@@ -1,11 +1,12 @@
 import { View, Text } from "react-native";
 import { router, Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { ListScreen } from "@/components/ListScreen";
 
 export default function LeadsScreen() {
-  const leads = trpc.leads.list.useQuery({}, { retry: false });
-  const items = (leads.data as any[]) ?? [];
+  const leads = useApi(api.getLeads);
+  const items = Array.isArray(leads.data) ? leads.data : [];
 
   return (
     <>
@@ -16,7 +17,7 @@ export default function LeadsScreen() {
         isLoading={leads.isLoading}
         emptyIcon="people-outline"
         emptyText="No leads found"
-        onRefresh={async () => { await leads.refetch(); }}
+        onRefresh={leads.refetch}
         onItemPress={(item: any) => router.push(`/leads/${item.id}`)}
         keyExtractor={(item: any) => String(item.id)}
         searchable
@@ -27,9 +28,9 @@ export default function LeadsScreen() {
           <View>
             <Text className="text-foreground font-semibold">{item.name || "Unnamed Lead"}</Text>
             {item.company && <Text className="text-muted text-sm mt-1">{item.company}</Text>}
-            {item.status && (
+            {item.status_name && (
               <View className="mt-2 self-start px-2 py-1 rounded-full bg-blue-100">
-                <Text className="text-xs text-blue-700 font-medium">{item.status}</Text>
+                <Text className="text-xs text-blue-700 font-medium">{item.status_name}</Text>
               </View>
             )}
           </View>

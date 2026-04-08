@@ -1,11 +1,14 @@
 import { View, Text } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useCallback } from "react";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { DetailScreenLayout, DetailField, StatusBadge } from "@/components/DetailScreen";
 
 export default function TicketDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const ticket = trpc.tickets.getById.useQuery({ id: Number(id) }, { retry: false });
+  const fetcher = useCallback(() => api.getTicket(Number(id)), [id]);
+  const ticket = useApi(fetcher);
   const data = ticket.data as any;
 
   return (
@@ -15,18 +18,18 @@ export default function TicketDetailScreen() {
         data={data}
         isLoading={ticket.isLoading}
         isError={ticket.isError}
-        onRefresh={async () => { await ticket.refetch(); }}
+        onRefresh={ticket.refetch}
       >
         <View className="bg-white rounded-xl p-4 mb-4">
-          <Text className="text-xl font-bold text-foreground mb-2">{data?.subject || data?.title}</Text>
-          {data?.status && <StatusBadge status={data.status} />}
+          <Text className="text-xl font-bold text-foreground mb-2">{data?.subject}</Text>
+          {data?.status_name && <StatusBadge status={data.status_name} />}
         </View>
         <View className="bg-white rounded-xl p-4">
-          <DetailField label="Priority" value={data?.priority} />
-          <DetailField label="Client" value={data?.client_name} />
-          <DetailField label="Assigned To" value={data?.assigned_to_name} />
-          <DetailField label="Description" value={data?.description} />
-          <DetailField label="Created" value={data?.created_at ? new Date(data.created_at).toLocaleDateString() : null} />
+          <DetailField label="Priority" value={data?.priority_name} />
+          <DetailField label="Department" value={data?.department_name} />
+          <DetailField label="Service" value={data?.service_name} />
+          <DetailField label="Message" value={data?.message} />
+          <DetailField label="Created" value={data?.date ? new Date(data.date).toLocaleDateString() : null} />
         </View>
       </DetailScreenLayout>
     </>

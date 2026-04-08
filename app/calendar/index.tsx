@@ -1,14 +1,14 @@
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from "react-native";
+import { View, Text, ScrollView, RefreshControl } from "react-native";
 import { useState, useCallback } from "react";
-import { router, Stack } from "expo-router";
+import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 
 export default function CalendarScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const today = new Date().toISOString().split("T")[0];
-  const events = trpc.calendar.getEvents.useQuery({ date: today }, { retry: false });
-  const items = (events.data as any[]) ?? [];
+  const events = useApi(api.getCalendarEvents);
+  const items = Array.isArray(events.data) ? events.data : [];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -34,25 +34,25 @@ export default function CalendarScreen() {
           <View className="items-center py-12">
             <Ionicons name="calendar-outline" size={48} color="#CBD5E1" />
             <Text className="text-muted mt-3 font-medium">
-              {events.isLoading ? "Loading..." : "No events on this day"}
+              {events.isLoading ? "Loading..." : "No events"}
             </Text>
           </View>
         ) : (
-          items.map((item: any) => (
-            <TouchableOpacity
-              key={item.id}
-              onPress={() => router.push(`/calendar/${item.id}`)}
+          items.map((item: any, index: number) => (
+            <View
+              key={item.id || index}
               className="bg-white rounded-xl p-4 mb-3 shadow-sm flex-row"
-              activeOpacity={0.7}
             >
               <View className="w-1 bg-primary rounded-full mr-3" />
               <View className="flex-1">
                 <Text className="text-foreground font-semibold">{item.title}</Text>
-                {item.start_time && (
-                  <Text className="text-muted text-sm mt-1">{item.start_time} - {item.end_time}</Text>
+                {item.start && (
+                  <Text className="text-muted text-sm mt-1">
+                    {new Date(item.start).toLocaleString()}
+                  </Text>
                 )}
               </View>
-            </TouchableOpacity>
+            </View>
           ))
         )}
       </ScrollView>

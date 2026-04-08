@@ -1,12 +1,17 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
-import { checkSession, clearSession, loginWithOAuth, logout as authLogout } from "./auth";
+import {
+  login as authLogin,
+  loginViaAdmin,
+  logout as authLogout,
+  getAuthToken,
+  clearSession,
+} from "./auth";
 
 type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
-  login: () => Promise<void>;
+  login: (email: string, password: string) => Promise<{ success: boolean; message?: string }>;
   logout: () => Promise<void>;
-  refreshAuth: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthState | null>(null);
@@ -15,33 +20,34 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  const refreshAuth = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const valid = await checkSession();
-      setIsAuthenticated(valid);
-    } catch {
-      setIsAuthenticated(false);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
+  // Check for existing session on mount
   useEffect(() => {
-    refreshAuth();
-  }, [refreshAuth]);
-
-  const login = useCallback(async () => {
-    setIsLoading(true);
-    try {
-      const result = await loginWithOAuth();
-      setIsAuthenticated(!!result);
-    } catch {
-      setIsAuthenticated(false);
-    } finally {
+    (async () => {
+      const token = await getAuthToken();
+      setIsAuthenticated(!!token);
       setIsLoading(false);
-    }
+    })();
   }, []);
+
+  const login = useCallback(
+    async (email: string, password: string) => {
+      setIsLoading(true);
+      try {
+        // Try mobile auth first, fall back to admin session auth
+        let result = await authLogin(email, password);
+        if (!result.success) {
+          result = await loginViaAdmin(email, password);
+        }
+        setIsAuthenticated(result.success);
+        return result;
+      } catch (err: any) {
+        return { success: false, message: err.message };
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    []
+  );
 
   const logout = useCallback(async () => {
     await authLogout();
@@ -49,7 +55,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout, refreshAuth }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
       {children}
     </AuthContext.Provider>
   );

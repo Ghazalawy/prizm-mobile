@@ -1,13 +1,14 @@
-import { View, Text, FlatList, RefreshControl, TouchableOpacity } from "react-native";
+import { View, Text, FlatList, RefreshControl } from "react-native";
 import { useState, useCallback } from "react";
 import { Stack } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 
 export default function NotificationsScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const notifications = trpc.notifications.list.useQuery(undefined, { retry: false });
-  const items = (notifications.data as any[]) ?? [];
+  const notifications = useApi(api.getNotifications);
+  const items = Array.isArray(notifications.data) ? notifications.data : [];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -21,7 +22,7 @@ export default function NotificationsScreen() {
       <View className="flex-1 bg-surface">
         <FlatList
           data={items}
-          keyExtractor={(item: any) => String(item.id)}
+          keyExtractor={(item: any, index) => String(item.id || index)}
           contentContainerClassName="p-4"
           refreshControl={
             <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0284C7" />
@@ -35,12 +36,11 @@ export default function NotificationsScreen() {
             </View>
           }
           renderItem={({ item }: { item: any }) => (
-            <View className={`bg-white rounded-xl p-4 mb-3 shadow-sm ${!item.read ? "border-l-4 border-primary" : ""}`}>
-              <Text className="text-foreground font-semibold">{item.title}</Text>
-              <Text className="text-muted text-sm mt-1">{item.message || item.body}</Text>
-              {item.created_at && (
+            <View className={`bg-white rounded-xl p-4 mb-3 shadow-sm ${!item.isread ? "border-l-4 border-primary" : ""}`}>
+              <Text className="text-foreground font-semibold">{item.description || item.title}</Text>
+              {item.date && (
                 <Text className="text-muted text-xs mt-2">
-                  {new Date(item.created_at).toLocaleString()}
+                  {new Date(item.date).toLocaleString()}
                 </Text>
               )}
             </View>

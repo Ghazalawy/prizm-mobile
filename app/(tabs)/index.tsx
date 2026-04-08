@@ -2,7 +2,8 @@ import { View, Text, ScrollView, RefreshControl, TouchableOpacity } from "react-
 import { useState, useCallback } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 
 type StatCardProps = {
   title: string;
@@ -30,18 +31,20 @@ function StatCard({ title, value, icon, color, onPress }: StatCardProps) {
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
+  const leads = useApi(api.getLeads);
+  const projects = useApi(api.getProjects);
+  const tasks = useApi(api.getTasks);
+  const invoices = useApi(api.getInvoices);
 
-  const dashboard = trpc.dashboard.getSummary.useQuery(undefined, {
-    retry: false,
-  });
+  const hasError = leads.isError && projects.isError;
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await dashboard.refetch();
+    await Promise.all([leads.refetch(), projects.refetch(), tasks.refetch(), invoices.refetch()]);
     setRefreshing(false);
-  }, [dashboard]);
+  }, [leads, projects, tasks, invoices]);
 
-  const data = dashboard.data as any;
+  const count = (d: any) => (Array.isArray(d) ? d.length : 0);
 
   return (
     <ScrollView
@@ -53,17 +56,14 @@ export default function DashboardScreen() {
     >
       <Text className="text-2xl font-bold text-foreground mb-4">Dashboard</Text>
 
-      {dashboard.error ? (
+      {hasError ? (
         <View className="bg-white rounded-xl p-6 items-center">
           <Ionicons name="cloud-offline-outline" size={48} color="#EF4444" />
           <Text className="text-foreground font-semibold mt-3">Unable to connect</Text>
           <Text className="text-muted text-sm mt-1 text-center">
             Could not reach the Prizm CRM server. Check your API configuration.
           </Text>
-          <TouchableOpacity
-            onPress={onRefresh}
-            className="mt-4 bg-primary px-6 py-2 rounded-lg"
-          >
+          <TouchableOpacity onPress={onRefresh} className="mt-4 bg-primary px-6 py-2 rounded-lg">
             <Text className="text-white font-medium">Retry</Text>
           </TouchableOpacity>
         </View>
@@ -71,28 +71,28 @@ export default function DashboardScreen() {
         <View className="flex-row flex-wrap">
           <StatCard
             title="Active Projects"
-            value={data?.activeProjects ?? "—"}
+            value={count(projects.data)}
             icon="folder-outline"
             color="#0284C7"
             onPress={() => router.push("/(tabs)/projects")}
           />
           <StatCard
             title="Open Tasks"
-            value={data?.openTasks ?? "—"}
+            value={count(tasks.data)}
             icon="checkbox-outline"
             color="#F59E0B"
             onPress={() => router.push("/(tabs)/tasks")}
           />
           <StatCard
             title="Total Leads"
-            value={data?.totalLeads ?? "—"}
+            value={count(leads.data)}
             icon="people-outline"
             color="#16A34A"
             onPress={() => router.push("/leads")}
           />
           <StatCard
-            title="Pending Invoices"
-            value={data?.pendingInvoices ?? "—"}
+            title="Invoices"
+            value={count(invoices.data)}
             icon="document-text-outline"
             color="#EF4444"
             onPress={() => router.push("/invoices")}

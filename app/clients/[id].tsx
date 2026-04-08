@@ -1,32 +1,36 @@
 import { View, Text } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useCallback } from "react";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { DetailScreenLayout, DetailField } from "@/components/DetailScreen";
 
 export default function ClientDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const client = trpc.clients.getById.useQuery({ id: Number(id) }, { retry: false });
+  const fetcher = useCallback(() => api.getClient(Number(id)), [id]);
+  const client = useApi(fetcher);
   const data = client.data as any;
 
   return (
     <>
-      <Stack.Screen options={{ headerShown: true, title: data?.name || "Client Detail" }} />
+      <Stack.Screen options={{ headerShown: true, title: data?.company || "Client Detail" }} />
       <DetailScreenLayout
         data={data}
         isLoading={client.isLoading}
         isError={client.isError}
-        onRefresh={async () => { await client.refetch(); }}
+        onRefresh={client.refetch}
       >
         <View className="bg-white rounded-xl p-4 mb-4">
-          <Text className="text-xl font-bold text-foreground">{data?.name || data?.company}</Text>
+          <Text className="text-xl font-bold text-foreground">{data?.company}</Text>
         </View>
         <View className="bg-white rounded-xl p-4">
-          <DetailField label="Company" value={data?.company} />
-          <DetailField label="Email" value={data?.email} />
-          <DetailField label="Phone" value={data?.phone} />
+          <DetailField label="Phone" value={data?.phonenumber} />
+          <DetailField label="Website" value={data?.website} />
           <DetailField label="Address" value={data?.address} />
-          <DetailField label="Group" value={data?.group_name} />
-          <DetailField label="Created" value={data?.created_at ? new Date(data.created_at).toLocaleDateString() : null} />
+          <DetailField label="City" value={data?.city} />
+          <DetailField label="Country" value={data?.country_name} />
+          <DetailField label="VAT Number" value={data?.vat} />
+          <DetailField label="Created" value={data?.datecreated ? new Date(data.datecreated).toLocaleDateString() : null} />
         </View>
       </DetailScreenLayout>
     </>

@@ -1,11 +1,12 @@
 import { View, Text } from "react-native";
 import { Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { ListScreen } from "@/components/ListScreen";
 
 export default function ContractsScreen() {
-  const contracts = trpc.contracts.list.useQuery({}, { retry: false });
-  const items = (contracts.data as any[]) ?? [];
+  const contracts = useApi(api.getContracts);
+  const items = Array.isArray(contracts.data) ? contracts.data : [];
 
   return (
     <>
@@ -16,16 +17,16 @@ export default function ContractsScreen() {
         isLoading={contracts.isLoading}
         emptyIcon="document-outline"
         emptyText="No contracts found"
-        onRefresh={async () => { await contracts.refetch(); }}
+        onRefresh={contracts.refetch}
         onItemPress={() => {}}
         keyExtractor={(item: any) => String(item.id)}
         renderItem={(item: any) => (
           <View>
-            <Text className="text-foreground font-semibold">{item.title || item.name}</Text>
-            <Text className="text-muted text-sm mt-1">{item.client_name}</Text>
-            {item.end_date && (
+            <Text className="text-foreground font-semibold">{item.subject}</Text>
+            <Text className="text-muted text-sm mt-1">{item.client_name || item.company}</Text>
+            {item.dateend && (
               <Text className="text-xs text-muted mt-1">
-                Expires: {new Date(item.end_date).toLocaleDateString()}
+                Expires: {new Date(item.dateend).toLocaleDateString()}
               </Text>
             )}
           </View>

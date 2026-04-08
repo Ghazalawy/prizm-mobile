@@ -1,10 +1,22 @@
 import * as SecureStore from "expo-secure-store";
-import * as WebBrowser from "expo-web-browser";
-import * as Linking from "expo-linking";
-import { Platform } from "react-native";
-import { AUTH_URL, OAUTH_URL, API_BASE_URL } from "./config";
+import { ADMIN_URL, MOBILE_AUTH_URL } from "./config";
 
+const TOKEN_KEY = "prizm_auth_token";
 const SESSION_KEY = "prizm_session_cookie";
+
+// --- Token storage ---
+
+export async function getAuthToken(): Promise<string | null> {
+  try {
+    return await SecureStore.getItemAsync(TOKEN_KEY);
+  } catch {
+    return null;
+  }
+}
+
+export async function setAuthToken(token: string): Promise<void> {
+  await SecureStore.setItemAsync(TOKEN_KEY, token);
+}
 
 export async function getSessionCookie(): Promise<string | null> {
   try {
@@ -19,51 +31,147 @@ export async function setSessionCookie(cookie: string): Promise<void> {
 }
 
 export async function clearSession(): Promise<void> {
+  await SecureStore.deleteItemAsync(TOKEN_KEY);
   await SecureStore.deleteItemAsync(SESSION_KEY);
 }
 
+// --- Login via mobile_auth.php ---
+
+export async function login(
+  email: string,
+  password: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    const formData = new FormData();
+    formData.append("email", email);
+    formData.append("password", password);
+
+    const res = await fetch(MOBILE_AUTH_URL, {
+      method: "POST",
+      body: formData,
+    });
+
+    const data = await res.json();
+
+    if (data.status === true || data.success === true) {
+      // Store token if returned
+      if (data.token) {
+        await setAuthToken(data.token);
+      }
+      // Store session cookie if returned in headers
+      const setCookie = res.headers.get("set-cookie");
+      if (setCookie) {
+        await setSessionCookie(setCookie);
+      }
+      return { success: true };
+    }
+
+    return {
+      success: false,
+      message: data.message || "Invalid email or password",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Could not connect to server",
+    };
+  }
+}
+
+// --- Session-based login (admin panel) ---
+
+export async function loginViaAdmin(
+  email: string,
+  password: string
+): Promise<{ success: boolean; message?: string }> {
+  try {
+    // Step 1: Get CSRF token from login page
+    const pageRes = await fetch(`${ADMIN_URL}/authentication`);
+    const html = await pageRes.text();
+
+    const csrfMatch = html.match(
+      /name="csrf_token_name"\s+value="([^"]+)"/
+    );
+    const csrf = csrfMatch?.[1] || "";
+
+    // Capture cookies from the page load
+    const pageCookies = pageRes.headers.get("set-cookie") || "";
+
+    // Step 2: POST login
+    const formData = new URLSearchParams();
+    formData.append("csrf_token_name", csrf);
+    formData.append("email", email);
+    formData.append("password", password);
+
+    const loginRes = await fetch(`${ADMIN_URL}/authentication`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/x-www-form-urlencoded",
+        Cookie: pageCookies,
+      },
+      body: formData.toString(),
+      redirect: "manual",
+    });
+
+    const sessionCookie = loginRes.headers.get("set-cookie");
+
+    // 302/307 redirect to dashboard = success
+    if (loginRes.status >= 300 && loginRes.status < 400) {
+      const location = loginRes.headers.get("location") || "";
+      if (
+        location.includes("dashboard") ||
+        location.includes("admin") &&
+        !location.includes("authentication")
+      ) {
+        if (sessionCookie) {
+          await setSessionCookie(sessionCookie);
+        }
+        return { success: true };
+      }
+    }
+
+    return {
+      success: false,
+      message: "Invalid email or password",
+    };
+  } catch (err: any) {
+    return {
+      success: false,
+      message: err.message || "Could not connect to server",
+    };
+  }
+}
+
+// --- Logout ---
+
+export async function logout(): Promise<void> {
+  try {
+    const cookie = await getSessionCookie();
+    if (cookie) {
+      await fetch(`${ADMIN_URL}/authentication/logout`, {
+        headers: { Cookie: cookie },
+      });
+    }
+  } catch {
+    // Ignore logout errors
+  }
+  await clearSession();
+}
+
+// --- Check if session is valid ---
+
 export async function checkSession(): Promise<boolean> {
-  const cookie = await getSessionCookie();
-  if (!cookie) return false;
+  const token = await getAuthToken();
+  if (!token) return false;
 
   try {
-    const res = await fetch(`${AUTH_URL}/session`, {
-      headers: { cookie },
+    // Quick check: hit a lightweight API endpoint
+    const res = await fetch(`${ADMIN_URL}/dashboard`, {
+      redirect: "manual",
     });
-    return res.ok;
+    // If it doesn't redirect to auth, session is valid
+    return res.status === 200;
   } catch {
     return false;
   }
-}
-
-export async function loginWithOAuth(): Promise<string | null> {
-  const redirectUri = Linking.createURL("oauth/callback");
-  const authUrl = `${OAUTH_URL}/mobile?redirect_uri=${encodeURIComponent(redirectUri)}`;
-
-  const result = await WebBrowser.openAuthSessionAsync(authUrl, redirectUri);
-
-  if (result.type === "success" && result.url) {
-    const url = new URL(result.url);
-    const sessionCookie = url.searchParams.get("session");
-    if (sessionCookie) {
-      await setSessionCookie(sessionCookie);
-      return sessionCookie;
-    }
-  }
-  return null;
-}
-
-export async function logout(): Promise<void> {
-  const cookie = await getSessionCookie();
-  if (cookie) {
-    try {
-      await fetch(`${AUTH_URL}/logout`, {
-        method: "POST",
-        headers: { cookie },
-      });
-    } catch {
-      // Ignore logout API errors
-    }
-  }
-  await clearSession();
 }

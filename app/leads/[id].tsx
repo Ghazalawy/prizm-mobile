@@ -1,11 +1,14 @@
 import { View, Text } from "react-native";
 import { useLocalSearchParams, Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useCallback } from "react";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { DetailScreenLayout, DetailField, StatusBadge } from "@/components/DetailScreen";
 
 export default function LeadDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const lead = trpc.leads.getById.useQuery({ id: Number(id) }, { retry: false });
+  const fetcher = useCallback(() => api.getLead(Number(id)), [id]);
+  const lead = useApi(fetcher);
   const data = lead.data as any;
 
   return (
@@ -15,22 +18,22 @@ export default function LeadDetailScreen() {
         data={data}
         isLoading={lead.isLoading}
         isError={lead.isError}
-        onRefresh={async () => { await lead.refetch(); }}
+        onRefresh={lead.refetch}
       >
         <View className="bg-white rounded-xl p-4 mb-4">
           <Text className="text-xl font-bold text-foreground mb-2">
             {data?.name || "Unnamed Lead"}
           </Text>
-          {data?.status && <StatusBadge status={data.status} />}
+          {data?.status_name && <StatusBadge status={data.status_name} />}
         </View>
         <View className="bg-white rounded-xl p-4">
           <DetailField label="Company" value={data?.company} />
           <DetailField label="Email" value={data?.email} />
-          <DetailField label="Phone" value={data?.phone} />
-          <DetailField label="Source" value={data?.source} />
-          <DetailField label="Value" value={data?.value} />
-          <DetailField label="Assigned To" value={data?.assigned_to_name} />
-          <DetailField label="Created" value={data?.created_at ? new Date(data.created_at).toLocaleDateString() : null} />
+          <DetailField label="Phone" value={data?.phonenumber} />
+          <DetailField label="Source" value={data?.source_name} />
+          <DetailField label="Value" value={data?.lead_value} />
+          <DetailField label="Assigned To" value={data?.assigned_name} />
+          <DetailField label="Created" value={data?.dateadded ? new Date(data.dateadded).toLocaleDateString() : null} />
         </View>
       </DetailScreenLayout>
     </>

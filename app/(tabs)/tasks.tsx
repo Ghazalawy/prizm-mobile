@@ -2,19 +2,19 @@ import { View, Text, FlatList, RefreshControl, TouchableOpacity } from "react-na
 import { useState, useCallback } from "react";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 
 export default function TasksScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const tasks = trpc.tasks.list.useQuery({}, { retry: false });
+  const tasks = useApi(api.getTasks);
+  const items = Array.isArray(tasks.data) ? tasks.data : [];
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await tasks.refetch();
     setRefreshing(false);
   }, [tasks]);
-
-  const items = (tasks.data as any[]) ?? [];
 
   return (
     <View className="flex-1 bg-surface">
@@ -42,37 +42,21 @@ export default function TasksScreen() {
             <View className="flex-row items-center justify-between">
               <View className="flex-1 mr-3">
                 <Text className="text-foreground font-semibold" numberOfLines={1}>
-                  {item.title || item.name}
+                  {item.name || item.title}
                 </Text>
                 {item.project_name && (
                   <Text className="text-muted text-sm mt-1">{item.project_name}</Text>
                 )}
               </View>
-              <View
-                className={`px-2 py-1 rounded-full ${
-                  item.status === "completed"
-                    ? "bg-green-100"
-                    : item.status === "overdue"
-                    ? "bg-red-100"
-                    : "bg-yellow-100"
-                }`}
-              >
-                <Text
-                  className={`text-xs font-medium ${
-                    item.status === "completed"
-                      ? "text-green-700"
-                      : item.status === "overdue"
-                      ? "text-red-700"
-                      : "text-yellow-700"
-                  }`}
-                >
-                  {item.status}
-                </Text>
-              </View>
+              {item.status_name && (
+                <View className="px-2 py-1 rounded-full bg-gray-100">
+                  <Text className="text-xs font-medium text-gray-600">{item.status_name}</Text>
+                </View>
+              )}
             </View>
-            {item.due_date && (
+            {item.duedate && (
               <Text className="text-muted text-xs mt-2">
-                Due: {new Date(item.due_date).toLocaleDateString()}
+                Due: {new Date(item.duedate).toLocaleDateString()}
               </Text>
             )}
           </TouchableOpacity>

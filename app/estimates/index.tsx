@@ -1,11 +1,12 @@
 import { View, Text } from "react-native";
 import { Stack } from "expo-router";
-import { trpc } from "@/lib/trpc";
+import { useApi } from "@/lib/use-api";
+import * as api from "@/lib/api";
 import { ListScreen } from "@/components/ListScreen";
 
 export default function EstimatesScreen() {
-  const estimates = trpc.estimates.list.useQuery({}, { retry: false });
-  const items = (estimates.data as any[]) ?? [];
+  const estimates = useApi(api.getEstimates);
+  const items = Array.isArray(estimates.data) ? estimates.data : [];
 
   return (
     <>
@@ -16,17 +17,17 @@ export default function EstimatesScreen() {
         isLoading={estimates.isLoading}
         emptyIcon="calculator-outline"
         emptyText="No estimates found"
-        onRefresh={async () => { await estimates.refetch(); }}
+        onRefresh={estimates.refetch}
         onItemPress={() => {}}
         keyExtractor={(item: any) => String(item.id)}
         renderItem={(item: any) => (
           <View className="flex-row items-center justify-between">
             <View className="flex-1">
-              <Text className="text-foreground font-semibold">{item.number || item.title}</Text>
-              <Text className="text-muted text-sm mt-1">{item.client_name}</Text>
+              <Text className="text-foreground font-semibold">{item.number || item.id}</Text>
+              <Text className="text-muted text-sm mt-1">{item.client_name || item.company}</Text>
             </View>
             <Text className="text-foreground font-bold">
-              {item.currency || "AED"} {item.total?.toLocaleString()}
+              {item.currency_name || "AED"} {Number(item.total || 0).toLocaleString()}
             </Text>
           </View>
         )}

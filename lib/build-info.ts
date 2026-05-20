@@ -2,9 +2,9 @@
 // the "Inject build metadata" step). The "dev" values below are only used when
 // running locally via `expo start`. Do not edit by hand.
 
-export const BUILD_TIME    = "dev";
-export const BUILD_SHA     = "dev";
-export const BUILD_VERSION = "1.0.0-dev";
+export const BUILD_TIME: string    = "dev";
+export const BUILD_SHA: string     = "dev";
+export const BUILD_VERSION: string = "1.0.0-dev";
 
 /**
  * Per-module gating flags. A tab only appears in the bottom bar when its flag

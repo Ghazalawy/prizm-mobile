@@ -28,7 +28,7 @@ export default function TasksScreen() {
       keyExtractor={(t) => String(t.id)}
       searchPlaceholder="Search tasks…"
       emptyMessage="No tasks found"
-      onItemPress={(t) => router.push(`/(tabs)/tasks/${t.id}`)}
+      onItemPress={(t) => router.push(`/(tabs)/tasks/${t.id}` as any)}
       renderItem={(t) => (
         <View className="bg-white rounded-xl p-3 shadow-sm">
           <View className="flex-row items-start">

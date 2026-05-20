@@ -28,7 +28,7 @@ export default function ProjectsScreen() {
       keyExtractor={(p) => String(p.id)}
       searchPlaceholder="Search projects…"
       emptyMessage="No projects found"
-      onItemPress={(p) => router.push(`/(tabs)/projects/${p.id}`)}
+      onItemPress={(p) => router.push(`/(tabs)/projects/${p.id}` as any)}
       renderItem={(p) => (
         <View className="bg-white rounded-xl p-3 shadow-sm">
           <View className="flex-row items-center">

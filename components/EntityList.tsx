@@ -57,7 +57,6 @@ export function EntityList<T>({
   const q = useQuery({
     queryKey: [...queryKey, "list", { search }],
     queryFn: () => fetcher({ search: search.trim() || undefined, limit: DEFAULT_LIMIT }),
-    keepPreviousData: true as any,
   });
 
   const list: ListResult<T> = useMemo(() => normalizeList(q.data), [q.data]);

@@ -64,6 +64,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="erp"
+          options={{
+            title: "ERP",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="apps-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="settings"
           options={{
             title: "Settings",

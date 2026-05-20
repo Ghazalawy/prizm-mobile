@@ -27,7 +27,7 @@ export default function LeadsScreen() {
       keyExtractor={(l) => String(l.id)}
       searchPlaceholder="Search leads…"
       emptyMessage="No leads found"
-      onItemPress={(l) => router.push(`/(tabs)/leads/${l.id}`)}
+      onItemPress={(l) => router.push(`/(tabs)/leads/${l.id}` as any)}
       renderItem={(l) => (
         <View className="bg-white rounded-xl p-3 shadow-sm">
           <Text className="text-foreground font-semibold" numberOfLines={2}>

@@ -3,7 +3,7 @@ import { getAuthToken, getSessionCookie } from "./auth";
 
 // --- REST API client (JWT auth) ---
 
-async function apiRequest(
+export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
@@ -82,7 +82,7 @@ async function adminRequest(
 // hooks normalize via normalizeList.
 // =====================================================
 
-function buildQS(params?: Record<string, string | number | undefined>): string {
+export function buildQS(params?: Record<string, string | number | undefined>): string {
   if (!params) return "";
   const parts = Object.entries(params)
     .filter(([, v]) => v !== undefined && v !== null && v !== "")
@@ -143,3 +143,47 @@ export const getCalendarEvents = () => apiRequest("calendar");
 // counts but kept for completeness.
 export const getDashboardData = () => adminRequest("dashboard");
 export const getNotifications = () => adminRequest("misc/get_notifications");
+
+// --- Generic native ERP CRUD client ---
+
+export type CrudEndpoint = {
+  endpoint: string;
+  detailEndpoint?: string;
+  deleteEndpoint?: string;
+};
+
+export const listEntities = (
+  endpoint: string,
+  p?: ListParams
+) => apiRequest(`${endpoint}${buildQS(p)}`);
+
+export const getEntity = (
+  endpoint: string,
+  id: string | number,
+  detailEndpoint?: string
+) => apiRequest(`${detailEndpoint || endpoint}/${encodeURIComponent(String(id))}`);
+
+export const createEntity = (
+  endpoint: string,
+  payload: Record<string, any>
+) => apiRequest(endpoint, {
+  method: "POST",
+  body: JSON.stringify(payload),
+});
+
+export const updateEntity = (
+  endpoint: string,
+  id: string | number,
+  payload: Record<string, any>
+) => apiRequest(`${endpoint}/${encodeURIComponent(String(id))}`, {
+  method: "PUT",
+  body: JSON.stringify(payload),
+});
+
+export const deleteEntity = (
+  endpoint: string,
+  id: string | number,
+  deleteEndpoint?: string
+) => apiRequest(`${deleteEndpoint || endpoint}/${encodeURIComponent(String(id))}`, {
+  method: "DELETE",
+});

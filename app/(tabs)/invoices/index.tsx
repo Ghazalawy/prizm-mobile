@@ -38,7 +38,7 @@ export default function InvoicesScreen() {
       keyExtractor={(i) => String(i.id)}
       searchPlaceholder="Search invoices…"
       emptyMessage="No invoices found"
-      onItemPress={(i) => router.push(`/(tabs)/invoices/${i.id}`)}
+      onItemPress={(i) => router.push(`/(tabs)/invoices/${i.id}` as any)}
       renderItem={(i) => (
         <View className="bg-white rounded-xl p-3 shadow-sm">
           <View className="flex-row items-start justify-between">

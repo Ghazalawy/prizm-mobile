@@ -91,7 +91,7 @@ export default function DashboardScreen() {
           color="#0284C7"
           isLoading={projects.isLoading}
           isError={projects.isError}
-          onPress={() => router.push("/(tabs)/projects")}
+          onPress={() => router.push("/(tabs)/erp/projects" as any)}
         />
         <StatCard
           title="Open Tasks"
@@ -100,7 +100,7 @@ export default function DashboardScreen() {
           color="#F59E0B"
           isLoading={tasks.isLoading}
           isError={tasks.isError}
-          onPress={() => router.push("/(tabs)/tasks")}
+          onPress={() => router.push("/(tabs)/erp/tasks" as any)}
         />
         <StatCard
           title="Customers"
@@ -109,7 +109,7 @@ export default function DashboardScreen() {
           color="#8B5CF6"
           isLoading={customers.isLoading}
           isError={customers.isError}
-          onPress={() => router.push("/(tabs)/customers")}
+          onPress={() => router.push("/(tabs)/customers" as any)}
         />
         <StatCard
           title="Total Leads"
@@ -118,7 +118,7 @@ export default function DashboardScreen() {
           color="#16A34A"
           isLoading={leads.isLoading}
           isError={leads.isError}
-          onPress={() => router.push("/(tabs)/leads")}
+          onPress={() => router.push("/(tabs)/erp/leads" as any)}
         />
         <StatCard
           title="Invoices"
@@ -127,7 +127,7 @@ export default function DashboardScreen() {
           color="#EF4444"
           isLoading={invoices.isLoading}
           isError={invoices.isError}
-          onPress={() => router.push("/(tabs)/invoices")}
+          onPress={() => router.push("/(tabs)/erp/invoices" as any)}
         />
       </View>
 

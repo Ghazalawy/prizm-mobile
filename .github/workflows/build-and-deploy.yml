@@ -49,8 +49,8 @@ jobs:
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund --legacy-peer-deps
 
-      - name: Install missing native peer deps (Expo SDK matrix)
-        run: npx expo install react-native-worklets
+      - name: Install missing peer/build deps (Expo SDK matrix)
+        run: npx expo install react-native-worklets babel-preset-expo
 
       - name: Write .env
         run: echo "EXPO_PUBLIC_API_URL=${{ env.API_URL }}" > .env

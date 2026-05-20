@@ -1,7 +1,9 @@
 import { Tabs, Redirect } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { View, ActivityIndicator } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { UpdateBanner } from "@/components/UpdateBanner";
 
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -19,8 +21,10 @@ export default function TabLayout() {
   }
 
   return (
-    <Tabs
-      screenOptions={{
+    <SafeAreaView edges={["top"]} className="flex-1 bg-white">
+      <UpdateBanner />
+      <Tabs
+        screenOptions={{
         tabBarActiveTintColor: "#0284C7",
         tabBarInactiveTintColor: "#64748B",
         tabBarStyle: {
@@ -76,6 +80,7 @@ export default function TabLayout() {
           ),
         }}
       />
-    </Tabs>
+      </Tabs>
+    </SafeAreaView>
   );
 }

@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth-context";
 import { BASE_URL } from "@/lib/config";
+import { BUILD_VERSION, BUILD_TIME } from "@/lib/build-info";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -101,7 +102,10 @@ export default function SettingsScreen() {
         <View className="bg-white rounded-xl overflow-hidden mb-6">
           <View className="px-4 py-4 border-b border-gray-100">
             <Text className="text-foreground font-medium">Version</Text>
-            <Text className="text-muted text-sm mt-1">1.0.0</Text>
+            <Text className="text-muted text-sm mt-1">{BUILD_VERSION}</Text>
+            {BUILD_TIME !== "dev" ? (
+              <Text className="text-muted text-xs mt-0.5">Built {BUILD_TIME}</Text>
+            ) : null}
           </View>
           <View className="px-4 py-4">
             <Text className="text-foreground font-medium">API Server</Text>

@@ -5,6 +5,14 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
+/**
+ * Bottom tab bar. During the phased native rebuild, only modules whose native
+ * screens are FINISHED appear here. Each phase commit re-adds its Tabs.Screen
+ * entry alongside the new screen file. No stub tabs visible.
+ *
+ * Current visible tabs: Dashboard, Settings.
+ * Phase 1a will add Tasks; Phase 1b will add Projects; etc.
+ */
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -25,61 +33,35 @@ export default function TabLayout() {
       <UpdateBanner />
       <Tabs
         screenOptions={{
-        tabBarActiveTintColor: "#0284C7",
-        tabBarInactiveTintColor: "#64748B",
-        tabBarStyle: {
-          backgroundColor: "#FFFFFF",
-          borderTopColor: "#E2E8F0",
-        },
-        headerStyle: { backgroundColor: "#FFFFFF" },
-        headerTitleStyle: { color: "#0F172A", fontWeight: "600" },
-      }}
-    >
-      <Tabs.Screen
-        name="index"
-        options={{
-          title: "Dashboard",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="grid-outline" size={size} color={color} />
-          ),
+          tabBarActiveTintColor: "#0284C7",
+          tabBarInactiveTintColor: "#64748B",
+          tabBarStyle: {
+            backgroundColor: "#FFFFFF",
+            borderTopColor: "#E2E8F0",
+          },
+          headerStyle: { backgroundColor: "#FFFFFF" },
+          headerTitleStyle: { color: "#0F172A", fontWeight: "600" },
         }}
-      />
-      <Tabs.Screen
-        name="tasks"
-        options={{
-          title: "Tasks",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="checkbox-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="projects"
-        options={{
-          title: "Projects",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="folder-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="more"
-        options={{
-          title: "More",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="menu-outline" size={size} color={color} />
-          ),
-        }}
-      />
-      <Tabs.Screen
-        name="settings"
-        options={{
-          title: "Settings",
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name="settings-outline" size={size} color={color} />
-          ),
-        }}
-      />
+      >
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: "Dashboard",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="grid-outline" size={size} color={color} />
+            ),
+          }}
+        />
+
+        <Tabs.Screen
+          name="settings"
+          options={{
+            title: "Settings",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="settings-outline" size={size} color={color} />
+            ),
+          }}
+        />
       </Tabs>
     </SafeAreaView>
   );

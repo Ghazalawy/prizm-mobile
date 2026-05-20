@@ -1,28 +1,40 @@
 import { Platform } from "react-native";
-import * as FileSystem from "expo-file-system";
+// expo-file-system's createDownloadResumable was removed from the new top-level
+// API in Expo SDK 54 (in favor of File/Directory classes). The legacy entry
+// point keeps the function-style API working with zero migration.
+import * as FileSystem from "expo-file-system/legacy";
 import * as IntentLauncher from "expo-intent-launcher";
 import * as SecureStore from "expo-secure-store";
-import { BUILD_TIME } from "./build-info";
+import { BUILD_SHA } from "./build-info";
 
-// We compare the timestamp the user's installed APK was built (BUILD_TIME, ISO 8601)
-// against the GitHub release's `published_at`. If the release is newer, an update
-// is available. This deliberately avoids relying on semver bumps in package.json.
+// Update detection is SHA-based, not timestamp-based:
+//
+// The workflow publishes the release with name "Latest build (<short_sha>)".
+// We parse the short SHA out of the release name and compare against the
+// BUILD_SHA embedded in the installed APK (also short SHA, set at build time
+// in lib/build-info.ts). Match → no update. Different → newer build exists.
+//
+// Why not compare timestamps? BUILD_TIME is captured at CI job START, but the
+// release asset's updated_at is set ~15 min later when upload finishes —
+// so the SAME APK always looks "15 minutes newer than itself". The SHA is
+// monotonic per commit and never collides with the same build.
 
 const RELEASE_API =
   "https://api.github.com/repos/Ghazalawy/prizm-mobile/releases/latest";
 
-const DISMISSED_KEY = "prizm_update_dismissed_for"; // stores the publishedAt string
-                                                    // the user last dismissed.
+// SecureStore key. We store the remote SHA the user dismissed so the banner
+// stays hidden for that exact build but reappears for any later one.
+const DISMISSED_KEY = "prizm_update_dismissed_sha";
 
 export type UpdateInfo = {
   apkUrl: string;
-  publishedAt: string;
+  remoteSha: string;
   htmlUrl: string;
   sizeBytes: number;
 };
 
 /**
- * Returns an UpdateInfo if a newer release is available AND the user hasn't
+ * Returns an UpdateInfo if a newer build is available AND the user hasn't
  * already dismissed it. Returns null otherwise. Never throws — network/parse
  * errors silently return null so the app keeps working offline.
  */
@@ -30,7 +42,7 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
   // The whole feature is Android-only for now (install intent is Android).
   if (Platform.OS !== "android") return null;
   // No comparison possible in dev builds — bail out.
-  if (BUILD_TIME === "dev") return null;
+  if (!BUILD_SHA || BUILD_SHA === "dev") return null;
 
   try {
     // 5-second timeout so a slow/offline network on launch doesn't keep the
@@ -50,24 +62,23 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
     );
     if (!apk) return null;
 
-    // IMPORTANT: use the ASSET's updated_at, not release.published_at.
-    // We re-upload prizm-mobile.apk to the same rolling "latest" tag on every
-    // build, so the release's published_at stays frozen at the first build.
-    // Only the asset's updated_at tracks each new build.
-    const publishedAt = (apk.updated_at || j.published_at) as string;
-    if (!publishedAt) return null;
+    // Parse the short SHA out of the release name, e.g.
+    //   "Latest build (b3f019e)"  →  "b3f019e"
+    const name = (j.name || "") as string;
+    const match = name.match(/\(([a-f0-9]{6,12})\)/i);
+    const remoteSha = match?.[1]?.toLowerCase();
+    if (!remoteSha) return null;
 
-    // Compare lexicographically — ISO 8601 strings sort correctly as long as
-    // both are UTC ("Z" suffix), which GitHub guarantees.
-    if (publishedAt <= BUILD_TIME) return null;
+    // Same build? No banner.
+    if (remoteSha === BUILD_SHA.toLowerCase()) return null;
 
-    // Respect the user's "Not now" choice on this exact build.
+    // Respect the user's "Not now" choice on this exact remote build.
     const dismissed = await SecureStore.getItemAsync(DISMISSED_KEY);
-    if (dismissed === publishedAt) return null;
+    if (dismissed === remoteSha) return null;
 
     return {
       apkUrl: apk.browser_download_url,
-      publishedAt,
+      remoteSha,
       htmlUrl: j.html_url,
       sizeBytes: apk.size || 0,
     };
@@ -76,8 +87,8 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
   }
 }
 
-export async function dismissUpdate(publishedAt: string): Promise<void> {
-  await SecureStore.setItemAsync(DISMISSED_KEY, publishedAt);
+export async function dismissUpdate(remoteSha: string): Promise<void> {
+  await SecureStore.setItemAsync(DISMISSED_KEY, remoteSha);
 }
 
 /**
@@ -101,8 +112,10 @@ export async function downloadAndInstall(
 
   // Wipe any prior partial download so we never install a stale file.
   try {
-    const info = await FileSystem.getInfoAsync(dest);
-    if (info.exists) await FileSystem.deleteAsync(dest, { idempotent: true });
+    const existing = await FileSystem.getInfoAsync(dest);
+    if (existing.exists) {
+      await FileSystem.deleteAsync(dest, { idempotent: true });
+    }
   } catch {
     // ignore
   }

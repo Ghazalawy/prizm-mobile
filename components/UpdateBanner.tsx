@@ -42,7 +42,7 @@ export function UpdateBanner() {
   };
 
   const handleDismiss = async () => {
-    await dismissUpdate(info.publishedAt);
+    await dismissUpdate(info.remoteSha);
     setInfo(null);
   };
 

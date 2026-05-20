@@ -47,7 +47,7 @@ jobs:
         uses: android-actions/setup-android@v3
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install --no-audit --no-fund --legacy-peer-deps
 
       - name: Write .env
         run: echo "EXPO_PUBLIC_API_URL=${{ env.API_URL }}" > .env

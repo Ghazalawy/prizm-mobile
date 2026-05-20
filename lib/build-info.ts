@@ -13,16 +13,16 @@ export const BUILD_VERSION = "1.0.0-dev";
  * roadmap.
  */
 export const BUILD_FLAGS = {
-  tasksNative:           false,  // Phase 1a
-  projectsNative:        false,  // Phase 1b
-  customersNative:       false,  // Phase 2
-  invoicesNative:        false,  // Phase 2
-  tendersNative:         false,  // Phase 3
-  opportunitiesNative:   false,  // Phase 3
-  purchaseNative:        false,  // Phase 4
-  materialsNative:       false,  // Phase 4
-  leadsNative:           false,  // Phase 5
-  ticketsNative:         false,  // Phase 5
-  calendarNative:        false,  // Phase 5
-  notificationsNative:   false,  // Phase 5
+  tasksNative:           true,
+  projectsNative:        true,
+  customersNative:       true,
+  leadsNative:           true,
+  invoicesNative:        true,
+  tendersNative:         false,
+  opportunitiesNative:   false,
+  purchaseNative:        false,
+  materialsNative:       false,
+  ticketsNative:         false,
+  calendarNative:        false,
+  notificationsNative:   false,
 } as const;

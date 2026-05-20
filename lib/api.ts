@@ -11,8 +11,7 @@ async function apiRequest(
 
   // Perfex's modules/api expects the JWT in a custom header called `authtoken`,
   // NOT in Authorization: Bearer. See modules/api/config/jwt.php (`token_header`)
-  // and Authorization_Token::tokenIsExist(). Sending Bearer makes every endpoint
-  // return 401 "Token is not defined".
+  // and Authorization_Token::tokenIsExist().
   const res = await fetch(`${API_URL}/${endpoint}`, {
     ...options,
     headers: {
@@ -35,6 +34,26 @@ async function apiRequest(
   return res.json();
 }
 
+// Some endpoints return a plain array, others return { status, data, total, limit, offset }.
+// This helper normalizes both shapes.
+export type ListResult<T = any> = {
+  items: T[];
+  total: number;
+};
+
+export function normalizeList(response: any): ListResult {
+  if (Array.isArray(response)) {
+    return { items: response, total: response.length };
+  }
+  if (response && Array.isArray(response.data)) {
+    return {
+      items: response.data,
+      total: typeof response.total === "number" ? response.total : response.data.length,
+    };
+  }
+  return { items: [], total: 0 };
+}
+
 // --- Admin AJAX client (session auth) ---
 
 async function adminRequest(
@@ -51,158 +70,76 @@ async function adminRequest(
     },
   });
 
-  if (!res.ok) {
-    throw new Error(`HTTP ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
   const text = await res.text();
-  try {
-    return JSON.parse(text);
-  } catch {
-    return text;
-  }
+  try { return JSON.parse(text); } catch { return text; }
 }
 
-// ========================
-// Leads
-// ========================
+// =====================================================
+// Per-entity getters. All accept optional ?search / ?limit / ?offset and
+// return RAW response shape (paginated object or plain array). React Query
+// hooks normalize via normalizeList.
+// =====================================================
 
-export async function getLeads() {
-  return apiRequest("leads");
+function buildQS(params?: Record<string, string | number | undefined>): string {
+  if (!params) return "";
+  const parts = Object.entries(params)
+    .filter(([, v]) => v !== undefined && v !== null && v !== "")
+    .map(([k, v]) => `${encodeURIComponent(k)}=${encodeURIComponent(String(v))}`);
+  return parts.length ? `?${parts.join("&")}` : "";
 }
 
-export async function getLead(id: number) {
-  return apiRequest(`leads/${id}`);
-}
+export type ListParams = {
+  search?: string;
+  limit?: number;
+  offset?: number;
+};
 
-// ========================
-// Clients / Customers
-// ========================
-
-export async function getClients() {
-  return apiRequest("customers");
-}
-
-export async function getClient(id: number) {
-  return apiRequest(`customers/${id}`);
-}
-
-// ========================
 // Tasks
-// ========================
+export const getTasks    = (p?: ListParams) => apiRequest(`tasks${buildQS(p)}`);
+export const getTask     = (id: number)     => apiRequest(`tasks/${id}`);
 
-export async function getTasks() {
-  return apiRequest("tasks");
-}
-
-export async function getTask(id: number) {
-  return apiRequest(`tasks/${id}`);
-}
-
-// ========================
 // Projects
-// ========================
+export const getProjects = (p?: ListParams) => apiRequest(`projects${buildQS(p)}`);
+export const getProject  = (id: number)     => apiRequest(`projects/${id}`);
 
-export async function getProjects() {
-  return apiRequest("projects");
-}
+// Customers (Perfex names them "customers" in API)
+export const getCustomers = (p?: ListParams) => apiRequest(`customers${buildQS(p)}`);
+export const getCustomer  = (id: number)     => apiRequest(`customers/${id}`);
 
-export async function getProject(id: number) {
-  return apiRequest(`projects/${id}`);
-}
+// Leads
+export const getLeads = (p?: ListParams) => apiRequest(`leads${buildQS(p)}`);
+export const getLead  = (id: number)     => apiRequest(`leads/${id}`);
 
-// ========================
 // Invoices
-// ========================
+export const getInvoices = (p?: ListParams) => apiRequest(`invoices${buildQS(p)}`);
+export const getInvoice  = (id: number)     => apiRequest(`invoices/${id}`);
 
-export async function getInvoices() {
-  return apiRequest("invoices");
-}
-
-export async function getInvoice(id: number) {
-  return apiRequest(`invoices/${id}`);
-}
-
-// ========================
 // Estimates
-// ========================
+export const getEstimates = (p?: ListParams) => apiRequest(`estimates${buildQS(p)}`);
+export const getEstimate  = (id: number)     => apiRequest(`estimates/${id}`);
 
-export async function getEstimates() {
-  return apiRequest("estimates");
-}
-
-export async function getEstimate(id: number) {
-  return apiRequest(`estimates/${id}`);
-}
-
-// ========================
 // Contracts
-// ========================
+export const getContracts = (p?: ListParams) => apiRequest(`contracts${buildQS(p)}`);
+export const getContract  = (id: number)     => apiRequest(`contracts/${id}`);
 
-export async function getContracts() {
-  return apiRequest("contracts");
-}
-
-export async function getContract(id: number) {
-  return apiRequest(`contracts/${id}`);
-}
-
-// ========================
 // Expenses
-// ========================
+export const getExpenses = (p?: ListParams) => apiRequest(`expenses${buildQS(p)}`);
+export const getExpense  = (id: number)     => apiRequest(`expenses/${id}`);
 
-export async function getExpenses() {
-  return apiRequest("expenses");
-}
-
-export async function getExpense(id: number) {
-  return apiRequest(`expenses/${id}`);
-}
-
-// ========================
 // Tickets
-// ========================
+export const getTickets = (p?: ListParams) => apiRequest(`tickets${buildQS(p)}`);
+export const getTicket  = (id: number)     => apiRequest(`tickets/${id}`);
 
-export async function getTickets() {
-  return apiRequest("tickets");
-}
-
-export async function getTicket(id: number) {
-  return apiRequest(`tickets/${id}`);
-}
-
-// ========================
 // Staff
-// ========================
+export const getStaff       = (p?: ListParams) => apiRequest(`staffs${buildQS(p)}`);
+export const getStaffMember = (id: number)     => apiRequest(`staffs/${id}`);
 
-export async function getStaff() {
-  return apiRequest("staffs");
-}
-
-export async function getStaffMember(id: number) {
-  return apiRequest(`staffs/${id}`);
-}
-
-// ========================
 // Calendar
-// ========================
+export const getCalendarEvents = () => apiRequest("calendar");
 
-export async function getCalendarEvents() {
-  return apiRequest("calendar");
-}
-
-// ========================
-// Dashboard (admin AJAX)
-// ========================
-
-export async function getDashboardData() {
-  return adminRequest("dashboard");
-}
-
-// ========================
-// Notifications (admin AJAX)
-// ========================
-
-export async function getNotifications() {
-  return adminRequest("misc/get_notifications");
-}
+// Dashboard data (admin AJAX, session cookie auth) — superseded by per-entity
+// counts but kept for completeness.
+export const getDashboardData = () => adminRequest("dashboard");
+export const getNotifications = () => adminRequest("misc/get_notifications");

@@ -5,14 +5,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
-/**
- * Bottom tab bar. During the phased native rebuild, only modules whose native
- * screens are FINISHED appear here. Each phase commit re-adds its Tabs.Screen
- * entry alongside the new screen file. No stub tabs visible.
- *
- * Current visible tabs: Dashboard, Settings.
- * Phase 1a will add Tasks; Phase 1b will add Projects; etc.
- */
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -39,20 +31,66 @@ export default function TabLayout() {
             backgroundColor: "#FFFFFF",
             borderTopColor: "#E2E8F0",
           },
-          headerStyle: { backgroundColor: "#FFFFFF" },
-          headerTitleStyle: { color: "#0F172A", fontWeight: "600" },
+          tabBarLabelStyle: { fontSize: 11 },
+          headerShown: false,
         }}
       >
         <Tabs.Screen
           name="index"
           options={{
-            title: "Dashboard",
+            title: "Home",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="grid-outline" size={size} color={color} />
             ),
           }}
         />
-
+        <Tabs.Screen
+          name="tasks"
+          options={{
+            title: "Tasks",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="checkbox-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="projects"
+          options={{
+            title: "Projects",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="folder-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="customers"
+          options={{
+            title: "Customers",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="business-outline" size={size} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
+          name="leads"
+          options={{
+            title: "Leads",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="people-outline" size={size} color={color} />
+            ),
+            href: null, // accessible via stack but not in bottom bar (5 tabs limit)
+          }}
+        />
+        <Tabs.Screen
+          name="invoices"
+          options={{
+            title: "Invoices",
+            tabBarIcon: ({ color, size }) => (
+              <Ionicons name="document-text-outline" size={size} color={color} />
+            ),
+            href: null,
+          }}
+        />
         <Tabs.Screen
           name="settings"
           options={{

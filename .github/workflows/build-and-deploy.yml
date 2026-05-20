@@ -1,0 +1,113 @@
+name: Build APK and Deploy Pages
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+env:
+  API_URL: https://ms.prizm-energy.com
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+    outputs:
+      short_sha: ${{ steps.meta.outputs.short_sha }}
+      build_time: ${{ steps.meta.outputs.build_time }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          echo "short_sha=$(git rev-parse --short HEAD)" >> "$GITHUB_OUTPUT"
+          echo "build_time=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install npm dependencies
+        run: npm ci
+
+      - name: Write .env
+        run: echo "EXPO_PUBLIC_API_URL=${{ env.API_URL }}" > .env
+
+      - name: Expo prebuild (Android)
+        run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Build release APK
+        working-directory: android
+        run: ./gradlew assembleRelease --no-daemon
+
+      - name: Stage APK
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/release/app-release.apk out/prizm-mobile.apk
+          ls -lh out/
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: prizm-mobile-apk
+          path: out/prizm-mobile.apk
+          retention-days: 30
+
+      - name: Publish rolling "latest" release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: latest
+          name: "Latest build (${{ steps.meta.outputs.short_sha }})"
+          body: |
+            Auto-built from `main` @ `${{ github.sha }}`
+            Built at: ${{ steps.meta.outputs.build_time }}
+            API: ${{ env.API_URL }}
+
+            Install on Android: enable "Install unknown apps" for your browser, then tap the APK.
+          files: out/prizm-mobile.apk
+          make_latest: "true"
+
+  deploy-pages:
+    name: Deploy GitHub Pages
+    needs: build-apk
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Stage site
+        run: |
+          mkdir -p _site
+          cp pages/index.html _site/index.html
+          sed -i "s|__SHORT_SHA__|${{ needs.build-apk.outputs.short_sha }}|g" _site/index.html
+          sed -i "s|__BUILD_TIME__|${{ needs.build-apk.outputs.build_time }}|g" _site/index.html
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

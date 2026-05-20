@@ -33,9 +33,15 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
   if (BUILD_TIME === "dev") return null;
 
   try {
+    // 5-second timeout so a slow/offline network on launch doesn't keep the
+    // banner check hanging in the background.
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
     const res = await fetch(RELEASE_API, {
       headers: { Accept: "application/vnd.github+json" },
+      signal: controller.signal,
     });
+    clearTimeout(timeout);
     if (!res.ok) return null;
     const j = await res.json();
 
@@ -44,14 +50,18 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
     );
     if (!apk) return null;
 
-    const publishedAt = j.published_at as string;
+    // IMPORTANT: use the ASSET's updated_at, not release.published_at.
+    // We re-upload prizm-mobile.apk to the same rolling "latest" tag on every
+    // build, so the release's published_at stays frozen at the first build.
+    // Only the asset's updated_at tracks each new build.
+    const publishedAt = (apk.updated_at || j.published_at) as string;
     if (!publishedAt) return null;
 
     // Compare lexicographically — ISO 8601 strings sort correctly as long as
     // both are UTC ("Z" suffix), which GitHub guarantees.
     if (publishedAt <= BUILD_TIME) return null;
 
-    // Respect the user's "Not now" choice on this exact release.
+    // Respect the user's "Not now" choice on this exact build.
     const dismissed = await SecureStore.getItemAsync(DISMISSED_KEY);
     if (dismissed === publishedAt) return null;
 

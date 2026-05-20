@@ -9,11 +9,15 @@ async function apiRequest(
 ): Promise<any> {
   const token = await getAuthToken();
 
+  // Perfex's modules/api expects the JWT in a custom header called `authtoken`,
+  // NOT in Authorization: Bearer. See modules/api/config/jwt.php (`token_header`)
+  // and Authorization_Token::tokenIsExist(). Sending Bearer makes every endpoint
+  // return 401 "Token is not defined".
   const res = await fetch(`${API_URL}/${endpoint}`, {
     ...options,
     headers: {
       "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...(token ? { authtoken: token } : {}),
       ...(options.headers || {}),
     },
   });

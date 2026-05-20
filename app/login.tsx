@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
+import { setBiometricEnabled, markBiometricAsked } from "@/lib/biometric";
 
 export default function LoginScreen() {
   const { isAuthenticated, isLoading, login } = useAuth();
@@ -36,6 +37,26 @@ export default function LoginScreen() {
 
     if (!result.success) {
       Alert.alert("Login Failed", result.message || "Invalid credentials");
+      return;
+    }
+
+    // One-time offer to enable fingerprint login on supported devices.
+    // auth-context only sets this flag on the FIRST successful login.
+    if (result.shouldOfferBiometric) {
+      await markBiometricAsked();
+      Alert.alert(
+        "Enable fingerprint login?",
+        "Use your fingerprint to sign in next time instead of typing your password.",
+        [
+          { text: "Not now", style: "cancel" },
+          {
+            text: "Enable",
+            onPress: async () => {
+              await setBiometricEnabled(true);
+            },
+          },
+        ]
+      );
     }
   };
 

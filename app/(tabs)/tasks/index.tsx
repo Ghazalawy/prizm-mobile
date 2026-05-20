@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { router } from "expo-router";
 import { EntityList } from "@/components/EntityList";
+import { ComingSoonBanner } from "@/components/ComingSoonBanner";
 import { getTasks } from "@/lib/api";
 
 const STATUS = { 1: "Not Started", 2: "Awaiting Feedback", 3: "Testing", 4: "In Progress", 5: "Complete" } as Record<number, string>;
@@ -17,6 +18,8 @@ type Task = {
 
 export default function TasksScreen() {
   return (
+    <View className="flex-1">
+      <ComingSoonBanner moduleName="Tasks" />
     <EntityList<Task>
       title="Tasks"
       icon="checkbox-outline"
@@ -55,5 +58,6 @@ export default function TasksScreen() {
         </View>
       )}
     />
+    </View>
   );
 }

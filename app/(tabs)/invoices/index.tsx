@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { router } from "expo-router";
 import { EntityList } from "@/components/EntityList";
+import { ComingSoonBanner } from "@/components/ComingSoonBanner";
 import { getInvoices } from "@/lib/api";
 
 const STATUS = { 1: "Unpaid", 2: "Paid", 3: "Partially paid", 4: "Overdue", 5: "Cancelled", 6: "Draft" } as Record<number, string>;
@@ -27,6 +28,8 @@ function formatCurrency(amount: any, currency?: string): string {
 
 export default function InvoicesScreen() {
   return (
+    <View className="flex-1">
+      <ComingSoonBanner moduleName="Invoices" />
     <EntityList<Invoice>
       title="Invoices"
       icon="document-text-outline"
@@ -72,5 +75,6 @@ export default function InvoicesScreen() {
         </View>
       )}
     />
+    </View>
   );
 }

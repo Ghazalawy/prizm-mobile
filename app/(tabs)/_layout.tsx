@@ -5,6 +5,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { UpdateBanner } from "@/components/UpdateBanner";
 
+/**
+ * Bottom bar: Home / Customers / Settings only.
+ *
+ * Tasks / Projects / Leads / Invoices are still reachable from dashboard tiles
+ * (deep-link into the (tabs)/<module>/index.tsx route), but their tabs are
+ * hidden from the bar via href:null because those modules are not yet native
+ * to web parity — they show a "Coming in Phase 2 — use web for full CRUD"
+ * banner above the existing list. Once each module reaches full parity
+ * (Customer is first), its tab flips back on.
+ */
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -45,50 +55,12 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="tasks"
-          options={{
-            title: "Tasks",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="checkbox-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
-          name="projects"
-          options={{
-            title: "Projects",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="folder-outline" size={size} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="customers"
           options={{
             title: "Customers",
             tabBarIcon: ({ color, size }) => (
               <Ionicons name="business-outline" size={size} color={color} />
             ),
-          }}
-        />
-        <Tabs.Screen
-          name="leads"
-          options={{
-            title: "Leads",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="people-outline" size={size} color={color} />
-            ),
-            href: null, // accessible via stack but not in bottom bar (5 tabs limit)
-          }}
-        />
-        <Tabs.Screen
-          name="invoices"
-          options={{
-            title: "Invoices",
-            tabBarIcon: ({ color, size }) => (
-              <Ionicons name="document-text-outline" size={size} color={color} />
-            ),
-            href: null,
           }}
         />
         <Tabs.Screen
@@ -100,6 +72,12 @@ export default function TabLayout() {
             ),
           }}
         />
+
+        {/* Reachable via dashboard tile / router.push, hidden from bottom bar */}
+        <Tabs.Screen name="tasks"    options={{ href: null }} />
+        <Tabs.Screen name="projects" options={{ href: null }} />
+        <Tabs.Screen name="leads"    options={{ href: null }} />
+        <Tabs.Screen name="invoices" options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
   );

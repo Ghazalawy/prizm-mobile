@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { router } from "expo-router";
 import { EntityList } from "@/components/EntityList";
+import { ComingSoonBanner } from "@/components/ComingSoonBanner";
 import { getLeads } from "@/lib/api";
 
 type Lead = {
@@ -16,6 +17,8 @@ type Lead = {
 
 export default function LeadsScreen() {
   return (
+    <View className="flex-1">
+      <ComingSoonBanner moduleName="Leads" />
     <EntityList<Lead>
       title="Leads"
       icon="people-outline"
@@ -45,5 +48,6 @@ export default function LeadsScreen() {
         </View>
       )}
     />
+    </View>
   );
 }

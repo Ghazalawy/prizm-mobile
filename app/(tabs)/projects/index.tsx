@@ -1,6 +1,7 @@
 import { View, Text } from "react-native";
 import { router } from "expo-router";
 import { EntityList } from "@/components/EntityList";
+import { ComingSoonBanner } from "@/components/ComingSoonBanner";
 import { getProjects } from "@/lib/api";
 
 const STATUS = { 1: "Not Started", 2: "In Progress", 3: "On Hold", 4: "Cancelled", 5: "Finished" } as Record<number, string>;
@@ -17,6 +18,8 @@ type Project = {
 
 export default function ProjectsScreen() {
   return (
+    <View className="flex-1">
+      <ComingSoonBanner moduleName="Projects" />
     <EntityList<Project>
       title="Projects"
       icon="folder-outline"
@@ -53,5 +56,6 @@ export default function ProjectsScreen() {
         </View>
       )}
     />
+    </View>
   );
 }

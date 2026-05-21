@@ -3,7 +3,8 @@ import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { useAuth } from "@/lib/auth-context";
 import { BASE_URL } from "@/lib/config";
-import { BUILD_VERSION, BUILD_TIME } from "@/lib/build-info";
+import { BUILD_VERSION, BUILD_TIME, BUILD_SHA } from "@/lib/build-info";
+import { checkForUpdate, downloadAndInstall } from "@/lib/updates";
 import {
   isBiometricAvailable,
   isBiometricEnabled,
@@ -16,6 +17,7 @@ export default function SettingsScreen() {
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
+  const [checkingUpdate, setCheckingUpdate] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -53,6 +55,45 @@ export default function SettingsScreen() {
         onPress: logout,
       },
     ]);
+  };
+
+  const handleCheckUpdate = async () => {
+    setCheckingUpdate(true);
+    try {
+      const info = await checkForUpdate({ ignoreDismissed: true });
+      if (!info) {
+        Alert.alert("No update found", "This device is already on the latest available build.");
+        return;
+      }
+
+      const sizeMb = info.sizeBytes
+        ? (info.sizeBytes / (1024 * 1024)).toFixed(0)
+        : "?";
+
+      Alert.alert(
+        "Update available",
+        `A new build is ready (${sizeMb} MB). Install it now?`,
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Install",
+            onPress: async () => {
+              try {
+                Alert.alert(
+                  "Downloading update",
+                  "The Android installer will open when the APK finishes downloading."
+                );
+                await downloadAndInstall(info);
+              } catch (err: any) {
+                Alert.alert("Update failed", err?.message || "Could not download the update.");
+              }
+            },
+          },
+        ]
+      );
+    } finally {
+      setCheckingUpdate(false);
+    }
   };
 
   return (
@@ -106,7 +147,24 @@ export default function SettingsScreen() {
             {BUILD_TIME !== "dev" ? (
               <Text className="text-muted text-xs mt-0.5">Built {BUILD_TIME}</Text>
             ) : null}
+            {BUILD_SHA !== "dev" ? (
+              <Text className="text-muted text-xs mt-0.5">Build {BUILD_SHA}</Text>
+            ) : null}
           </View>
+          <TouchableOpacity
+            onPress={handleCheckUpdate}
+            disabled={checkingUpdate}
+            className="flex-row items-center px-4 py-4 border-b border-gray-100"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="cloud-download-outline" size={22} color="#0284C7" />
+            <Text className="text-foreground font-medium ml-3">
+              {checkingUpdate ? "Checking..." : "Check for updates"}
+            </Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </TouchableOpacity>
           <View className="px-4 py-4">
             <Text className="text-foreground font-medium">API Server</Text>
             <Text className="text-muted text-sm mt-1">{BASE_URL}</Text>

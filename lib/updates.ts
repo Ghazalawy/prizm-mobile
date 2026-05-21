@@ -38,7 +38,9 @@ export type UpdateInfo = {
  * already dismissed it. Returns null otherwise. Never throws — network/parse
  * errors silently return null so the app keeps working offline.
  */
-export async function checkForUpdate(): Promise<UpdateInfo | null> {
+export async function checkForUpdate(
+  options: { ignoreDismissed?: boolean } = {}
+): Promise<UpdateInfo | null> {
   // The whole feature is Android-only for now (install intent is Android).
   if (Platform.OS !== "android") return null;
   // No comparison possible in dev builds — bail out.
@@ -73,8 +75,10 @@ export async function checkForUpdate(): Promise<UpdateInfo | null> {
     if (remoteSha === BUILD_SHA.toLowerCase()) return null;
 
     // Respect the user's "Not now" choice on this exact remote build.
-    const dismissed = await SecureStore.getItemAsync(DISMISSED_KEY);
-    if (dismissed === remoteSha) return null;
+    if (!options.ignoreDismissed) {
+      const dismissed = await SecureStore.getItemAsync(DISMISSED_KEY);
+      if (dismissed === remoteSha) return null;
+    }
 
     return {
       apkUrl: apk.browser_download_url,

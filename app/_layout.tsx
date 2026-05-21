@@ -10,6 +10,7 @@ import * as SplashScreen from "expo-splash-screen";
 
 import { AuthProvider } from "@/lib/auth-context";
 import { queryClient, wireAppStateFocus } from "@/lib/query-client";
+import { UpdatePrompt } from "@/components/UpdatePrompt";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -34,6 +35,7 @@ export default function RootLayout() {
               <Stack.Screen name="login" options={{ headerShown: false }} />
               <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
             </Stack>
+            <UpdatePrompt />
             <StatusBar style="auto" />
             <Toast />
           </AuthProvider>

@@ -16,12 +16,14 @@ export type ModuleField = {
   key: string;
   label: string;
   type?: FieldType;
+  relation?: "customer" | "staff";
   required?: boolean;
   readOnly?: boolean;
   section?: string;
   placeholder?: string;
   defaultValue?: string | number;
   options?: Array<{ label: string; value: string | number }>;
+  hideIfZero?: boolean;
 };
 
 export type ModuleTab = {
@@ -73,6 +75,20 @@ const priorityOptions = [
   { label: "Urgent", value: "4" },
 ];
 
+const projectStatusOptions = [
+  { label: "Not Started", value: "1" },
+  { label: "In Progress", value: "2" },
+  { label: "On Hold", value: "3" },
+  { label: "Finished", value: "4" },
+  { label: "Cancelled", value: "5" },
+];
+
+const projectBillingOptions = [
+  { label: "Fixed Rate", value: "1" },
+  { label: "Project Hours", value: "2" },
+  { label: "Task Hours", value: "3" },
+];
+
 const addressFields: ModuleField[] = [
   { key: "address", label: "Street", section: "Address", type: "multiline" },
   { key: "city", label: "City", section: "Address" },
@@ -106,7 +122,7 @@ const itemFields: ModuleField[] = [
 ];
 
 const moneyDocFields: ModuleField[] = [
-  { key: "clientid", label: "Customer ID", section: "Customer", type: "number", required: true },
+  { key: "clientid", label: "Customer", section: "Customer", type: "number", relation: "customer", required: true },
   { key: "number", label: "Number", section: "Document", required: true },
   { key: "date", label: "Date", section: "Document", type: "date", required: true },
   { key: "duedate", label: "Due Date", section: "Document", type: "date" },
@@ -155,7 +171,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "vat", label: "VAT", section: "Customer" },
       { key: "phonenumber", label: "Phone", section: "Customer", type: "phone" },
       { key: "website", label: "Website", section: "Customer", type: "url" },
-      { key: "default_currency", label: "Default Currency ID", section: "Customer", type: "number" },
+      { key: "default_currency", label: "Default Currency ID", section: "Customer", type: "number", hideIfZero: true },
       { key: "default_language", label: "Default Language", section: "Customer" },
       { key: "active", label: "Active", section: "Customer", type: "select", options: statusOptions },
       ...addressFields,
@@ -189,7 +205,7 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["company", "title", "phonenumber"],
     searchFields: ["firstname", "lastname", "email", "company"],
     fields: [
-      { key: "customer_id", label: "Customer ID", section: "Contact", type: "number", required: true },
+      { key: "customer_id", label: "Customer", section: "Contact", type: "number", relation: "customer", required: true },
       { key: "firstname", label: "First Name", section: "Contact", required: true },
       { key: "lastname", label: "Last Name", section: "Contact", required: true },
       { key: "email", label: "Email", section: "Contact", type: "email", required: true },
@@ -221,8 +237,8 @@ export const MODULES: ModuleDefinition[] = [
       { key: "name", label: "Lead Name", section: "Lead", required: true },
       { key: "source", label: "Source ID", section: "Lead", type: "number", required: true },
       { key: "status", label: "Status ID", section: "Lead", type: "number", required: true },
-      { key: "assigned", label: "Assigned Staff ID", section: "Lead", type: "number" },
-      { key: "client_id", label: "Customer ID", section: "Lead", type: "number" },
+      { key: "assigned", label: "Assigned To", section: "Lead", type: "number", relation: "staff", hideIfZero: true },
+      { key: "client_id", label: "Customer", section: "Lead", type: "number", relation: "customer", hideIfZero: true },
       { key: "contact", label: "Contact", section: "Contact" },
       { key: "title", label: "Title", section: "Contact" },
       { key: "email", label: "Email", section: "Contact", type: "email" },
@@ -248,14 +264,14 @@ export const MODULES: ModuleDefinition[] = [
     icon: "folder-outline",
     color: "#2563EB",
     titleFields: ["name"],
-    subtitleFields: ["clientid", "status", "deadline"],
+    subtitleFields: ["company", "clientid", "status", "deadline"],
     searchFields: ["name", "description"],
     fields: [
       { key: "name", label: "Project Name", section: "Project", required: true },
       { key: "rel_type", label: "Related Type", section: "Project", type: "select", defaultValue: "customer", options: [{ label: "Customer", value: "customer" }, { label: "Lead", value: "lead" }, { label: "Internal", value: "internal" }] },
-      { key: "clientid", label: "Related ID", section: "Project", type: "number", required: true },
-      { key: "billing_type", label: "Billing Type", section: "Billing", type: "number", required: true, defaultValue: "3" },
-      { key: "status", label: "Status", section: "Project", type: "number", required: true, defaultValue: "2" },
+      { key: "clientid", label: "Customer", section: "Project", type: "number", relation: "customer", required: true },
+      { key: "billing_type", label: "Billing Type", section: "Billing", type: "select", required: true, defaultValue: "3", options: projectBillingOptions },
+      { key: "status", label: "Status", section: "Project", type: "select", required: true, defaultValue: "2", options: projectStatusOptions },
       { key: "start_date", label: "Start Date", section: "Dates", type: "date", required: true },
       { key: "deadline", label: "Deadline", section: "Dates", type: "date" },
       { key: "progress", label: "Progress", section: "Project", type: "number" },
@@ -264,6 +280,17 @@ export const MODULES: ModuleDefinition[] = [
       { key: "estimated_hours", label: "Estimated Hours", section: "Billing", type: "number" },
       { key: "tags", label: "Tags", section: "Project" },
       { key: "description", label: "Description", section: "Notes", type: "multiline" },
+      { key: "project_created", label: "Created", section: "Dates", type: "date", readOnly: true },
+      { key: "date_finished", label: "Finished", section: "Dates", type: "datetime", readOnly: true },
+      { key: "projectmanager", label: "Project Manager", section: "Team", type: "number", relation: "staff", hideIfZero: true, readOnly: true },
+      { key: "projectseniorManager", label: "Senior Manager", section: "Team", type: "number", relation: "staff", hideIfZero: true, readOnly: true },
+      { key: "projectsenior_manager", label: "Senior Manager", section: "Team", type: "number", relation: "staff", hideIfZero: true, readOnly: true },
+      { key: "projectseniormanager", label: "Senior Manager", section: "Team", type: "number", relation: "staff", hideIfZero: true, readOnly: true },
+      { key: "addedfrom", label: "Added By", section: "Team", type: "number", relation: "staff", hideIfZero: true, readOnly: true },
+      { key: "progress_from_tasks", label: "Progress Uses Tasks", section: "Settings", type: "boolean", readOnly: true },
+      { key: "contact_notification", label: "Contact Notifications", section: "Notifications", type: "boolean", readOnly: true },
+      { key: "notify_contacts", label: "Notify Contacts", section: "Notifications", type: "json", readOnly: true },
+      { key: "teams_channel", label: "Teams Channel", section: "Collaboration", type: "url", readOnly: true },
     ],
     tabs: [
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "project" }, createDefaults: { rel_id: "{id}", rel_type: "project" } },
@@ -352,7 +379,7 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["dateassigned"],
     fields: [
       { key: "taskid", label: "Task ID", type: "number", required: true },
-      { key: "staffid", label: "Staff ID", type: "number", required: true },
+      { key: "staffid", label: "Staff", type: "number", relation: "staff", required: true },
     ],
     canUpdate: false,
   },
@@ -369,7 +396,7 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["dateadded"],
     fields: [
       { key: "taskid", label: "Task ID", type: "number", required: true },
-      { key: "staffid", label: "Staff ID", type: "number", required: true },
+      { key: "staffid", label: "Staff", type: "number", relation: "staff", required: true },
     ],
     canUpdate: false,
   },
@@ -430,7 +457,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "subtotal", label: "Subtotal", section: "Totals", type: "money" },
       { key: "total", label: "Total", section: "Totals", type: "money" },
       { key: "content", label: "Content", section: "Content", type: "multiline" },
-      { key: "assigned", label: "Assigned Staff ID", section: "Proposal", type: "number" },
+      { key: "assigned", label: "Assigned To", section: "Proposal", type: "number", relation: "staff", hideIfZero: true },
     ],
   },
   {
@@ -472,7 +499,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "amount", label: "Amount", section: "Expense", type: "money", required: true },
       { key: "date", label: "Date", section: "Expense", type: "date", required: true },
       { key: "currency", label: "Currency ID", section: "Expense", type: "number" },
-      { key: "clientid", label: "Customer ID", section: "Relation", type: "number" },
+      { key: "clientid", label: "Customer", section: "Relation", type: "number", relation: "customer" },
       { key: "project_id", label: "Project ID", section: "Relation", type: "number" },
       { key: "paymentmode", label: "Payment Mode ID", section: "Expense", type: "number" },
       { key: "reference_no", label: "Reference No", section: "Expense" },
@@ -507,7 +534,7 @@ export const MODULES: ModuleDefinition[] = [
     searchFields: ["subject", "description", "company"],
     fields: [
       { key: "subject", label: "Subject", section: "Contract", required: true },
-      { key: "client", label: "Customer ID", section: "Contract", type: "number", required: true },
+      { key: "client", label: "Customer", section: "Contract", type: "number", relation: "customer", required: true },
       { key: "datestart", label: "Start Date", section: "Dates", type: "date", required: true },
       { key: "dateend", label: "End Date", section: "Dates", type: "date" },
       { key: "contract_type", label: "Contract Type ID", section: "Contract", type: "number" },
@@ -531,7 +558,7 @@ export const MODULES: ModuleDefinition[] = [
     searchFields: ["subject", "message", "email"],
     fields: [
       { key: "subject", label: "Subject", section: "Ticket", required: true },
-      { key: "userid", label: "Customer ID", section: "Relation", type: "number" },
+      { key: "userid", label: "Customer", section: "Relation", type: "number", relation: "customer" },
       { key: "contactid", label: "Contact ID", section: "Relation", type: "number" },
       { key: "project_id", label: "Project ID", section: "Relation", type: "number" },
       { key: "department", label: "Department ID", section: "Ticket", type: "number", required: true },
@@ -629,9 +656,9 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["customer_id", "status", "dateadded"],
     fields: [
       { key: "name", label: "Name", section: "Inquiry", required: true },
-      { key: "customer_id", label: "Customer ID", section: "Relation", type: "number" },
+      { key: "customer_id", label: "Customer", section: "Relation", type: "number", relation: "customer" },
       { key: "status", label: "Status", section: "Inquiry" },
-      { key: "assigned", label: "Assigned Staff ID", section: "Inquiry", type: "number" },
+      { key: "assigned", label: "Assigned To", section: "Inquiry", type: "number", relation: "staff", hideIfZero: true },
       { key: "description", label: "Description", section: "Inquiry", type: "multiline" },
     ],
     tabs: [
@@ -749,7 +776,7 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["customer_id", "stage", "status"],
     fields: [
       { key: "name", label: "Name", section: "Opportunity", required: true },
-      { key: "customer_id", label: "Customer ID", section: "Relation", type: "number" },
+      { key: "customer_id", label: "Customer", section: "Relation", type: "number", relation: "customer" },
       { key: "stage", label: "Stage", section: "Opportunity" },
       { key: "status", label: "Status", section: "Opportunity" },
       { key: "value", label: "Value", section: "Opportunity", type: "money" },
@@ -984,7 +1011,7 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["start_time", "end_time"],
     fields: [
       { key: "task_id", label: "Task ID", section: "Timesheet", type: "number", required: true },
-      { key: "staff_id", label: "Staff ID", section: "Timesheet", type: "number", required: true },
+      { key: "staff_id", label: "Staff", section: "Timesheet", type: "number", relation: "staff", required: true },
       { key: "start_time", label: "Start Time", section: "Timesheet", type: "datetime", required: true },
       { key: "end_time", label: "End Time", section: "Timesheet", type: "datetime" },
       { key: "note", label: "Note", section: "Timesheet", type: "multiline" },
@@ -1040,7 +1067,7 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["staff_id", "month", "year"],
     subtitleFields: ["net_pay", "status"],
     fields: [
-      { key: "staff_id", label: "Staff ID", section: "Payslip", type: "number", required: true },
+      { key: "staff_id", label: "Staff", section: "Payslip", type: "number", relation: "staff", required: true },
       { key: "month", label: "Month", section: "Payslip", required: true },
       { key: "year", label: "Year", section: "Payslip", type: "number", required: true },
       { key: "gross_pay", label: "Gross Pay", section: "Totals", type: "money" },
@@ -1196,20 +1223,77 @@ export function moduleId(module: ModuleDefinition, row: any): string {
 export function moduleTitle(module: ModuleDefinition, row: any): string {
   const parts = module.titleFields
     .map((field) => row?.[field])
-    .filter((value) => value !== undefined && value !== null && String(value).trim() !== "")
-    .map((value) => String(value).trim());
+    .filter((value) => !isBlankDisplayValue(value))
+    .map((value) => cleanModuleText(value));
   if (parts.length > 0) return parts.join(" ");
   return `${module.title} #${moduleId(module, row) || "?"}`;
 }
 
 export function moduleSubtitle(module: ModuleDefinition, row: any): string {
   const fields = module.subtitleFields || [];
+  const seen = new Set<string>();
   return fields
-    .map((field) => row?.[field])
-    .filter((value) => value !== undefined && value !== null && String(value).trim() !== "" && String(value) !== "0")
+    .map((field) => moduleFieldDisplayValue(module, row, field))
+    .filter((value) => {
+      if (!value) return false;
+      const normalized = value.toLowerCase();
+      if (seen.has(normalized)) return false;
+      seen.add(normalized);
+      return true;
+    })
     .slice(0, 3)
-    .map((value) => String(value).trim())
     .join(" • ");
+}
+
+function moduleFieldDisplayValue(module: ModuleDefinition, row: any, key: string): string {
+  const value = row?.[key];
+  if (isBlankDisplayValue(value)) return "";
+
+  const field = module.fields.find((item) => item.key === key);
+  const option = field?.options?.find((item) => String(item.value) === String(value));
+  if (option) return option.label;
+
+  if (field?.relation === "customer") {
+    return cleanModuleText(row?.company || row?.customer_name || row?.client_name || `Customer #${value}`);
+  }
+
+  if (field?.relation === "staff") {
+    return cleanModuleText(`Staff #${value}`);
+  }
+
+  return cleanModuleText(value);
+}
+
+function isBlankDisplayValue(value: any): boolean {
+  if (value === undefined || value === null) return true;
+  const text = cleanModuleText(value).toLowerCase();
+  return (
+    text === "" ||
+    text === "0" ||
+    text === "0.00" ||
+    text === "0000-00-00" ||
+    text === "0000-00-00 00:00:00" ||
+    text === "a:0:{}" ||
+    text === "[]" ||
+    text === "{}"
+  );
+}
+
+function cleanModuleText(value: any): string {
+  return String(value ?? "")
+    .replace(/<\/(p|div|li|br|tr|h[1-6])>/gi, " ")
+    .replace(/<br\s*\/?>/gi, " ")
+    .replace(/<[^>]+>/g, " ")
+    .replace(/&#(\d+);/g, (_, code) => String.fromCodePoint(Number(code)))
+    .replace(/&#x([0-9a-f]+);/gi, (_, code) => String.fromCodePoint(parseInt(code, 16)))
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&quot;/gi, '"')
+    .replace(/&apos;/gi, "'")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/\s+/g, " ")
+    .trim();
 }
 
 export function isCrudEnabled(module: ModuleDefinition, action: "create" | "update" | "delete"): boolean {

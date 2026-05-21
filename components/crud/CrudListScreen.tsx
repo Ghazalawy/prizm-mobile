@@ -44,7 +44,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   });
 
   const rows = useMemo(() => {
-    const list = normalizeList(q.data).items;
+    const list = uniqueRowsById(module, normalizeList(q.data).items);
     return filterRows(module, list, search);
   }, [module, q.data, search]);
 
@@ -186,6 +186,17 @@ function filterRows(module: ModuleDefinition | undefined, rows: any[], search: s
   return rows.filter((row) =>
     keys.some((key) => String(row?.[key] ?? "").toLowerCase().includes(needle))
   );
+}
+
+function uniqueRowsById(module: ModuleDefinition | undefined, rows: any[]): any[] {
+  if (!module) return rows;
+  const seen = new Set<string>();
+  return rows.filter((row, index) => {
+    const id = moduleId(module, row) || `${module.key}-${index}`;
+    if (seen.has(id)) return false;
+    seen.add(id);
+    return true;
+  });
 }
 
 function MissingModule({ moduleKey }: { moduleKey: string }) {

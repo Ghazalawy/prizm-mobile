@@ -30,6 +30,7 @@ import {
   decodeCustomFieldValue,
   type CustomFieldRow,
 } from "@/lib/queries/custom-fields";
+import { FilesTab } from "./FilesTab";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -195,13 +196,26 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
             >
               <RecordSummary module={module} row={row} />
             </ScrollView>
-          ) : (
-            <RelatedTab
-              parentModule={module}
-              parentRow={row}
-              tab={module.tabs?.find((tab) => tab.key === activeTab)}
-            />
-          )}
+          ) : (() => {
+            const tab = module.tabs?.find((t) => t.key === activeTab);
+            if (tab?.kind === "files") {
+              const relType = String(tab.fixedFilters?.rel_type ?? module.key);
+              return (
+                <FilesTab
+                  relType={relType}
+                  relId={moduleId(module, row)}
+                  color={module.color}
+                />
+              );
+            }
+            return (
+              <RelatedTab
+                parentModule={module}
+                parentRow={row}
+                tab={tab}
+              />
+            );
+          })()}
         </>
       )}
     </View>

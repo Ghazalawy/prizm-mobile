@@ -48,6 +48,12 @@ export type ModuleTab = {
   parentField?: string;
   fixedFilters?: Record<string, string | number>;
   createDefaults?: Record<string, string | number>;
+  /**
+   * Special-cased tab kinds. "files" → renders the attachments tab with
+   * camera/gallery/document upload, not the generic related-list view.
+   * The associated rel_type for /api/files is taken from `fixedFilters.rel_type`.
+   */
+  kind?: "files";
 };
 
 export type ModuleDefinition = {
@@ -225,6 +231,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "contracts", title: "Contracts", moduleKey: "contracts", childField: "client", parentField: "userid", createDefaults: { client: "{id}" } },
       { key: "expenses", title: "Expenses", moduleKey: "expenses", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
       { key: "credit_notes", title: "Credit Notes", moduleKey: "credit_notes", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "customer" } },
     ],
   },
   {
@@ -290,6 +297,7 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "lead" }, createDefaults: { rel_id: "{id}", rel_type: "lead" } },
       { key: "projects", title: "Projects", moduleKey: "projects", childField: "clientid", parentField: "id", fixedFilters: { rel_type: "lead" }, createDefaults: { clientid: "{id}", rel_type: "lead" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "lead" } },
     ],
   },
   {
@@ -337,6 +345,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "invoices", title: "Invoices", moduleKey: "invoices", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "expenses", title: "Expenses", moduleKey: "expenses", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "tickets", title: "Tickets", moduleKey: "tickets", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "project" } },
     ],
   },
   {
@@ -370,6 +379,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "comments", title: "Comments", moduleKey: "task_comments", endpointTemplate: "tasks/comments/{id}", createDefaults: { taskid: "{id}" } },
       { key: "assignments", title: "Assignments", moduleKey: "task_assignments", endpointTemplate: "tasks/assignments/{id}", createDefaults: { taskid: "{id}" } },
       { key: "followers", title: "Followers", moduleKey: "task_followers", endpointTemplate: "tasks/followers/{id}", createDefaults: { taskid: "{id}" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "task" } },
     ],
   },
   {
@@ -457,6 +467,7 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "payments", title: "Payments", moduleKey: "payments", childField: "invoiceid", parentField: "id", createDefaults: { invoiceid: "{id}" } },
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "invoice" }, createDefaults: { rel_id: "{id}", rel_type: "invoice" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "invoice" } },
     ],
   },
   {

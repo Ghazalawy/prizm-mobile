@@ -241,4 +241,36 @@ const RELATION_CONFIG: Record<RelationKind, RelationCfg> = {
         r.name
       ),
   },
+  lead_source: {
+    endpoint: "lead_sources",
+    queryKey: "lead_sources",
+    title: "Select source",
+    fallbackLabel: "Source",
+    id: (r) => r.id,
+    label: (r) => firstStr(r.name),
+  },
+  lead_status: {
+    endpoint: "lead_statuses",
+    queryKey: "lead_statuses",
+    title: "Select status",
+    fallbackLabel: "Status",
+    id: (r) => r.id,
+    label: (r) => firstStr(r.name),
+  },
+  ticket_priority: {
+    endpoint: "ticket_priorities",
+    queryKey: "ticket_priorities",
+    title: "Select priority",
+    fallbackLabel: "Priority",
+    id: (r) => r.priorityid ?? r.id,
+    label: (r) => firstStr(r.name),
+  },
+  ticket_status: {
+    endpoint: "ticket_statuses",
+    queryKey: "ticket_statuses",
+    title: "Select status",
+    fallbackLabel: "Status",
+    id: (r) => r.ticketstatusid ?? r.id,
+    label: (r) => firstStr(r.name),
+  },
 };

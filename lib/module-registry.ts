@@ -19,7 +19,11 @@ export type RelationKind =
   | "currency"
   | "customer_group"
   | "payment_mode"
-  | "tax_rate";
+  | "tax_rate"
+  | "lead_source"
+  | "lead_status"
+  | "ticket_priority"
+  | "ticket_status";
 
 export type ModuleField = {
   key: string;
@@ -244,8 +248,8 @@ export const MODULES: ModuleDefinition[] = [
     searchFields: ["name", "company", "email", "phonenumber"],
     fields: [
       { key: "name", label: "Lead Name", section: "Lead", required: true },
-      { key: "source", label: "Source ID", section: "Lead", type: "number", required: true },
-      { key: "status", label: "Status ID", section: "Lead", type: "number", required: true },
+      { key: "source", label: "Source", section: "Lead", type: "number", relation: "lead_source", required: true },
+      { key: "status", label: "Status", section: "Lead", type: "number", relation: "lead_status", required: true },
       { key: "assigned", label: "Assigned To", section: "Lead", type: "number", relation: "staff", hideIfZero: true },
       { key: "client_id", label: "Customer", section: "Lead", type: "number", relation: "customer", hideIfZero: true },
       { key: "contact", label: "Contact", section: "Contact" },
@@ -571,9 +575,9 @@ export const MODULES: ModuleDefinition[] = [
       { key: "contactid", label: "Contact ID", section: "Relation", type: "number" },
       { key: "project_id", label: "Project ID", section: "Relation", type: "number" },
       { key: "department", label: "Department ID", section: "Ticket", type: "number", required: true },
-      { key: "priority", label: "Priority ID", section: "Ticket", type: "number" },
+      { key: "priority", label: "Priority", section: "Ticket", type: "number", relation: "ticket_priority" },
       { key: "service", label: "Service ID", section: "Ticket", type: "number" },
-      { key: "status", label: "Status ID", section: "Ticket", type: "number" },
+      { key: "status", label: "Status", section: "Ticket", type: "number", relation: "ticket_status" },
       { key: "email", label: "Email", section: "Requester", type: "email" },
       { key: "name", label: "Requester Name", section: "Requester" },
       { key: "message", label: "Message", section: "Content", type: "multiline", required: true },

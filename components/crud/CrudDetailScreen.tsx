@@ -269,15 +269,48 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
     staleTime: 60 * 60 * 1000,
   });
 
+  // Lead/ticket enum tables (added in ERP v2.4.6)
+  const leadSourceLookup = useQuery({
+    queryKey: ["crud", "lookup", "lead_sources"],
+    queryFn: () => listEntities("lead_sources"),
+    enabled: !!needs.lead_source,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const leadStatusLookup = useQuery({
+    queryKey: ["crud", "lookup", "lead_statuses"],
+    queryFn: () => listEntities("lead_statuses"),
+    enabled: !!needs.lead_status,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const ticketPriorityLookup = useQuery({
+    queryKey: ["crud", "lookup", "ticket_priorities"],
+    queryFn: () => listEntities("ticket_priorities"),
+    enabled: !!needs.ticket_priority,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const ticketStatusLookup = useQuery({
+    queryKey: ["crud", "lookup", "ticket_statuses"],
+    queryFn: () => listEntities("ticket_statuses"),
+    enabled: !!needs.ticket_status,
+    staleTime: 60 * 60 * 1000,
+  });
+
   const lookups = useMemo<LookupMaps>(
     () => ({
-      staff:          buildLookupMap(normalizeList(staffLookup.data).items,         "staff"),
-      customer:       buildLookupMap(normalizeList(customerLookup.data).items,      "customer"),
-      country:        buildLookupMap(normalizeList(countryLookup.data).items,       "country"),
-      currency:       buildLookupMap(normalizeList(currencyLookup.data).items,      "currency"),
-      customer_group: buildLookupMap(normalizeList(customerGroupLookup.data).items, "customer_group"),
-      payment_mode:   buildLookupMap(normalizeList(paymentModeLookup.data).items,   "payment_mode"),
-      tax_rate:       buildLookupMap(normalizeList(taxRateLookup.data).items,       "tax_rate"),
+      staff:           buildLookupMap(normalizeList(staffLookup.data).items,          "staff"),
+      customer:        buildLookupMap(normalizeList(customerLookup.data).items,       "customer"),
+      country:         buildLookupMap(normalizeList(countryLookup.data).items,        "country"),
+      currency:        buildLookupMap(normalizeList(currencyLookup.data).items,       "currency"),
+      customer_group:  buildLookupMap(normalizeList(customerGroupLookup.data).items,  "customer_group"),
+      payment_mode:    buildLookupMap(normalizeList(paymentModeLookup.data).items,    "payment_mode"),
+      tax_rate:        buildLookupMap(normalizeList(taxRateLookup.data).items,        "tax_rate"),
+      lead_source:     buildLookupMap(normalizeList(leadSourceLookup.data).items,     "lead_source"),
+      lead_status:     buildLookupMap(normalizeList(leadStatusLookup.data).items,     "lead_status"),
+      ticket_priority: buildLookupMap(normalizeList(ticketPriorityLookup.data).items, "ticket_priority"),
+      ticket_status:   buildLookupMap(normalizeList(ticketStatusLookup.data).items,   "ticket_status"),
     }),
     [
       staffLookup.data,
@@ -287,6 +320,10 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
       customerGroupLookup.data,
       paymentModeLookup.data,
       taxRateLookup.data,
+      leadSourceLookup.data,
+      leadStatusLookup.data,
+      ticketPriorityLookup.data,
+      ticketStatusLookup.data,
     ]
   );
 
@@ -735,6 +772,10 @@ function resolveRelationValue(
     customer_group: "Customer Group",
     payment_mode: "Payment Mode",
     tax_rate: "Tax Rate",
+    lead_source: "Source",
+    lead_status: "Status",
+    ticket_priority: "Priority",
+    ticket_status: "Status",
   };
   return `${labels[relation]} #${id}`;
 }
@@ -804,6 +845,24 @@ function buildLookupMap(items: any[], relation: RelationKind): Map<string, strin
         break;
       case "tax_rate":
         id = item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "lead_source":
+        id = item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "lead_status":
+        id = item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "ticket_priority":
+        // tbltickets_priorities uses priorityid as primary key
+        id = item.priorityid ?? item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "ticket_status":
+        // tbltickets_status uses ticketstatusid as primary key
+        id = item.ticketstatusid ?? item.id;
         label = firstCleanText(item.name);
         break;
     }

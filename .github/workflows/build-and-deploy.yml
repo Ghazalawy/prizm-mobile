@@ -49,6 +49,9 @@ jobs:
       - name: Install npm dependencies
         run: npm install --no-audit --no-fund --legacy-peer-deps
 
+      - name: Install missing peer/build deps (Expo SDK matrix)
+        run: npx expo install react-native-worklets babel-preset-expo expo-local-authentication expo-file-system expo-intent-launcher @tanstack/react-query react-native-toast-message @react-native-community/datetimepicker
+
       - name: Validate Expo dependency matrix
         run: npx expo install --check
 

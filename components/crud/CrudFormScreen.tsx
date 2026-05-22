@@ -21,6 +21,7 @@ import {
   moduleTitle,
 } from "@/lib/module-registry";
 import { RelationPicker } from "./RelationPicker";
+import { DateInput } from "./DateInput";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -262,6 +263,18 @@ function CustomFieldInput({
 }) {
   const options = parseCustomFieldOptions(cf);
 
+  // Native date / datetime picker
+  if (cf.type === "date_picker" || cf.type === "date_picker_time") {
+    return (
+      <DateInput
+        value={value}
+        onChange={onChange}
+        mode={cf.type === "date_picker_time" ? "datetime" : "date"}
+        placeholder={cf.label}
+      />
+    );
+  }
+
   if (cf.type === "checkbox" && options.length === 0) {
     const active = ["1", "on", "true", "yes"].includes(String(value).toLowerCase());
     return (
@@ -370,6 +383,19 @@ function FieldInput({
   // CrudDetailScreen uses for FK resolution, so view ↔ edit stays consistent.
   if (field.relation) {
     return <RelationPicker relation={field.relation} value={value} onChange={onChange} placeholder={field.placeholder || field.label} />;
+  }
+
+  // Date / datetime fields use the native picker. Output matches Perfex's
+  // expected string format ("YYYY-MM-DD" / "YYYY-MM-DD HH:MM:SS").
+  if (field.type === "date" || field.type === "datetime") {
+    return (
+      <DateInput
+        value={value}
+        onChange={onChange}
+        mode={field.type === "datetime" ? "datetime" : "date"}
+        placeholder={field.placeholder}
+      />
+    );
   }
 
   if (field.type === "boolean") {

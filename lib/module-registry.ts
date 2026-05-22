@@ -69,6 +69,28 @@ export type ModuleDefinition = {
   canCreate?: boolean;
   canUpdate?: boolean;
   canDelete?: boolean;
+  /**
+   * Perfex's /api/custom_fields/<type>/ URL segment. Mixed singular/plural in
+   * the upstream API: invoice/estimate/proposal/credit_note are singular while
+   * customers/leads/tasks/etc. are plural. Set this when the module supports
+   * custom fields; leave undefined to opt out.
+   */
+  customFieldsType?:
+    | "customers"
+    | "contacts"
+    | "leads"
+    | "company"
+    | "staff"
+    | "projects"
+    | "tasks"
+    | "tickets"
+    | "items"
+    | "expenses"
+    | "contracts"
+    | "invoice"
+    | "estimate"
+    | "credit_note"
+    | "proposal";
 };
 
 const statusOptions = [
@@ -173,6 +195,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Customers",
     group: "CRM",
     endpoint: "customers",
+    customFieldsType: "customers",
     idKey: "userid",
     icon: "business-outline",
     color: "#0284C7",
@@ -211,6 +234,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "CRM",
     endpoint: "contacts",
     detailEndpoint: "contacts/detail",
+    customFieldsType: "contacts",
     idKey: "id",
     icon: "person-outline",
     color: "#0F766E",
@@ -240,6 +264,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Leads",
     group: "CRM",
     endpoint: "leads",
+    customFieldsType: "leads",
     idKey: "id",
     icon: "people-outline",
     color: "#16A34A",
@@ -273,6 +298,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Projects",
     group: "Work",
     endpoint: "projects",
+    customFieldsType: "projects",
     idKey: "id",
     icon: "folder-outline",
     color: "#2563EB",
@@ -319,6 +345,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Tasks",
     group: "Work",
     endpoint: "tasks",
+    customFieldsType: "tasks",
     idKey: "id",
     icon: "checkbox-outline",
     color: "#F59E0B",
@@ -419,6 +446,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Invoices",
     group: "Sales",
     endpoint: "invoices",
+    customFieldsType: "invoice",
     idKey: "id",
     icon: "document-text-outline",
     color: "#DC2626",
@@ -437,6 +465,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Estimates",
     group: "Sales",
     endpoint: "estimates",
+    customFieldsType: "estimate",
     idKey: "id",
     icon: "reader-outline",
     color: "#7C3AED",
@@ -451,6 +480,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Proposals",
     group: "Sales",
     endpoint: "proposals",
+    customFieldsType: "proposal",
     idKey: "id",
     icon: "newspaper-outline",
     color: "#0891B2",
@@ -501,6 +531,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Expenses",
     group: "Finance",
     endpoint: "expenses",
+    customFieldsType: "expenses",
     idKey: "id",
     icon: "receipt-outline",
     color: "#EA580C",
@@ -526,6 +557,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Credit Notes",
     group: "Finance",
     endpoint: "credit_notes",
+    customFieldsType: "credit_note",
     idKey: "id",
     icon: "return-down-back-outline",
     color: "#BE123C",
@@ -539,6 +571,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Contracts",
     group: "CRM",
     endpoint: "contracts",
+    customFieldsType: "contracts",
     idKey: "id",
     icon: "document-lock-outline",
     color: "#475569",
@@ -563,6 +596,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Tickets",
     group: "Support",
     endpoint: "tickets",
+    customFieldsType: "tickets",
     idKey: "ticketid",
     icon: "help-buoy-outline",
     color: "#DB2777",
@@ -589,6 +623,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Items",
     group: "Sales",
     endpoint: "items",
+    customFieldsType: "items",
     idKey: "itemid",
     icon: "cube-outline",
     color: "#4F46E5",
@@ -603,6 +638,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Staff",
     group: "Admin",
     endpoint: "staffs",
+    customFieldsType: "staff",
     idKey: "staffid",
     icon: "people-circle-outline",
     color: "#64748B",

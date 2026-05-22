@@ -25,6 +25,11 @@ import {
   ModuleTab,
   resolveTemplateValue,
 } from "@/lib/module-registry";
+import {
+  useCustomFields,
+  decodeCustomFieldValue,
+  type CustomFieldRow,
+} from "@/lib/queries/custom-fields";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -368,8 +373,114 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
           </View>
         </View>
       ))}
+
+      <CustomFieldsSection module={module} row={row} />
     </View>
   );
+}
+
+/**
+ * Renders the per-entity "Custom Fields" section. Hits
+ * /api/custom_fields/<perfexType>/<id> only if the module declares
+ * customFieldsType. Empty values are silently hidden so the section only
+ * appears when there's actually something to show.
+ */
+function CustomFieldsSection({
+  module,
+  row,
+}: {
+  module: ModuleDefinition;
+  row: any;
+}) {
+  const id = moduleId(module, row);
+  const q = useCustomFields(module.customFieldsType, id);
+
+  if (!module.customFieldsType) return null;
+
+  const populated = (q.data || []).filter(
+    (cf) => decodeCustomFieldValue(cf).trim().length > 0
+  );
+  if (populated.length === 0) return null;
+
+  return (
+    <View className="mb-3">
+      <Text className="text-xs text-muted uppercase tracking-wide px-2 mb-1.5">
+        Custom Fields
+      </Text>
+      <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {populated.map((cf, index) => (
+          <View
+            key={String(cf.custom_field_id)}
+            className={`px-4 py-3 ${index > 0 ? "border-t border-gray-100" : ""}`}
+          >
+            <Text className="text-xs text-muted">{cf.label}</Text>
+            <View className="mt-1">{renderCustomFieldValue(cf)}</View>
+          </View>
+        ))}
+      </View>
+    </View>
+  );
+}
+
+function renderCustomFieldValue(cf: CustomFieldRow): ReactNode {
+  const text = decodeCustomFieldValue(cf);
+  if (!text) return null;
+
+  // Date / datetime: render in the user's locale
+  if ((cf.type === "date_picker" || cf.type === "date_picker_time") &&
+      /^\d{4}-\d{2}-\d{2}/.test(text)) {
+    try {
+      const d = new Date(text.replace(" ", "T"));
+      if (!isNaN(d.getTime())) {
+        return (
+          <Text className="text-foreground">
+            {d.toLocaleString(undefined, {
+              year: "numeric",
+              month: "short",
+              day: "numeric",
+              hour: cf.type === "date_picker_time" ? "2-digit" : undefined,
+              minute: cf.type === "date_picker_time" ? "2-digit" : undefined,
+            })}
+          </Text>
+        );
+      }
+    } catch {}
+  }
+
+  // Colorpicker: show a colored chip alongside the hex
+  if (cf.type === "colorpicker" && /^#[0-9a-fA-F]{3,8}$/.test(text)) {
+    return (
+      <View className="flex-row items-center">
+        <View
+          className="w-5 h-5 rounded-full mr-2 border border-gray-200"
+          style={{ backgroundColor: text }}
+        />
+        <Text className="text-foreground" selectable>{text}</Text>
+      </View>
+    );
+  }
+
+  // Link: stripped HTML; the raw value can be a full anchor tag — extract href
+  if (cf.type === "link") {
+    const m = text.match(/href=["']([^"']+)["']/);
+    const url = m ? m[1] : (text.match(/https?:\/\/\S+/)?.[0] || text);
+    const label = text.replace(/<[^>]+>/g, "").trim() || url;
+    return (
+      <Text
+        className="text-primary underline"
+        selectable
+        onPress={() => {
+          import("react-native").then(({ Linking }) => Linking.openURL(url));
+        }}
+      >
+        {label}
+      </Text>
+    );
+  }
+
+  // Default: just selectable text. Multiselect/select arrays are already
+  // comma-joined by decodeCustomFieldValue.
+  return <Text className="text-foreground" selectable>{text}</Text>;
 }
 
 function RelatedTab({

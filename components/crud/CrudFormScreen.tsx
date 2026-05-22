@@ -21,6 +21,12 @@ import {
   moduleTitle,
 } from "@/lib/module-registry";
 import { RelationPicker } from "./RelationPicker";
+import {
+  useCustomFields,
+  decodeCustomFieldValue,
+  parseCustomFieldOptions,
+  type CustomFieldRow,
+} from "@/lib/queries/custom-fields";
 
 type CrudFormScreenProps = {
   moduleKey: string;
@@ -46,6 +52,24 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   const fields = useMemo(() => (module ? editableFields(module, isEdit) : []), [module, isEdit]);
   const sections = useMemo(() => groupFields(fields), [fields]);
 
+  // Custom fields: fetched for create (no id, blank values) or edit (id given,
+  // values populated). Tracked in their own values map keyed by custom_field_id.
+  const customFieldsQuery = useCustomFields(module?.customFieldsType, isEdit ? id : undefined);
+  const customFields = customFieldsQuery.data || [];
+  const [customValues, setCustomValues] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (!customFields.length) {
+      setCustomValues({});
+      return;
+    }
+    const next: Record<string, string> = {};
+    customFields.forEach((cf) => {
+      next[cf.custom_field_id] = decodeCustomFieldValue(cf);
+    });
+    setCustomValues(next);
+  }, [customFields]);
+
   useEffect(() => {
     if (!module) return;
     if (isEdit && !row) return;
@@ -69,6 +93,20 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
     mutationFn: async () => {
       if (!module) throw new Error("Module not found");
       const payload = buildPayload(fields, values, isEdit);
+      // Attach custom field values in Perfex's expected shape:
+      //   custom_fields: { <belongsTo>: { <field_id>: value } }
+      // The PHP layer reads $_POST['custom_fields'][belongsTo][field_id]
+      // when creating/updating any record that supports custom fields.
+      if (module.customFieldsType && customFields.length) {
+        const bag: Record<string, string> = {};
+        customFields.forEach((cf) => {
+          const raw = customValues[cf.custom_field_id];
+          if (raw !== undefined) bag[cf.custom_field_id] = raw;
+        });
+        if (Object.keys(bag).length > 0) {
+          payload.custom_fields = { [module.customFieldsType]: bag };
+        }
+      }
       if (isEdit && id) {
         return updateEntity(module.endpoint, id, payload);
       }
@@ -169,9 +207,152 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
               </View>
             </View>
           ))}
+
+          {customFields.length > 0 ? (
+            <View className="mb-3">
+              <Text className="text-xs text-muted uppercase tracking-wide px-2 mb-1.5">
+                Custom Fields
+              </Text>
+              <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
+                {customFields.map((cf, index) => (
+                  <View
+                    key={String(cf.custom_field_id)}
+                    className={`px-4 py-3 ${index > 0 ? "border-t border-gray-100" : ""}`}
+                  >
+                    <Text className="text-xs text-muted mb-1">
+                      {cf.label}
+                      {String(cf.required) === "1" ? " *" : ""}
+                    </Text>
+                    <CustomFieldInput
+                      cf={cf}
+                      value={customValues[cf.custom_field_id] ?? ""}
+                      onChange={(value) => {
+                        setCustomValues((current) => ({
+                          ...current,
+                          [cf.custom_field_id]: value,
+                        }));
+                        setTouched(true);
+                      }}
+                    />
+                  </View>
+                ))}
+              </View>
+            </View>
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
+  );
+}
+
+/**
+ * Renders the right input for each Perfex custom-field type.
+ * input/number/textarea → TextInput; select/radio with options → chip picker;
+ * multiselect with options → multi-chip; checkbox → boolean toggle;
+ * date_picker/date_picker_time → text for now (native picker comes next batch).
+ */
+function CustomFieldInput({
+  cf,
+  value,
+  onChange,
+}: {
+  cf: CustomFieldRow;
+  value: string;
+  onChange: (value: string) => void;
+}) {
+  const options = parseCustomFieldOptions(cf);
+
+  if (cf.type === "checkbox" && options.length === 0) {
+    const active = ["1", "on", "true", "yes"].includes(String(value).toLowerCase());
+    return (
+      <TouchableOpacity
+        onPress={() => onChange(active ? "" : "on")}
+        className={`self-start rounded-full px-3 py-1.5 ${active ? "bg-primary" : "bg-gray-100"}`}
+      >
+        <Text className={`font-medium ${active ? "text-white" : "text-foreground"}`}>
+          {active ? "Yes" : "No"}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
+
+  // Multi-select checkboxes (Perfex multiselect + select w/options w/value JSON array)
+  if (cf.type === "multiselect" && options.length) {
+    const selectedSet = new Set(
+      value.split(",").map((s) => s.trim()).filter(Boolean)
+    );
+    return (
+      <View className="flex-row flex-wrap">
+        {options.map((opt) => {
+          const sel = selectedSet.has(opt);
+          return (
+            <TouchableOpacity
+              key={opt}
+              onPress={() => {
+                const next = new Set(selectedSet);
+                if (sel) next.delete(opt); else next.add(opt);
+                onChange(Array.from(next).join(", "));
+              }}
+              className={`rounded-full px-3 py-1.5 mr-2 mb-2 ${sel ? "bg-primary" : "bg-gray-100"}`}
+            >
+              <Text className={`font-medium ${sel ? "text-white" : "text-foreground"}`}>
+                {opt}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+
+  // Single-select / radio: chip picker
+  if ((cf.type === "select" || cf.type === "radio") && options.length) {
+    return (
+      <View className="flex-row flex-wrap">
+        {options.map((opt) => {
+          const sel = String(opt) === String(value);
+          return (
+            <TouchableOpacity
+              key={opt}
+              onPress={() => onChange(opt)}
+              className={`rounded-full px-3 py-1.5 mr-2 mb-2 ${sel ? "bg-primary" : "bg-gray-100"}`}
+            >
+              <Text className={`font-medium ${sel ? "text-white" : "text-foreground"}`}>
+                {opt}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </View>
+    );
+  }
+
+  const multiline = cf.type === "textarea";
+  const keyboard =
+    cf.type === "number" ? "numeric" :
+    cf.type === "link" ? "url" :
+    "default";
+
+  return (
+    <TextInput
+      value={value}
+      onChangeText={onChange}
+      multiline={multiline}
+      textAlignVertical={multiline ? "top" : "center"}
+      keyboardType={keyboard as any}
+      autoCapitalize={cf.type === "link" ? "none" : "sentences"}
+      autoCorrect={cf.type !== "link"}
+      placeholder={
+        cf.type === "date_picker" ? "YYYY-MM-DD" :
+        cf.type === "date_picker_time" ? "YYYY-MM-DD HH:MM:SS" :
+        cf.type === "colorpicker" ? "#RRGGBB" :
+        cf.label
+      }
+      placeholderTextColor="#94A3B8"
+      className={`text-foreground bg-gray-50 rounded-xl px-3 ${
+        multiline ? "min-h-[104px] py-3" : "h-11"
+      }`}
+    />
   );
 }
 

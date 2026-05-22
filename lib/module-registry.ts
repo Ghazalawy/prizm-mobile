@@ -12,11 +12,20 @@ export type FieldType =
   | "select"
   | "json";
 
+export type RelationKind =
+  | "customer"
+  | "staff"
+  | "country"
+  | "currency"
+  | "customer_group"
+  | "payment_mode"
+  | "tax_rate";
+
 export type ModuleField = {
   key: string;
   label: string;
   type?: FieldType;
-  relation?: "customer" | "staff";
+  relation?: RelationKind;
   required?: boolean;
   readOnly?: boolean;
   section?: string;
@@ -94,7 +103,7 @@ const addressFields: ModuleField[] = [
   { key: "city", label: "City", section: "Address" },
   { key: "state", label: "State", section: "Address" },
   { key: "zip", label: "Zip", section: "Address" },
-  { key: "country", label: "Country ID", section: "Address", type: "number" },
+  { key: "country", label: "Country", section: "Address", type: "number", relation: "country", hideIfZero: true },
 ];
 
 const billingFields: ModuleField[] = [
@@ -102,7 +111,7 @@ const billingFields: ModuleField[] = [
   { key: "billing_city", label: "Billing City", section: "Billing" },
   { key: "billing_state", label: "Billing State", section: "Billing" },
   { key: "billing_zip", label: "Billing Zip", section: "Billing" },
-  { key: "billing_country", label: "Billing Country ID", section: "Billing", type: "number" },
+  { key: "billing_country", label: "Billing Country", section: "Billing", type: "number", relation: "country", hideIfZero: true },
 ];
 
 const shippingFields: ModuleField[] = [
@@ -110,7 +119,7 @@ const shippingFields: ModuleField[] = [
   { key: "shipping_city", label: "Shipping City", section: "Shipping" },
   { key: "shipping_state", label: "Shipping State", section: "Shipping" },
   { key: "shipping_zip", label: "Shipping Zip", section: "Shipping" },
-  { key: "shipping_country", label: "Shipping Country ID", section: "Shipping", type: "number" },
+  { key: "shipping_country", label: "Shipping Country", section: "Shipping", type: "number", relation: "country", hideIfZero: true },
 ];
 
 const itemFields: ModuleField[] = [
@@ -126,7 +135,7 @@ const moneyDocFields: ModuleField[] = [
   { key: "number", label: "Number", section: "Document", required: true },
   { key: "date", label: "Date", section: "Document", type: "date", required: true },
   { key: "duedate", label: "Due Date", section: "Document", type: "date" },
-  { key: "currency", label: "Currency ID", section: "Document", type: "number", required: true },
+  { key: "currency", label: "Currency", section: "Document", type: "number", relation: "currency", required: true },
   {
     key: "allowed_payment_modes",
     label: "Allowed Payment Modes",
@@ -171,7 +180,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "vat", label: "VAT", section: "Customer" },
       { key: "phonenumber", label: "Phone", section: "Customer", type: "phone" },
       { key: "website", label: "Website", section: "Customer", type: "url" },
-      { key: "default_currency", label: "Default Currency ID", section: "Customer", type: "number", hideIfZero: true },
+      { key: "default_currency", label: "Default Currency", section: "Customer", type: "number", relation: "currency", hideIfZero: true },
       { key: "default_language", label: "Default Language", section: "Customer" },
       { key: "active", label: "Active", section: "Customer", type: "select", options: statusOptions },
       ...addressFields,

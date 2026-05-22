@@ -3,17 +3,22 @@ import { useAuth } from "@/lib/auth-context";
 import { View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
-import { UpdateBanner } from "@/components/UpdateBanner";
 
 /**
- * Bottom bar: Home / Customers / Settings only.
+ * Bottom bar: Home / Customers / ERP / Settings.
  *
- * Tasks / Projects / Leads / Invoices are still reachable from dashboard tiles
- * (deep-link into the (tabs)/<module>/index.tsx route), but their tabs are
- * hidden from the bar via href:null because those modules are not yet native
- * to web parity — they show a "Coming in Phase 2 — use web for full CRUD"
- * banner above the existing list. Once each module reaches full parity
- * (Customer is first), its tab flips back on.
+ * - Home: dashboard summary tiles (counts)
+ * - Customers: dedicated tab for the most-used module
+ * - ERP: hub tab listing all 49 registered modules
+ * - Settings
+ *
+ * Tasks / Projects / Leads / Invoices are reachable from dashboard tiles
+ * (deep-link into the (tabs)/<module>/index.tsx route) but hidden from the
+ * bottom bar via href:null. They use the same CrudListScreen/CrudDetailScreen
+ * via the module-registry — no separate per-module code path.
+ *
+ * The update banner is rendered globally by <UpdatePrompt /> in the root
+ * _layout.tsx, so it covers Login + Tabs + every screen.
  */
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
@@ -32,7 +37,6 @@ export default function TabLayout() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-white">
-      <UpdateBanner />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: "#0284C7",

@@ -4,8 +4,8 @@ import { getAuthToken } from "../auth";
 
 /**
  * Dashboard count tiles. Each tile hits a dedicated /api/<module>/count
- * endpoint that returns { count: N } from a single SELECT COUNT(*) query —
- * no row download. CRM-side endpoints added in ERP v2.4.4.
+ * endpoint (added in ERP v2.4.4) that returns { count: N } from a single
+ * SELECT COUNT(*) query — no row download. Cheap, fast, ~100 bytes per tile.
  *
  * Tasks tile is special because Tasks::data_get already returns a paginated
  * envelope with `total` — we just ask for limit:1 and read .total.
@@ -31,17 +31,39 @@ async function fetchTasksTotal(): Promise<number> {
   return Number(j.total ?? 0);
 }
 
+const FIVE_MIN = 5 * 60 * 1000;
+
 export const useProjectsCount = () =>
-  useQuery({ queryKey: ["projects", "count"], queryFn: () => fetchCount("projects") });
+  useQuery({
+    queryKey: ["dashboard", "projects", "count"],
+    queryFn: () => fetchCount("projects"),
+    staleTime: FIVE_MIN,
+  });
 
 export const useTasksCount = () =>
-  useQuery({ queryKey: ["tasks", "count"], queryFn: fetchTasksTotal });
+  useQuery({
+    queryKey: ["dashboard", "tasks", "count"],
+    queryFn: fetchTasksTotal,
+    staleTime: FIVE_MIN,
+  });
 
 export const useLeadsCount = () =>
-  useQuery({ queryKey: ["leads", "count"], queryFn: () => fetchCount("leads") });
+  useQuery({
+    queryKey: ["dashboard", "leads", "count"],
+    queryFn: () => fetchCount("leads"),
+    staleTime: FIVE_MIN,
+  });
 
 export const useInvoicesCount = () =>
-  useQuery({ queryKey: ["invoices", "count"], queryFn: () => fetchCount("invoices") });
+  useQuery({
+    queryKey: ["dashboard", "invoices", "count"],
+    queryFn: () => fetchCount("invoices"),
+    staleTime: FIVE_MIN,
+  });
 
 export const useCustomersCount = () =>
-  useQuery({ queryKey: ["customers", "count"], queryFn: () => fetchCount("customers") });
+  useQuery({
+    queryKey: ["dashboard", "customers", "count"],
+    queryFn: () => fetchCount("customers"),
+    staleTime: FIVE_MIN,
+  });

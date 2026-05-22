@@ -207,35 +207,87 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
   const fields = useMemo(() => buildVisibleFields(module, row), [module, row]);
   const sections = useMemo(() => groupFields(fields), [fields]);
   const subtitle = moduleSubtitle(module, row);
-  const needsStaffLookup = useMemo(
-    () => fields.some((field) => resolveRelationKind(field) === "staff"),
-    [fields]
-  );
-  const needsCustomerLookup = useMemo(
-    () => fields.some((field) => resolveRelationKind(field) === "customer"),
-    [fields]
-  );
+  // Detect which relation kinds this record actually uses, then only fetch
+  // those lookup tables. Empty maps for the rest.
+  const needs = useMemo(() => {
+    const out: Partial<Record<RelationKind, boolean>> = {};
+    for (const field of fields) {
+      const kind = resolveRelationKind(field);
+      if (kind) out[kind] = true;
+    }
+    return out;
+  }, [fields]);
 
   const staffLookup = useQuery({
     queryKey: ["crud", "lookup", "staff"],
     queryFn: () => listEntities("staffs", { limit: LOOKUP_LIMIT }),
-    enabled: needsStaffLookup,
+    enabled: !!needs.staff,
     staleTime: LOOKUP_STALE_MS,
   });
 
   const customerLookup = useQuery({
     queryKey: ["crud", "lookup", "customers"],
     queryFn: () => listEntities("customers", { limit: LOOKUP_LIMIT }),
-    enabled: needsCustomerLookup,
+    enabled: !!needs.customer,
     staleTime: LOOKUP_STALE_MS,
+  });
+
+  // Reference-data lookups — small tables, cached for 1 hour. Each endpoint
+  // was added to the CRM in ERP v2.4.5 (mcp changelog).
+  const countryLookup = useQuery({
+    queryKey: ["crud", "lookup", "countries"],
+    queryFn: () => listEntities("countries"),
+    enabled: !!needs.country,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const currencyLookup = useQuery({
+    queryKey: ["crud", "lookup", "currencies"],
+    queryFn: () => listEntities("currencies"),
+    enabled: !!needs.currency,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const customerGroupLookup = useQuery({
+    queryKey: ["crud", "lookup", "customer_groups"],
+    queryFn: () => listEntities("customer_groups"),
+    enabled: !!needs.customer_group,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const paymentModeLookup = useQuery({
+    queryKey: ["crud", "lookup", "payment_modes"],
+    queryFn: () => listEntities("payment_modes"),
+    enabled: !!needs.payment_mode,
+    staleTime: 60 * 60 * 1000,
+  });
+
+  const taxRateLookup = useQuery({
+    queryKey: ["crud", "lookup", "tax_rates"],
+    queryFn: () => listEntities("tax_rates"),
+    enabled: !!needs.tax_rate,
+    staleTime: 60 * 60 * 1000,
   });
 
   const lookups = useMemo<LookupMaps>(
     () => ({
-      staff: buildLookupMap(normalizeList(staffLookup.data).items, "staff"),
-      customer: buildLookupMap(normalizeList(customerLookup.data).items, "customer"),
+      staff:          buildLookupMap(normalizeList(staffLookup.data).items,         "staff"),
+      customer:       buildLookupMap(normalizeList(customerLookup.data).items,      "customer"),
+      country:        buildLookupMap(normalizeList(countryLookup.data).items,       "country"),
+      currency:       buildLookupMap(normalizeList(currencyLookup.data).items,      "currency"),
+      customer_group: buildLookupMap(normalizeList(customerGroupLookup.data).items, "customer_group"),
+      payment_mode:   buildLookupMap(normalizeList(paymentModeLookup.data).items,   "payment_mode"),
+      tax_rate:       buildLookupMap(normalizeList(taxRateLookup.data).items,       "tax_rate"),
     }),
-    [customerLookup.data, staffLookup.data]
+    [
+      staffLookup.data,
+      customerLookup.data,
+      countryLookup.data,
+      currencyLookup.data,
+      customerGroupLookup.data,
+      paymentModeLookup.data,
+      taxRateLookup.data,
+    ]
   );
 
   return (
@@ -626,6 +678,33 @@ function inferRelationKind(key: string): RelationKind | undefined {
     return "customer";
   }
 
+  // country, billing_country, shipping_country, country_id, ...
+  if (normalized === "country" || normalized.endsWith("_country") || normalized === "country_id") {
+    return "country";
+  }
+
+  // currency, default_currency, currency_id
+  if (normalized === "currency" || normalized === "default_currency" || normalized === "currency_id") {
+    return "currency";
+  }
+
+  if (normalized === "customer_group" || normalized === "group_id") {
+    return "customer_group";
+  }
+
+  if (
+    normalized === "payment_mode" ||
+    normalized === "paymentmode" ||
+    normalized === "paymentmodeid" ||
+    normalized === "payment_mode_id"
+  ) {
+    return "payment_mode";
+  }
+
+  if (normalized === "tax" || normalized === "tax_id" || normalized === "taxid") {
+    return "tax_rate";
+  }
+
   return undefined;
 }
 
@@ -647,7 +726,17 @@ function resolveRelationValue(
   const lookup = lookups[relation].get(id);
   if (lookup) return lookup;
 
-  return relation === "staff" ? `Staff #${id}` : `Customer #${id}`;
+  // Lookup hasn't loaded (or row's id isn't in it). Show typed placeholder.
+  const labels: Record<RelationKind, string> = {
+    staff: "Staff",
+    customer: "Customer",
+    country: "Country",
+    currency: "Currency",
+    customer_group: "Customer Group",
+    payment_mode: "Payment Mode",
+    tax_rate: "Tax Rate",
+  };
+  return `${labels[relation]} #${id}`;
 }
 
 function directRelationLabel(key: string, relation: RelationKind, row: any): string | null {
@@ -684,14 +773,41 @@ function directRelationLabel(key: string, relation: RelationKind, row: any): str
 function buildLookupMap(items: any[], relation: RelationKind): Map<string, string> {
   const map = new Map<string, string>();
   items.forEach((item) => {
-    const id =
-      relation === "staff"
-        ? item?.staffid ?? item?.id
-        : item?.userid ?? item?.customer_id ?? item?.id;
-    const label =
-      relation === "staff"
-        ? firstCleanText(joinName(item?.firstname, item?.lastname), item?.email)
-        : firstCleanText(item?.company, item?.name, item?.customer_name, item?.email);
+    if (!item) return;
+    let id: any;
+    let label: string | null = null;
+
+    switch (relation) {
+      case "staff":
+        id = item.staffid ?? item.id;
+        label = firstCleanText(joinName(item.firstname, item.lastname), item.email);
+        break;
+      case "customer":
+        id = item.userid ?? item.customer_id ?? item.id;
+        label = firstCleanText(item.company, item.name, item.customer_name, item.email);
+        break;
+      case "country":
+        id = item.country_id ?? item.id;
+        label = firstCleanText(item.short_name, item.long_name, item.iso2);
+        break;
+      case "currency":
+        id = item.id;
+        label = firstCleanText(item.name, item.symbol);
+        break;
+      case "customer_group":
+        id = item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "payment_mode":
+        id = item.id;
+        label = firstCleanText(item.name);
+        break;
+      case "tax_rate":
+        id = item.id;
+        label = firstCleanText(item.name);
+        break;
+    }
+
     if (id !== undefined && id !== null && label) {
       map.set(String(id), label);
     }

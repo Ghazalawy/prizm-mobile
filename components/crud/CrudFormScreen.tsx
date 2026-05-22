@@ -20,6 +20,7 @@ import {
   ModuleField,
   moduleTitle,
 } from "@/lib/module-registry";
+import { RelationPicker } from "./RelationPicker";
 
 type CrudFormScreenProps = {
   moduleKey: string;
@@ -183,6 +184,13 @@ function FieldInput({
   value: string;
   onChange: (value: string) => void;
 }) {
+  // Relation-typed fields get a searchable modal picker instead of a raw
+  // numeric TextInput. Hooks into the same /api/<table> endpoints the
+  // CrudDetailScreen uses for FK resolution, so view ↔ edit stays consistent.
+  if (field.relation) {
+    return <RelationPicker relation={field.relation} value={value} onChange={onChange} placeholder={field.placeholder || field.label} />;
+  }
+
   if (field.type === "boolean") {
     const active = ["1", "on", "true", "yes"].includes(value.toLowerCase());
     return (

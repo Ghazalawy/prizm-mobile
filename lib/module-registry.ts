@@ -34,7 +34,7 @@ export type ModuleField = {
   readOnly?: boolean;
   section?: string;
   placeholder?: string;
-  defaultValue?: string | number;
+  defaultValue?: string | number | boolean;
   options?: Array<{ label: string; value: string | number }>;
   hideIfZero?: boolean;
 };

@@ -415,6 +415,18 @@ export const MODULES: ModuleDefinition[] = [
       { key: "followers", title: "Followers", moduleKey: "task_followers", endpointTemplate: "tasks/followers/{id}", createDefaults: { taskid: "{id}" } },
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "task" } },
     ],
+    actions: [
+      { key: "timer_start", title: "Start Timer", icon: "play-outline", endpointTemplate: "tasks/{id}/timer/start", confirm: "Start a timer on this task?", successMessage: "Timer started" },
+      { key: "timer_stop", title: "Stop Timer…", icon: "stop-outline", endpointTemplate: "tasks/{id}/timer/stop",
+        fields: [
+          { key: "timer_id", label: "Timer ID (from the running timer)", type: "number", required: true },
+          { key: "note", label: "Note (optional)", type: "multiline" },
+        ],
+        successMessage: "Timer stopped",
+      },
+      { key: "mark_complete", title: "Mark Complete", icon: "checkmark-done-circle-outline", endpointTemplate: "tasks/{id}/mark_complete", method: "PUT", confirm: "Mark this task as complete?", successMessage: "Task marked complete" },
+      { key: "reopen", title: "Reopen Task", icon: "refresh-circle-outline", endpointTemplate: "tasks/{id}/reopen", method: "PUT", confirm: "Reopen this task?", successMessage: "Task reopened" },
+    ],
   },
   {
     key: "task_checklist",

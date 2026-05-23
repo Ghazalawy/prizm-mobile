@@ -2,6 +2,17 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Tenders, Opportunities, Purchase, RFQs — full workflow on mobile",
+      "highlights": [
+        "Tap the ⋮ menu on any record to run workflow actions — no more 'view-only' on mobile",
+        "Tenders: mark Won / Lost / change status straight from the phone",
+        "Opportunities: change stage, change status, submit for approval",
+        "Purchase Orders: approve, reject, send to supplier, mark received, mark paid",
+        "Purchase Requests: publish or close",
+        "Every action shows up in the activity log (tagged [Mobile]) so admins see who did what from where"
+      ]
+    },
+    {
       "title": "Custom fields, date pickers, file uploads",
       "highlights": [
         "Custom Fields section now appears on every record (whatever your admin defined in Settings)",

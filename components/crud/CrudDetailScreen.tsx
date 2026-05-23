@@ -31,6 +31,7 @@ import {
   type CustomFieldRow,
 } from "@/lib/queries/custom-fields";
 import { FilesTab } from "./FilesTab";
+import { ActionRunner } from "./ActionRunner";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -78,6 +79,7 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
   const module = getModule(moduleKey);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState("summary");
+  const [actionsOpen, setActionsOpen] = useState(false);
   const queryClient = useQueryClient();
 
   const q = useQuery({
@@ -132,13 +134,31 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
         {row && isCrudEnabled(module, "delete") ? (
           <TouchableOpacity
             onPress={() => confirmDelete(module, deleteMutation.mutate)}
-            className="w-9 h-9 rounded-lg items-center justify-center bg-red-50"
+            className="w-9 h-9 rounded-lg items-center justify-center bg-red-50 mr-2"
             disabled={deleteMutation.isPending}
           >
             <Ionicons name="trash-outline" size={20} color="#DC2626" />
           </TouchableOpacity>
         ) : null}
+        {row && module.actions && module.actions.length > 0 ? (
+          <TouchableOpacity
+            onPress={() => setActionsOpen(true)}
+            className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100"
+          >
+            <Ionicons name="ellipsis-vertical" size={20} color="#0F172A" />
+          </TouchableOpacity>
+        ) : null}
       </View>
+
+      {row && module.actions && module.actions.length > 0 ? (
+        <ActionRunner
+          module={module}
+          recordId={id}
+          actions={module.actions}
+          open={actionsOpen}
+          onClose={() => setActionsOpen(false)}
+        />
+      ) : null}
 
       {q.isLoading && !row ? (
         <View className="flex-1 items-center justify-center">

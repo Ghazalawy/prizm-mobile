@@ -39,6 +39,33 @@ export type ModuleField = {
   hideIfZero?: boolean;
 };
 
+/**
+ * Workflow action exposed in the CrudDetailScreen overflow menu.
+ *
+ *  - `endpointTemplate` may contain `{id}` placeholder (resolved at runtime).
+ *  - `method` defaults to POST.
+ *  - `body` is an object literal sent as JSON; values may also be `{id}` etc.
+ *  - `fields` is an optional small inline form shown in the confirmation
+ *    sheet (e.g. ticket reply needs a `content` textarea).
+ *  - `confirm` is the prompt body, e.g. "Mark this PO as received?".
+ *  - `successMessage` is the toast shown on 2xx.
+ *  - `destructive` flags the action as red (e.g. Reject).
+ *  - `requiresConfirm` defaults true. Set false for trivial pickers.
+ */
+export type ModuleAction = {
+  key: string;
+  title: string;
+  icon: string;
+  endpointTemplate: string;
+  method?: "POST" | "PUT" | "DELETE";
+  body?: Record<string, string | number>;
+  fields?: ModuleField[];
+  confirm?: string;
+  successMessage?: string;
+  destructive?: boolean;
+  requiresConfirm?: boolean;
+};
+
 export type ModuleTab = {
   key: string;
   title: string;
@@ -75,6 +102,13 @@ export type ModuleDefinition = {
   canCreate?: boolean;
   canUpdate?: boolean;
   canDelete?: boolean;
+  /**
+   * Workflow actions exposed in the detail-screen overflow menu (three-dot
+   * icon in the header). Each action POSTs/PUTs to its endpoint and shows a
+   * confirmation sheet first. Use for state transitions: approve, reject,
+   * mark received, publish, mark won/lost, etc.
+   */
+  actions?: ModuleAction[];
   /**
    * Perfex's /api/custom_fields/<type>/ URL segment. Mixed singular/plural in
    * the upstream API: invoice/estimate/proposal/credit_note are singular while
@@ -766,6 +800,37 @@ export const MODULES: ModuleDefinition[] = [
       { key: "boq", title: "BOQ", moduleKey: "tender_boq", endpointTemplate: "tenders_api/boq/{id}", createDefaults: { tender_id: "{id}" } },
       { key: "requirements", title: "Requirements", moduleKey: "tender_requirements", endpointTemplate: "tenders_api/requirements/{id}", createDefaults: { tender_id: "{id}" } },
       { key: "risks", title: "Risks", moduleKey: "tender_risks", endpointTemplate: "tenders_api/risks/{id}", createDefaults: { tender_id: "{id}" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "tender" } },
+    ],
+    actions: [
+      {
+        key: "mark_won",
+        title: "Mark as Won",
+        icon: "trophy-outline",
+        endpointTemplate: "tenders_api/{id}/mark_won",
+        confirm: "Mark this tender as Won?",
+        successMessage: "Tender marked Won",
+      },
+      {
+        key: "mark_lost",
+        title: "Mark as Lost",
+        icon: "close-circle-outline",
+        endpointTemplate: "tenders_api/{id}/mark_lost",
+        confirm: "Mark this tender as Lost?",
+        successMessage: "Tender marked Lost",
+        destructive: true,
+      },
+      {
+        key: "set_status",
+        title: "Change Status…",
+        icon: "swap-horizontal-outline",
+        endpointTemplate: "tenders_api/{id}/status",
+        method: "PUT",
+        fields: [
+          { key: "tender_status", label: "Status", required: true, placeholder: "e.g. Submitted, Awarded, Cancelled" },
+        ],
+        successMessage: "Status updated",
+      },
     ],
   },
   {
@@ -845,6 +910,39 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "boq", title: "BOQ", moduleKey: "opportunity_boq", endpointTemplate: "opportunities_api/boq/{id}", createDefaults: { opportunity_id: "{id}" } },
       { key: "notes", title: "Notes", moduleKey: "opportunity_notes", endpointTemplate: "opportunities_api/notes/{id}", createDefaults: { opportunity_id: "{id}" } },
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "opportunity" } },
+    ],
+    actions: [
+      {
+        key: "submit",
+        title: "Submit for Approval",
+        icon: "send-outline",
+        endpointTemplate: "opportunities_api/submit/{id}",
+        confirm: "Submit this opportunity for approval?",
+        successMessage: "Submitted for approval",
+      },
+      {
+        key: "set_stage",
+        title: "Change Stage…",
+        icon: "git-branch-outline",
+        endpointTemplate: "opportunities_api/{id}/stage",
+        method: "PUT",
+        fields: [
+          { key: "stage_id", label: "Stage ID", type: "number", required: true, placeholder: "Pick from /api/opportunities_api/stages" },
+        ],
+        successMessage: "Stage updated",
+      },
+      {
+        key: "set_status",
+        title: "Change Status…",
+        icon: "swap-horizontal-outline",
+        endpointTemplate: "opportunities_api/{id}/status",
+        method: "PUT",
+        fields: [
+          { key: "status_id", label: "Status ID", type: "number", required: true, placeholder: "Pick from /api/opportunities_api/statuses" },
+        ],
+        successMessage: "Status updated",
+      },
     ],
   },
   {
@@ -942,6 +1040,27 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", label: "Status", section: "Request" },
       { key: "notes", label: "Notes", section: "Request", type: "multiline" },
     ],
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "purchase_request" } },
+    ],
+    actions: [
+      {
+        key: "publish",
+        title: "Publish",
+        icon: "megaphone-outline",
+        endpointTemplate: "purchase_api/requests/{id}/publish",
+        confirm: "Publish this purchase request to suppliers?",
+        successMessage: "Published",
+      },
+      {
+        key: "close",
+        title: "Close",
+        icon: "lock-closed-outline",
+        endpointTemplate: "purchase_api/requests/{id}/close",
+        confirm: "Close this purchase request?",
+        successMessage: "Closed",
+      },
+    ],
   },
   {
     key: "purchase_orders",
@@ -961,6 +1080,52 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", label: "Status", section: "Order" },
       { key: "total", label: "Total", section: "Order", type: "money" },
       { key: "notes", label: "Notes", section: "Order", type: "multiline" },
+    ],
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "purchase_order" } },
+    ],
+    actions: [
+      {
+        key: "approve",
+        title: "Approve",
+        icon: "checkmark-circle-outline",
+        endpointTemplate: "purchase_api/orders/{id}/approve",
+        confirm: "Approve this purchase order?",
+        successMessage: "Approved",
+      },
+      {
+        key: "reject",
+        title: "Reject",
+        icon: "close-circle-outline",
+        endpointTemplate: "purchase_api/orders/{id}/reject",
+        confirm: "Reject this purchase order?",
+        successMessage: "Rejected",
+        destructive: true,
+      },
+      {
+        key: "send_to_supplier",
+        title: "Send to Supplier",
+        icon: "paper-plane-outline",
+        endpointTemplate: "purchase_api/orders/{id}/send_to_supplier",
+        confirm: "Send this PO to the supplier?",
+        successMessage: "Sent",
+      },
+      {
+        key: "mark_received",
+        title: "Mark Received",
+        icon: "cube-outline",
+        endpointTemplate: "purchase_api/orders/{id}/mark_received",
+        confirm: "Mark this PO as received?",
+        successMessage: "Marked received",
+      },
+      {
+        key: "mark_paid",
+        title: "Mark Paid",
+        icon: "cash-outline",
+        endpointTemplate: "purchase_api/orders/{id}/mark_paid",
+        confirm: "Mark this PO as paid?",
+        successMessage: "Marked paid",
+      },
     ],
   },
   {

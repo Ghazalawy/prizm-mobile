@@ -2,6 +2,15 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Projects, Proposals & Leads — full workflow on mobile",
+      "highlights": [
+        "Projects: ⋮ menu now does Mark in Progress / On Hold / Finished / Cancelled — fires the same hooks the web does",
+        "Proposals: Send to client, Copy, Mark Open / Sent / Revised / Accepted / Declined",
+        "Leads: change status from the ⋮ menu (no more editing the raw status field) — fires after_lead_status_change so notifications + automations still run",
+        "Every action lands in the activity log tagged [Mobile] so admins see the source"
+      ]
+    },
+    {
       "title": "Workflow actions on 16 more modules + activity log tagging",
       "highlights": [
         "Tickets: reply, change status / priority / assignee — all from the ⋮ menu",

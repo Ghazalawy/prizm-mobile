@@ -333,6 +333,13 @@ export const MODULES: ModuleDefinition[] = [
       { key: "projects", title: "Projects", moduleKey: "projects", childField: "clientid", parentField: "id", fixedFilters: { rel_type: "lead" }, createDefaults: { clientid: "{id}", rel_type: "lead" } },
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "lead" } },
     ],
+    actions: [
+      { key: "change_status", title: "Change Status…", icon: "swap-vertical-outline", endpointTemplate: "leads/{id}/status", method: "PUT",
+        fields: [
+          { key: "status", label: "New Status ID", type: "number", required: true, placeholder: "e.g. 4 for Customer" },
+        ],
+        successMessage: "Lead status updated" },
+    ],
   },
   {
     key: "projects",
@@ -380,6 +387,12 @@ export const MODULES: ModuleDefinition[] = [
       { key: "expenses", title: "Expenses", moduleKey: "expenses", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "tickets", title: "Tickets", moduleKey: "tickets", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "project" } },
+    ],
+    actions: [
+      { key: "mark_in_progress", title: "Mark as In Progress", icon: "play-outline", endpointTemplate: "projects/{id}/mark_in_progress", method: "PUT", confirm: "Move this project to In Progress?", successMessage: "Project marked in progress" },
+      { key: "mark_on_hold", title: "Mark as On Hold", icon: "pause-outline", endpointTemplate: "projects/{id}/mark_on_hold", method: "PUT", confirm: "Put this project on hold?", successMessage: "Project on hold" },
+      { key: "mark_finished", title: "Mark as Finished", icon: "checkmark-done-outline", endpointTemplate: "projects/{id}/mark_finished", method: "PUT", confirm: "Mark this project as finished?", successMessage: "Project finished" },
+      { key: "mark_cancelled", title: "Mark as Cancelled", icon: "close-circle-outline", endpointTemplate: "projects/{id}/mark_cancelled", method: "PUT", confirm: "Cancel this project?", successMessage: "Project cancelled", destructive: true },
     ],
   },
   {
@@ -582,6 +595,20 @@ export const MODULES: ModuleDefinition[] = [
       { key: "total", label: "Total", section: "Totals", type: "money" },
       { key: "content", label: "Content", section: "Content", type: "multiline" },
       { key: "assigned", label: "Assigned To", section: "Proposal", type: "number", relation: "staff", hideIfZero: true },
+    ],
+    actions: [
+      { key: "send", title: "Send to Client…", icon: "paper-plane-outline", endpointTemplate: "proposals/{id}/send",
+        fields: [
+          { key: "cc", label: "CC (optional)", type: "email" },
+          { key: "attachpdf", label: "Attach PDF", type: "boolean", defaultValue: true },
+        ],
+        successMessage: "Proposal sent" },
+      { key: "copy", title: "Copy Proposal", icon: "copy-outline", endpointTemplate: "proposals/{id}/copy", confirm: "Make a copy of this proposal?", successMessage: "Proposal copied" },
+      { key: "mark_open", title: "Mark as Open", icon: "mail-open-outline", endpointTemplate: "proposals/{id}/mark_open", method: "PUT", confirm: "Mark this proposal as open?", successMessage: "Marked open" },
+      { key: "mark_sent", title: "Mark as Sent", icon: "checkmark-done-outline", endpointTemplate: "proposals/{id}/mark_sent", method: "PUT", confirm: "Mark this proposal as sent?", successMessage: "Marked sent" },
+      { key: "mark_revised", title: "Mark as Revised", icon: "refresh-outline", endpointTemplate: "proposals/{id}/mark_revised", method: "PUT", confirm: "Mark this proposal as revised?", successMessage: "Marked revised" },
+      { key: "mark_accepted", title: "Mark as Accepted", icon: "thumbs-up-outline", endpointTemplate: "proposals/{id}/mark_accepted", method: "PUT", confirm: "Mark this proposal as accepted?", successMessage: "Marked accepted" },
+      { key: "mark_declined", title: "Mark as Declined", icon: "thumbs-down-outline", endpointTemplate: "proposals/{id}/mark_declined", method: "PUT", confirm: "Mark this proposal as declined?", successMessage: "Marked declined", destructive: true },
     ],
   },
   {

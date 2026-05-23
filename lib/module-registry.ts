@@ -503,6 +503,20 @@ export const MODULES: ModuleDefinition[] = [
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "invoice" }, createDefaults: { rel_id: "{id}", rel_type: "invoice" } },
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "invoice" } },
     ],
+    actions: [
+      { key: "send", title: "Send to Client", icon: "paper-plane-outline", endpointTemplate: "invoices/{id}/send", confirm: "Email this invoice to the client?", successMessage: "Invoice sent" },
+      { key: "record_payment", title: "Record Payment…", icon: "cash-outline", endpointTemplate: "invoices/{id}/record_payment",
+        fields: [
+          { key: "amount", label: "Amount", type: "money", required: true },
+          { key: "paymentmode", label: "Payment Mode", required: true, placeholder: "e.g. cash, bank_transfer" },
+          { key: "date", label: "Date", type: "date" },
+          { key: "transactionid", label: "Transaction ID" },
+          { key: "note", label: "Note", type: "multiline" },
+        ],
+        successMessage: "Payment recorded",
+      },
+      { key: "mark_cancelled", title: "Mark Cancelled", icon: "close-circle-outline", endpointTemplate: "invoices/{id}/mark_cancelled", method: "PUT", confirm: "Cancel this invoice?", successMessage: "Invoice cancelled", destructive: true },
+    ],
   },
   {
     key: "estimates",
@@ -518,6 +532,16 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["company", "total", "status"],
     searchFields: ["number", "company", "clientid"],
     fields: moneyDocFields,
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "estimate" } },
+    ],
+    actions: [
+      { key: "send", title: "Send to Client", icon: "paper-plane-outline", endpointTemplate: "estimates/{id}/send", confirm: "Email this estimate to the client?", successMessage: "Estimate sent" },
+      { key: "convert", title: "Convert to Invoice", icon: "swap-horizontal-outline", endpointTemplate: "estimates/{id}/convert_to_invoice", confirm: "Convert this estimate to an invoice?", successMessage: "Converted to invoice" },
+      { key: "mark_sent", title: "Mark as Sent", icon: "checkmark-done-outline", endpointTemplate: "estimates/{id}/mark_sent", method: "PUT", confirm: "Mark this estimate as sent?", successMessage: "Marked sent" },
+      { key: "mark_accepted", title: "Mark as Accepted", icon: "thumbs-up-outline", endpointTemplate: "estimates/{id}/mark_accepted", method: "PUT", confirm: "Mark this estimate as accepted?", successMessage: "Marked accepted" },
+      { key: "mark_declined", title: "Mark as Declined", icon: "thumbs-down-outline", endpointTemplate: "estimates/{id}/mark_declined", method: "PUT", confirm: "Mark this estimate as declined?", successMessage: "Marked declined", destructive: true },
+    ],
   },
   {
     key: "proposals",
@@ -595,6 +619,14 @@ export const MODULES: ModuleDefinition[] = [
       { key: "expense_name", label: "Expense Name", section: "Expense" },
       { key: "note", label: "Note", section: "Notes", type: "multiline" },
     ],
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "expense" } },
+    ],
+    actions: [
+      { key: "mark_billable", title: "Mark as Billable", icon: "pricetag-outline", endpointTemplate: "expenses/{id}/mark_billable", method: "PUT", confirm: "Mark this expense as billable to the customer?", successMessage: "Marked billable" },
+      { key: "mark_not_billable", title: "Mark as Not Billable", icon: "remove-circle-outline", endpointTemplate: "expenses/{id}/mark_not_billable", method: "PUT", successMessage: "Marked not billable" },
+      { key: "copy", title: "Copy this Expense", icon: "copy-outline", endpointTemplate: "expenses/{id}/copy", confirm: "Clone this expense?", successMessage: "Expense copied" },
+    ],
   },
   {
     key: "credit_notes",
@@ -634,6 +666,21 @@ export const MODULES: ModuleDefinition[] = [
       { key: "description", label: "Description", section: "Content", type: "multiline" },
       { key: "content", label: "Content", section: "Content", type: "multiline" },
     ],
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "contract" } },
+    ],
+    actions: [
+      { key: "sign", title: "Mark as Signed", icon: "checkmark-done-circle-outline", endpointTemplate: "contracts/{id}/sign", confirm: "Mark this contract as signed?", successMessage: "Contract signed" },
+      { key: "send", title: "Send to Client", icon: "paper-plane-outline", endpointTemplate: "contracts/{id}/send", confirm: "Email this contract to the client?", successMessage: "Contract sent" },
+      { key: "renew", title: "Renew…", icon: "refresh-outline", endpointTemplate: "contracts/{id}/renew",
+        fields: [
+          { key: "date_start", label: "New Start Date", type: "date", required: true },
+          { key: "date_end", label: "New End Date", type: "date", required: true },
+          { key: "value", label: "Contract Value (optional)", type: "money" },
+        ],
+        successMessage: "Contract renewed",
+      },
+    ],
   },
   {
     key: "tickets",
@@ -660,6 +707,29 @@ export const MODULES: ModuleDefinition[] = [
       { key: "email", label: "Email", section: "Requester", type: "email" },
       { key: "name", label: "Requester Name", section: "Requester" },
       { key: "message", label: "Message", section: "Content", type: "multiline", required: true },
+    ],
+    tabs: [
+      { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "ticket" } },
+    ],
+    actions: [
+      { key: "reply", title: "Reply…", icon: "chatbubble-outline", endpointTemplate: "tickets/{id}/reply",
+        fields: [
+          { key: "content", label: "Reply Content", type: "multiline", required: true, placeholder: "Type your reply…" },
+        ],
+        successMessage: "Reply added",
+      },
+      { key: "change_status", title: "Change Status…", icon: "swap-horizontal-outline", endpointTemplate: "tickets/{id}/status", method: "PUT",
+        fields: [{ key: "status", label: "Status ID", type: "number", required: true, placeholder: "Pick from /api/ticket_statuses" }],
+        successMessage: "Status updated",
+      },
+      { key: "change_priority", title: "Change Priority…", icon: "flag-outline", endpointTemplate: "tickets/{id}/priority", method: "PUT",
+        fields: [{ key: "priority", label: "Priority ID", type: "number", required: true, placeholder: "Pick from /api/ticket_priorities" }],
+        successMessage: "Priority updated",
+      },
+      { key: "assign", title: "Assign…", icon: "person-add-outline", endpointTemplate: "tickets/{id}/assign", method: "PUT",
+        fields: [{ key: "assigned", label: "Staff ID", type: "number", required: true, placeholder: "Pick from /api/staffs" }],
+        successMessage: "Assigned",
+      },
     ],
   },
   {
@@ -1165,6 +1235,13 @@ export const MODULES: ModuleDefinition[] = [
       { key: "unit", label: "Unit", section: "Budget" },
       { key: "rate", label: "Rate", section: "Budget", type: "money" },
     ],
+    actions: [
+      { key: "approve", title: "Approve (Classify)", icon: "checkmark-circle-outline", endpointTemplate: "budget_api/items/{id}", method: "POST",
+        body: { id: "{id}", ai_classified: 1 },
+        confirm: "Approve this budget item?", successMessage: "Approved" },
+      { key: "reject", title: "Reject (Unclassify)", icon: "close-circle-outline", endpointTemplate: "budget_api/items/{id}/reject",
+        confirm: "Reject this budget item?", successMessage: "Rejected", destructive: true },
+    ],
   },
   {
     key: "goals",
@@ -1183,6 +1260,10 @@ export const MODULES: ModuleDefinition[] = [
       { key: "start_date", label: "Start Date", section: "Dates", type: "date" },
       { key: "end_date", label: "End Date", section: "Dates", type: "date" },
       { key: "achievement", label: "Achievement", section: "Goal", type: "number" },
+    ],
+    actions: [
+      { key: "mark_complete", title: "Mark as Complete", icon: "trophy", endpointTemplate: "goals_api/{id}/mark_complete", method: "PUT", confirm: "Mark this goal as complete?", successMessage: "Goal marked complete" },
+      { key: "reopen", title: "Reopen Goal", icon: "refresh-outline", endpointTemplate: "goals_api/{id}/reopen", method: "PUT", confirm: "Reopen this goal?", successMessage: "Goal reopened" },
     ],
   },
   {
@@ -1261,6 +1342,14 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", label: "Status", section: "Candidate" },
       { key: "description", label: "Notes", section: "Candidate", type: "multiline" },
     ],
+    actions: [
+      { key: "hire", title: "Hire", icon: "checkmark-circle-outline", endpointTemplate: "recruitment_api/candidates/{id}/hire", method: "PUT", confirm: "Hire this candidate?", successMessage: "Candidate hired" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "recruitment_api/candidates/{id}/reject", method: "PUT", confirm: "Reject this candidate?", successMessage: "Candidate rejected", destructive: true },
+      { key: "change_stage", title: "Change Stage…", icon: "swap-horizontal-outline", endpointTemplate: "recruitment_api/candidates/{id}/change_stage", method: "PUT",
+        fields: [{ key: "status", label: "Status (1=new, 2=interviewing, 3=hired, 4=rejected)", type: "number", required: true }],
+        successMessage: "Stage updated",
+      },
+    ],
   },
   {
     key: "recruitment_positions",
@@ -1299,6 +1388,9 @@ export const MODULES: ModuleDefinition[] = [
       { key: "net_pay", label: "Net Pay", section: "Totals", type: "money" },
       { key: "status", label: "Status", section: "Payslip" },
     ],
+    actions: [
+      { key: "mark_paid", title: "Mark as Paid", icon: "cash-outline", endpointTemplate: "hr_payroll_api/payslips/{id}/mark_paid", method: "PUT", confirm: "Mark this payslip as paid?", successMessage: "Payslip marked paid" },
+    ],
   },
   {
     key: "gatepass",
@@ -1316,6 +1408,11 @@ export const MODULES: ModuleDefinition[] = [
       { key: "date", label: "Date", section: "Gatepass", type: "date" },
       { key: "status", label: "Status", section: "Gatepass" },
       { key: "description", label: "Description", section: "Gatepass", type: "multiline" },
+    ],
+    actions: [
+      { key: "approve", title: "Approve", icon: "checkmark-circle-outline", endpointTemplate: "gatepass_api/{id}/approve", method: "PUT", confirm: "Approve this gatepass?", successMessage: "Gatepass approved" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "gatepass_api/{id}/reject", method: "PUT", confirm: "Reject this gatepass?", successMessage: "Gatepass rejected", destructive: true },
+      { key: "close", title: "Close (Used)", icon: "lock-closed-outline", endpointTemplate: "gatepass_api/{id}/close", method: "PUT", confirm: "Mark this gatepass as used / closed?", successMessage: "Gatepass closed" },
     ],
   },
   {
@@ -1337,6 +1434,16 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", label: "Status", section: "Asset" },
       { key: "notes", label: "Notes", section: "Asset", type: "multiline" },
     ],
+    actions: [
+      { key: "allocate", title: "Allocate to Staff…", icon: "person-add-outline", endpointTemplate: "fixed_equipment_api/{id}/allocate", method: "PUT",
+        fields: [
+          { key: "staff_id", label: "Staff ID", type: "number", required: true, placeholder: "Pick from /api/staffs", relation: "staff" },
+          { key: "location_id", label: "Location ID (optional)", type: "number" },
+        ],
+        successMessage: "Asset allocated",
+      },
+      { key: "return", title: "Return (Available)", icon: "arrow-undo-outline", endpointTemplate: "fixed_equipment_api/{id}/return", method: "PUT", confirm: "Mark this asset as returned and available?", successMessage: "Asset returned" },
+    ],
   },
   {
     key: "knowledge",
@@ -1355,6 +1462,10 @@ export const MODULES: ModuleDefinition[] = [
       { key: "description", label: "Article", section: "Article", type: "multiline" },
       { key: "active", label: "Active", section: "Article", type: "select", options: statusOptions },
     ],
+    actions: [
+      { key: "publish", title: "Publish", icon: "globe-outline", endpointTemplate: "knowledge_api/{id}/publish", method: "PUT", confirm: "Publish this article?", successMessage: "Article published" },
+      { key: "unpublish", title: "Unpublish", icon: "eye-off-outline", endpointTemplate: "knowledge_api/{id}/unpublish", method: "PUT", confirm: "Unpublish this article?", successMessage: "Article unpublished" },
+    ],
   },
   {
     key: "surveys",
@@ -1371,6 +1482,10 @@ export const MODULES: ModuleDefinition[] = [
       { key: "subject", label: "Subject", section: "Survey", required: true },
       { key: "description", label: "Description", section: "Survey", type: "multiline" },
       { key: "active", label: "Active", section: "Survey", type: "select", options: statusOptions },
+    ],
+    actions: [
+      { key: "publish", title: "Publish (Activate)", icon: "play-circle-outline", endpointTemplate: "surveys_api/{id}/publish", method: "PUT", confirm: "Activate this survey for responses?", successMessage: "Survey published" },
+      { key: "close", title: "Close (Deactivate)", icon: "stop-circle-outline", endpointTemplate: "surveys_api/{id}/close", method: "PUT", confirm: "Close this survey to new responses?", successMessage: "Survey closed" },
     ],
   },
   {

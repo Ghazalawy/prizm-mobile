@@ -2,6 +2,23 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Workflow actions on 15 more modules + activity log tagging",
+      "highlights": [
+        "Tickets: reply, change status / priority / assignee — all from the ⋮ menu",
+        "Estimates: send, convert to invoice, mark sent / accepted / declined",
+        "Invoices: send, record payment with full form, mark cancelled",
+        "Contracts: mark signed, send for signature, renew with new dates",
+        "Expenses: mark billable / not billable, copy",
+        "Goals / Surveys / Knowledge articles: publish / unpublish / mark complete",
+        "Recruitment: hire / reject / change candidate stage",
+        "HR Payroll: mark payslip paid",
+        "Gatepass: approve / reject / close — security workflow from the phone",
+        "Fixed Equipment: allocate to staff / return (status workflow)",
+        "Budget items: approve / reject classification",
+        "Every action lands in the activity log tagged [Mobile] so admins see the source"
+      ]
+    },
+    {
       "title": "Tenders, Opportunities, Purchase, RFQs — full workflow on mobile",
       "highlights": [
         "Tap the ⋮ menu on any record to run workflow actions — no more 'view-only' on mobile",

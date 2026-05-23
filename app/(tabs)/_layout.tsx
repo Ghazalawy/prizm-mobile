@@ -3,6 +3,7 @@ import { useAuth } from "@/lib/auth-context";
 import { View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
+import { ActionCenter } from "@/components/ActionCenter";
 
 /**
  * Bottom bar: Home / Customers / ERP / Settings.
@@ -37,6 +38,13 @@ export default function TabLayout() {
 
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-white">
+      {/* Persistent Action Center strip on every authenticated screen.
+          Categories: Approvals / Tasks / Mentions / Compliance. Tap a chip
+          opens a bottom sheet with the items in that category, each with
+          inline quick actions (approve/reject/mark done). Data via
+          GET /api/inbox (Inbox_api) — degrades to "All caught up" while
+          the endpoint is being deployed. */}
+      <ActionCenter />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: "#0284C7",

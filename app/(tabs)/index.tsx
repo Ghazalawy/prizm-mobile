@@ -1,5 +1,13 @@
-import { View, Text, ScrollView, RefreshControl, TouchableOpacity, ActivityIndicator } from "react-native";
-import { useState, useCallback } from "react";
+import {
+  View,
+  Text,
+  ScrollView,
+  RefreshControl,
+  TouchableOpacity,
+  ActivityIndicator,
+  Image,
+} from "react-native";
+import { useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
@@ -9,6 +17,8 @@ import {
   useInvoicesCount,
   useCustomersCount,
 } from "@/lib/queries/dashboard";
+import { useCurrentUser } from "@/lib/auth-context";
+import { useMyProfile } from "@/lib/queries/my";
 
 type StatCardProps = {
   title: string;
@@ -52,6 +62,75 @@ function StatCard({ title, value, icon, color, isLoading, isError, onPress }: St
   );
 }
 
+/**
+ * Welcome card pinned to the top of the dashboard. Mirrors the web admin
+ * landing strip — avatar, time-of-day greeting, role/department. Reads
+ * the persisted profile from SecureStore (via useCurrentUser) for instant
+ * render, then progressively enriches with role + department from
+ * /api/my/profile when that hook resolves.
+ */
+function WelcomeCard() {
+  const user = useCurrentUser();
+  const profile = useMyProfile();
+
+  const firstname = user?.firstname || profile.data?.firstname || "";
+  const lastname = user?.lastname || profile.data?.lastname || "";
+  const profileImage = user?.profile_image || profile.data?.profile_image || null;
+  const role = profile.data?.role_name || null;
+  const dept = profile.data?.departments?.[0]?.name || null;
+
+  const greeting = useMemo(() => {
+    const h = new Date().getHours();
+    if (h < 12) return "Good morning";
+    if (h < 18) return "Good afternoon";
+    return "Good evening";
+  }, []);
+
+  const initial = (firstname[0] || user?.email?.[0] || "?").toUpperCase();
+  const subline = [role, dept].filter(Boolean).join(" · ");
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push("/(tabs)/settings" as any)}
+      activeOpacity={0.85}
+      className="bg-white rounded-2xl px-4 py-3 mb-4 flex-row items-center shadow-sm"
+    >
+      <View
+        style={{
+          width: 48,
+          height: 48,
+          borderRadius: 24,
+          backgroundColor: "#E2E8F0",
+          alignItems: "center",
+          justifyContent: "center",
+          overflow: "hidden",
+          marginRight: 12,
+        }}
+      >
+        {profileImage ? (
+          <Image source={{ uri: profileImage }} style={{ width: 48, height: 48 }} />
+        ) : (
+          <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 18 }}>
+            {initial}
+          </Text>
+        )}
+      </View>
+      <View className="flex-1">
+        <Text className="text-xs text-muted">{greeting},</Text>
+        <Text className="text-base font-bold text-foreground" numberOfLines={1}>
+          {firstname ? `${firstname} ${lastname}`.trim() : user?.email || "—"}
+        </Text>
+        {subline ? (
+          <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
+            {subline}
+          </Text>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+    </TouchableOpacity>
+  );
+}
+
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const projects = useProjectsCount();
@@ -80,8 +159,10 @@ export default function DashboardScreen() {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0284C7" />
       }
     >
-      <Text className="text-3xl font-bold text-foreground mb-1">Dashboard</Text>
-      <Text className="text-sm text-muted mb-5">Tap any tile to drill in</Text>
+      <WelcomeCard />
+
+      <Text className="text-2xl font-bold text-foreground mb-1">Dashboard</Text>
+      <Text className="text-sm text-muted mb-4">Tap any tile to drill in</Text>
 
       <View className="flex-row flex-wrap -mx-1.5">
         <StatCard

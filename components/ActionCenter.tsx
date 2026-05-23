@@ -266,19 +266,11 @@ export function ActionCenter() {
       >
         {/* Left: brand */}
         <View className="flex-row items-center flex-1">
-          <View
-            style={{
-              width: 26,
-              height: 26,
-              borderRadius: 7,
-              backgroundColor: "#0284C7",
-              alignItems: "center",
-              justifyContent: "center",
-              marginRight: 8,
-            }}
-          >
-            <Ionicons name="flash" size={16} color="#FFFFFF" />
-          </View>
+          <Image
+            source={require("@/assets/images/prizm_logo.png")}
+            style={{ width: 30, height: 30, marginRight: 8 }}
+            resizeMode="contain"
+          />
           <Text
             className="text-base font-bold text-foreground"
             style={{ letterSpacing: 0.2 }}

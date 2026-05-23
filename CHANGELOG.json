@@ -2,6 +2,16 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Request leave from your phone",
+      "highlights": [
+        "Settings → My Leave: see your balance per type and your request history",
+        "Tap + to submit: pick leave type, dates, optional reason",
+        "Status pills show pending / approved / rejected at a glance",
+        "Cancel a pending request right from the list",
+        "Goes through the same approval flow as the web (your approver gets notified)"
+      ]
+    },
+    {
       "title": "Check in / out from your phone",
       "highlights": [
         "Big primary card at the top of Settings — tap to clock in, tap again to clock out",

@@ -214,3 +214,116 @@ export function useMarkAllNotificationsRead() {
     },
   });
 }
+
+// ─── My Leave (v2.7.1) ──────────────────────────────────────────────────
+
+/** rel_type integer → human label (matches Timesheets module enum) */
+export const LEAVE_REL_TYPES = [
+  { id: 1, label: "Leave (annual / sick / etc)" },
+  { id: 2, label: "Late / Early arrival" },
+  { id: 3, label: "Go-out during work" },
+  { id: 4, label: "Business trip" },
+  { id: 5, label: "Quit / resignation" },
+  { id: 6, label: "Early departure" },
+] as const;
+
+/** When rel_type === 1, type_of_leave picks the leave kind. */
+export const TYPE_OF_LEAVE = [
+  { id: 8, label: "Annual" },
+  { id: 1, label: "Sick" },
+  { id: 2, label: "Maternity" },
+  { id: 4, label: "Unpaid" },
+] as const;
+
+export type LeaveBalance = {
+  type_id: number;
+  type_name: string;
+  max_days: number;
+  used_days: number;
+  remaining: number;
+};
+
+export type LeaveRequest = {
+  id: number;
+  subject: string;
+  start_time: string;
+  end_time: string;
+  reason: string;
+  approver_id: number | null;
+  followers_id: string | null;
+  rel_type: number;
+  type_of_leave: number;
+  /** 0=pending, 1=approved, 2=rejected */
+  status: number;
+  place_of_business: string | null;
+  datecreated: string;
+};
+
+export function useLeaveBalance(year?: number) {
+  return useQuery({
+    queryKey: ["my", "leave", "balance", year],
+    queryFn: async () => {
+      const q = year ? `?year=${year}` : "";
+      const r = await api<{ status: true; data: { year: number; balance: LeaveBalance[] } }>(
+        `my/leave/balance${q}`
+      );
+      return r.data;
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useLeaveRequests(opts: { status?: number; limit?: number } = {}) {
+  const { status, limit = 100 } = opts;
+  return useQuery({
+    queryKey: ["my", "leave", "requests", status, limit],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (status !== undefined) params.set("status", String(status));
+      const r = await api<{ status: true; data: LeaveRequest[] }>(
+        `my/leave/requests?${params.toString()}`
+      );
+      return r.data || [];
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSubmitLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      rel_type: number;
+      type_of_leave?: number;
+      start_time: string;
+      end_time: string;
+      subject?: string;
+      reason?: string;
+      approver_id?: number;
+      place_of_business?: string;
+    }) => {
+      return api<{ status: true; message: string; data: { id: number } }>(
+        "my/leave/request",
+        { method: "POST", body: JSON.stringify(body) }
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "leave"] });
+      qc.invalidateQueries({ queryKey: ["my", "dashboard"] });
+    },
+  });
+}
+
+export function useCancelLeave() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) => {
+      return api<{ status: true; message: string }>(`my/leave/request/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "leave"] });
+    },
+  });
+}

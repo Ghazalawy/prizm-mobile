@@ -99,9 +99,11 @@ export default function TabLayout() {
         <Tabs.Screen name="projects" options={{ href: null }} />
         <Tabs.Screen name="leads"    options={{ href: null }} />
         <Tabs.Screen name="invoices" options={{ href: null }} />
-        <Tabs.Screen name="activity"   options={{ href: null }} />
-        <Tabs.Screen name="leave"      options={{ href: null }} />
-        <Tabs.Screen name="leave-new"  options={{ href: null }} />
+        <Tabs.Screen name="activity"        options={{ href: null }} />
+        <Tabs.Screen name="leave"           options={{ href: null }} />
+        <Tabs.Screen name="leave-new"       options={{ href: null }} />
+        <Tabs.Screen name="payslips"        options={{ href: null }} />
+        <Tabs.Screen name="payslip-detail"  options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
   );

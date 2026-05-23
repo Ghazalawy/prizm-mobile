@@ -327,3 +327,63 @@ export function useCancelLeave() {
     },
   });
 }
+
+// ─── My Payslips (v2.7.2) ───────────────────────────────────────────────
+
+export type PayslipRow = {
+  id: number;
+  payslip_id: number;
+  staff_id: number;
+  month: string;
+  pay_slip_number: string | null;
+  payment_run_date: string;
+  employee_name: string | null;
+  dept_name: string | null;
+  standard_workday: string;
+  actual_workday: string;
+  paid_leave: string;
+  unpaid_leave: string;
+  gross_pay: string;
+  total_deductions: string;
+  net_pay: string;
+  payslip_name: string;
+  payslip_status: string;
+  payslip_month: string;
+  from_currency_name: string | null;
+  to_currency_name: string | null;
+};
+
+export type PayslipDetail = PayslipRow & {
+  income_tax_paye?: string;
+  it_rebate_code?: string | null;
+  it_rebate_value?: string;
+  from_currency_rate?: string;
+  to_currency_rate?: string;
+};
+
+export function useMyPayslips(limit = 24) {
+  return useQuery({
+    queryKey: ["my", "payslips", limit],
+    queryFn: async () => {
+      const r = await api<{ status: true; data: PayslipRow[] }>(
+        `my/payslips?limit=${limit}`
+      );
+      return r.data || [];
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+export function useMyPayslip(id: number | null | undefined) {
+  return useQuery({
+    queryKey: ["my", "payslip", id],
+    queryFn: async () => {
+      const r = await api<{ status: true; data: PayslipDetail }>(
+        `my/payslips/${id}`
+      );
+      return r.data;
+    },
+    enabled: typeof id === "number" && id > 0,
+    staleTime: 5 * 60 * 1000,
+  });
+}

@@ -156,6 +156,17 @@ export default function SettingsScreen() {
             </View>
           </TouchableOpacity>
           <TouchableOpacity
+            onPress={() => router.push("/(tabs)/payslips" as any)}
+            className="flex-row items-center px-4 py-4 border-b border-gray-100"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="document-text-outline" size={22} color="#0284C7" />
+            <Text className="text-foreground font-medium ml-3">My Payslips</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
             onPress={() => router.push("/(tabs)/activity" as any)}
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}

@@ -387,3 +387,71 @@ export function useMyPayslip(id: number | null | undefined) {
     staleTime: 5 * 60 * 1000,
   });
 }
+
+// ─── My Expenses (v2.7.3) ───────────────────────────────────────────────
+
+export type ExpenseRow = {
+  id: number;
+  expense_name: string;
+  note: string | null;
+  amount: string;
+  date: string;
+  currency: number;
+  currency_name: string | null;
+  category: number;
+  category_name: string | null;
+  project_id: number | null;
+  customer_id: number | null;
+  billable: number;
+  invoiceid: number | null;
+  dateadded: string;
+};
+
+export type ExpensesResponse = {
+  status: true;
+  data: ExpenseRow[];
+  summary: {
+    total_amount: number;
+    total_count: number;
+    billed_amount: number;
+  };
+};
+
+export function useMyExpenses(opts: { from?: string; to?: string; limit?: number } = {}) {
+  const { from, to, limit = 60 } = opts;
+  return useQuery({
+    queryKey: ["my", "expenses", from, to, limit],
+    queryFn: async () => {
+      const params = new URLSearchParams({ limit: String(limit) });
+      if (from) params.set("from", from);
+      if (to) params.set("to", to);
+      return await api<ExpensesResponse>(`my/expenses?${params.toString()}`);
+    },
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useSubmitExpense() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: {
+      expense_name: string;
+      amount: number;
+      date: string;
+      category: number;
+      note?: string;
+      currency?: number;
+      project_id?: number;
+      customer_id?: number;
+      billable?: boolean;
+    }) => {
+      return api<{ status: true; message: string; data: { id: number } }>(
+        "my/expenses",
+        { method: "POST", body: JSON.stringify(body) }
+      );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "expenses"] });
+    },
+  });
+}

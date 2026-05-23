@@ -5,7 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-23 (after batch 7 — Proposals + Leads workflow)
+**Last updated:** 2026-05-24 (after batch 12 — My Expenses)
+**Recent:** batches 9-12 completed the employee self-service core (Check-in, My Leave, My Payslips, My Expenses) on top of the new `/api/my/*` namespace. See section "Recently shipped: employee self-service" below.
 **Maintained by:** the Claude session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -383,6 +384,68 @@ Admin-only modules (Staff, Items, Automation, OTP Manager, Business Partners, Co
 
 - `CHANGELOG.json` at the mobile repo root. CI's "Inject build metadata" step copies the TOP entry into `lib/build-info.ts`.
 - `<WhatsNewModal />` reads it from build info and shows once per build SHA (uses AsyncStorage to remember which SHA has been seen).
+
+---
+
+## Recently shipped: employee self-service (batches 9-12, 2026-05-23 → 2026-05-24)
+
+A new `/api/my/*` namespace was added to the CRM, with the principle that every endpoint resolves the staff_id from the auth token — no `/{id}/` in URLs. This unlocked the mobile **Me** workflow.
+
+### CRM endpoints (live on Hetzner, see `modules/api/controllers/My_api.php`)
+
+| Version | Endpoint | Purpose |
+|---|---|---|
+| v2.7.0 | `GET /api/my` | One-shot dashboard payload (profile + checkin status + counts) |
+| v2.7.0 | `GET /api/my/profile` | Staff record + departments + role name |
+| v2.7.0 | `POST /api/my/checkin` | Clock in/out — wraps `Timesheets_model::check_in()`. Honors IP whitelist + geo-fence + route validation. |
+| v2.7.0 | `GET /api/my/checkin/today` | Today's check-in/out rows |
+| v2.7.0 | `GET /api/my/checkin/history?days=N` | Last N days (max 90) |
+| v2.7.0 | `GET /api/my/notifications` | Paginated, `?unread=1` filter |
+| v2.7.0 | `PUT /api/my/notifications/{id}/read` | Scoped to own |
+| v2.7.0 | `PUT /api/my/notifications/read_all` | Bulk |
+| v2.7.1 | `POST /api/my/leave/request` | Submit a leave request — wraps `add_requisition_ajax()` |
+| v2.7.1 | `GET /api/my/leave/balance?year=` | Remaining days per leave type |
+| v2.7.1 | `GET /api/my/leave/requests?status=` | List MY submitted requests |
+| v2.7.1 | `GET /api/my/leave/request/{id}` | Single (own) |
+| v2.7.1 | `DELETE /api/my/leave/request/{id}` | Cancel pending |
+| v2.7.2 | `GET /api/my/payslips` | List own payslip-detail rows (from `tblhrp_payslip_details`) |
+| v2.7.2 | `GET /api/my/payslips/{id}` | Single (own) |
+| v2.7.2 | `GET /api/my/payslips/{id}/pdf` | Binary PDF stream — wraps `Hr_payroll_model::hr_payroll_get_payslip_pdf_only_for_pdf()` |
+| v2.7.3 | `GET /api/my/expenses?from=&to=` | List own expenses + summary (total submitted, total billed) |
+| v2.7.3 | `GET /api/my/expenses/{id}` | Single (own) |
+| v2.7.3 | `POST /api/my/expenses` | Submit new expense — wraps `Expenses_model::add()` |
+
+Total: **17 new `/api/my/*` endpoints** across 4 PRs (#276, #278, #279, #280, all merged to PrizmIT/prizm331:main).
+
+### Mobile screens
+
+| Route | Reached from | Status |
+|---|---|---|
+| `(tabs)/settings.tsx` | Bottom tab "Settings" | Now hosts the **CheckinCard** at the top + links to all the My-* screens |
+| `(tabs)/activity.tsx` | Settings → My Activity | List of `tblactivity_log` rows scoped to current staff, with `[Mobile]` filter |
+| `(tabs)/leave.tsx` | Settings → My Leave | Balance card + request history + cancel-pending button |
+| `(tabs)/leave-new.tsx` | FAB on My Leave | Submit form (rel_type radio + type_of_leave pills + dates + reason) |
+| `(tabs)/payslips.tsx` | Settings → My Payslips | List with month / pay number / net pay headline |
+| `(tabs)/payslip-detail.tsx` | Tap a payslip | Full breakdown: gross → deductions → PAYE → net, plus workdays + leave days |
+| `(tabs)/expenses-mine.tsx` | Settings → My Expenses | List with summary (total submitted, total billed), BILLED/BILLABLE badges |
+
+### Deferred (deliberately)
+
+- **PDF download** for payslips on mobile — endpoint exists; UI needs `expo-file-system` download + `expo-intent-launcher` VIEW pattern (same as APK self-update flow). Easy follow-up.
+- **Receipt photo capture** for expenses — needs `expo-image-picker` in package.json. POST endpoint accepts the data but mobile form not yet wired.
+- **Geo-fence on check-in** — needs `expo-location`. CheckinCard currently doesn't send coordinates; server falls back to IP whitelist.
+- **Submit hourly leave** (partial-day) — current form pads start/end to 09:00 / 18:00 (full-day granularity).
+- **Approve subordinates' leave from mobile** — endpoint not yet built; would extend the Inbox/Action Center "approvals" category.
+
+### Hardening backlog
+
+- `Hr_payroll_api.php` references non-existent tables (`tblpayslips` etc) — bypassed by `My_api` using the real `tblhrp_*` names. Fix or replace the legacy API.
+- `deploy.php` tokens still hardcoded in PHP source (rotated 2026-05-23 but not yet refactored to env-file).
+- `MONITOR_DEFAULT_BEARER` rotation pending (needs Android app rebuild coordination).
+- `YAHOO_MCP_ENV` rotation pending (Osama to regen at developer.yahoo.com).
+- Bluehost-side `deploy.php` token sync (manual FTP edit).
+- Branch protection on `PrizmIT/prizm331:main`.
+- See `policy_incident_response_2026_05_22.md` in claude-brain for the full list.
 
 ---
 

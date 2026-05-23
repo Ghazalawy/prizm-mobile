@@ -5,6 +5,8 @@ import {
   logout as authLogout,
   getAuthToken,
   clearSession,
+  getStaffProfile,
+  type StaffProfile,
 } from "./auth";
 import {
   isBiometricAvailable,
@@ -25,6 +27,9 @@ type LoginResult = {
 type AuthState = {
   isAuthenticated: boolean;
   isLoading: boolean;
+  /** Current staff profile (staffid + name + email). Null until login completes
+   * or while the persisted profile is being hydrated from SecureStore. */
+  currentUser: StaffProfile | null;
   login: (email: string, password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
 };
@@ -34,6 +39,7 @@ const AuthContext = createContext<AuthState | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState<StaffProfile | null>(null);
 
   // On mount: if a token exists, optionally gate it behind biometric.
   useEffect(() => {
@@ -58,6 +64,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setIsAuthenticated(true);
+      // Hydrate the persisted staff profile so currentUser is available on
+      // app boot without waiting for a fresh login.
+      const profile = await getStaffProfile();
+      if (profile) setCurrentUser(profile);
       setIsLoading(false);
     })();
   }, []);
@@ -81,6 +91,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             shouldOffer = !askedBefore && !alreadyOn;
           }
           setIsAuthenticated(true);
+          // Pick up the staff profile that authLogin just persisted.
+          const profile = await getStaffProfile();
+          if (profile) setCurrentUser(profile);
           return { ...result, shouldOfferBiometric: shouldOffer };
         }
 
@@ -99,10 +112,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const logout = useCallback(async () => {
     await authLogout();
     setIsAuthenticated(false);
+    setCurrentUser(null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, currentUser, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
@@ -112,4 +126,10 @@ export function useAuth() {
   const context = useContext(AuthContext);
   if (!context) throw new Error("useAuth must be used within AuthProvider");
   return context;
+}
+
+/** Shortcut: just the currently logged-in staff record. Returns null while
+ * loading or if no one is logged in. */
+export function useCurrentUser(): StaffProfile | null {
+  return useAuth().currentUser;
 }

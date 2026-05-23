@@ -1,7 +1,8 @@
 import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from "react-native";
 import { useEffect, useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { useAuth } from "@/lib/auth-context";
+import { router } from "expo-router";
+import { useAuth, useCurrentUser } from "@/lib/auth-context";
 import { BASE_URL } from "@/lib/config";
 import { BUILD_VERSION, BUILD_TIME, BUILD_SHA } from "@/lib/build-info";
 import { checkForUpdate, downloadAndInstall } from "@/lib/updates";
@@ -14,6 +15,7 @@ import {
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
+  const currentUser = useCurrentUser();
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
@@ -129,6 +131,26 @@ export default function SettingsScreen() {
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Account</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
+          {currentUser ? (
+            <View className="px-4 py-4 border-b border-gray-100">
+              <Text className="text-foreground font-medium">
+                {currentUser.firstname} {currentUser.lastname}
+              </Text>
+              <Text className="text-muted text-sm mt-1">{currentUser.email}</Text>
+              <Text className="text-muted text-xs mt-0.5">Staff #{currentUser.staffid}</Text>
+            </View>
+          ) : null}
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/activity" as any)}
+            className="flex-row items-center px-4 py-4 border-b border-gray-100"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="time-outline" size={22} color="#0284C7" />
+            <Text className="text-foreground font-medium ml-3">My Activity</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleLogout}
             className="flex-row items-center px-4 py-4"

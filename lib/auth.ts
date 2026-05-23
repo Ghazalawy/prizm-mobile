@@ -3,6 +3,18 @@ import { ADMIN_URL, MOBILE_AUTH_URL } from "./config";
 
 const TOKEN_KEY = "prizm_auth_token";
 const SESSION_KEY = "prizm_session_cookie";
+const PROFILE_KEY = "prizm_staff_profile";
+
+/** The current authenticated staff record. Stored on login, read by
+ * Action Center / My Activity / anywhere that needs the staffid. */
+export type StaffProfile = {
+  staffid: number;
+  email: string;
+  firstname: string;
+  lastname: string;
+  profile_image?: string | null;
+  phonenumber?: string | null;
+};
 
 // --- Token storage ---
 
@@ -30,9 +42,24 @@ export async function setSessionCookie(cookie: string): Promise<void> {
   await SecureStore.setItemAsync(SESSION_KEY, cookie);
 }
 
+export async function getStaffProfile(): Promise<StaffProfile | null> {
+  try {
+    const raw = await SecureStore.getItemAsync(PROFILE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as StaffProfile;
+  } catch {
+    return null;
+  }
+}
+
+export async function setStaffProfile(profile: StaffProfile): Promise<void> {
+  await SecureStore.setItemAsync(PROFILE_KEY, JSON.stringify(profile));
+}
+
 export async function clearSession(): Promise<void> {
   await SecureStore.deleteItemAsync(TOKEN_KEY);
   await SecureStore.deleteItemAsync(SESSION_KEY);
+  await SecureStore.deleteItemAsync(PROFILE_KEY);
 }
 
 // --- Login via mobile_auth.php ---
@@ -57,6 +84,19 @@ export async function login(
       // Store token if returned
       if (data.token) {
         await setAuthToken(data.token);
+      }
+      // Store the staff profile (mobile_auth.php returns it under `staff`).
+      // The Action Center, My Activity feed, and any feature that needs the
+      // current staffid reads this via getStaffProfile() / useCurrentUser().
+      if (data.staff && typeof data.staff.staffid === "number") {
+        await setStaffProfile({
+          staffid: data.staff.staffid,
+          email: data.staff.email,
+          firstname: data.staff.firstname || "",
+          lastname: data.staff.lastname || "",
+          profile_image: data.staff.profile_image || null,
+          phonenumber: data.staff.phonenumber || null,
+        });
       }
       // Store session cookie if returned in headers
       const setCookie = res.headers.get("set-cookie");

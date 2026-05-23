@@ -386,18 +386,41 @@ Admin-only modules (Staff, Items, Automation, OTP Manager, Business Partners, Co
 
 ---
 
-## In-flight: Action Center
+## Action Center ✅ (shipped 2026-05-23)
 
-> User asked 2026-05-23 for a top-of-screen "ribbon" that surfaces:
-> - Approvals waiting for me
-> - Tasks due today / overdue
-> - Mentions + replies
-> - Compliance items (timesheets to submit, training, expiring docs)
->
-> UX: top bar with category chips → tap → bottom sheet → drill into the
-> specific module record. Bottom tabs unchanged.
+**Backend** — `GET /api/inbox` (ERP v2.6.0, PR #275 merged, Hetzner live):
+- `Inbox_api::index_get()` aggregates 4 categories in one round trip
+- Each source wrapped in try/catch — missing module table doesn't kill the inbox
+- Auth via standard `authtoken` header; staff id resolved via `get_staff_user_id()` with fallback to `tbluser_api` lookup
 
-Plan tracked in tasks #37 (`Inbox_api`) + #38 (mobile UI). Schema research delegated to a background research agent (alphabetical inventory of all `modules/api/controllers/*` + approval table scan). When the agent returns, the design will be filled in below.
+**Frontend** — `components/ActionCenter.tsx` mounted in `(tabs)/_layout.tsx` ABOVE the Tabs:
+- Horizontal strip of 4 chips (Approvals / Tasks / Mentions / Compliance) with badge counts
+- Tap a chip → modal bottom sheet with the items in that category
+- Each row shows priority dot + title + subtitle + optional inline quick-action buttons (Approve / Reject / Done)
+- Polls every 90 s (`refetchInterval` in React Query)
+
+**Data shape** (from `lib/queries/inbox.ts`):
+```ts
+{ summary: { total, approvals, tasks, mentions, compliance },
+  approvals: InboxItem[], tasks: InboxItem[], mentions: InboxItem[], compliance: InboxItem[] }
+```
+Each `InboxItem`: `{ type, id, title, subtitle?, deeplink?, actions?[], priority?, due_at?, age_days? }`
+
+**Data sources per category:**
+
+| Category | Tables / queries |
+|---|---|
+| approvals | • `tblprizmbudget_statusapprovers WHERE approver = staffid` joined to budget rows by stage<br>• `tblgatepass` JOIN `tblrequest_notifications WHERE staff_id = staffid` (with inline Approve/Reject)<br>• `tblprz_purchase_request` JOIN `tblprz_pur_request_approvers WHERE staff_id = staffid AND isActive = 1`<br>• `tblprz_expense_request WHERE status = 1` |
+| tasks | `tbltasks JOIN tbltask_assigned WHERE staffid = me AND status != 5` ordered by due-date null/asc + priority desc. Bucketed Overdue / Today / Week / Later with inline "Mark complete" |
+| mentions | `tblnotifications WHERE touserid = me AND isread = 0`. Perfex admin URLs translated to mobile deeplinks via `_perfex_link_to_mobile_deeplink()` |
+| compliance | • `tbltimesheets_requisition_leave WHERE approver_id = me AND status = 0`<br>• `tblcontracts WHERE addedfrom = me AND dateend BETWEEN NOW() AND +30d`<br>• `tblgatepass WHERE created_by = me AND duration_to BETWEEN NOW() AND +30d` |
+
+**Mobile mounting:** `components/ActionCenter.tsx` is rendered as the first child inside the `SafeAreaView` in `(tabs)/_layout.tsx`. It stays visible on Home / Customers / ERP / Settings and any deep-linked screen inside the (tabs) group.
+
+**Open follow-ups for the Action Center:**
+- Payslip approvals — blocked by table-name mismatch in `Hr_payroll_api.php` (see Known Gaps section below)
+- Training overdue — `tblstaff_training` referenced by `Hr_payroll_api.php` but no `CREATE TABLE` for it; needs reconciliation with `modules/hr_profile`
+- Resource requests — would need a join through `tblprizm_resource_request.status` → approver-config table; deferred until the chain is documented
 
 ### Day-1 categories (from user 2026-05-23)
 
@@ -423,6 +446,37 @@ Response:
   }
 }
 ```
+
+---
+
+## Known gaps & latent bugs (from research audit 2026-05-23)
+
+These were surfaced by a comprehensive grep across `modules/api/controllers/*.php` + `*/install.php` for table schemas. Not blocking the mobile rollout but worth fixing in future batches:
+
+| # | File | Issue | Severity | Fix sketch |
+|---|---|---|---|---|
+| 1 | `modules/api/controllers/Contracts.php` | No `data_put` method — contracts cannot be updated via API. Mobile edits silently fail (404 on PUT). | High — mobile contract editing is broken | Add `data_put($id)` wrapping `contracts_model::update($data, $id)` |
+| 2 | `modules/api/controllers/Hr_payroll_api.php` | All endpoints write to non-existent tables (`tblpayslips`, `tblpayslip_details`, `tblpayroll_*`, `tblstaff_commissions`, `tbltimesheets`, `tblstaff_training`). Actual installed schema uses `tblhrp_*` prefix (see `modules/hr_payroll/install.php`). | High — entire HR/Payroll API surface broken on a real install | Repoint every `db_prefix().'payslips'` → `db_prefix().'hrp_payslips'` etc. Mobile `hr_payslips` module relies on this. |
+| 3 | `modules/api/controllers/Items.php` | Read-only — no `data_post`, `data_put`, `data_delete`. Items catalog cannot be created or edited via API. | Medium — mobile shows items as read-only (acceptable) | Add CRUD methods or document as read-only |
+| 4 | `modules/api/controllers/Otpmanager.php` | `data_delete` and `data_put` call `projects_model::delete_milestone` / `update_milestone` — copy-paste leftovers from scaffolding. Dead code that may silently corrupt data. | Medium — could affect milestones if anyone hits these routes | Replace with proper OTP delete/update or remove the methods entirely |
+| 5 | `modules/api/controllers/Tasks.php` | Workflow methods `mark_complete_put`, `reopen_put`, `timer/start_post`, `timer/stop_post` were added in batch 5 (v2.5.4) and DO exist in upstream — agent reported them missing because local working copy was 148+ commits stale. Inbox_api references them in the inline "Mark complete" action. Verified ✅. | None — false alarm | n/a (the local working copy fooled the audit) |
+
+The same staleness affected the agent's other "missing endpoints" claims for tickets, projects, tenders, opportunities, purchase_orders, etc. Verified against upstream/main on 2026-05-23: those endpoints ARE present and live on Hetzner.
+
+**Table name reality** (from `install.php` files — authoritative for fresh installs):
+
+| Code reference | Actual installed table | Where defined |
+|---|---|---|
+| `tblbudget_approval_stages` | `tblprizmbudget_approvalstages` | `modules/prizmbudget/install.php` |
+| `tblbudget_status_approvers` | `tblprizmbudget_statusapprovers` | same |
+| `tblbudget_detail_indvapprovals` | `tblprizm_budget_detail_indvapproval` | same |
+| `tblresource_req_indvapprovals` | `tblprizm_resource_req_detail_individual` | same |
+| `tblpayslips` | `tblhrp_payslips` | `modules/hr_payroll/install.php` |
+| `tblstaff_timesheets` | `tbltimesheets_timesheet` | `modules/timesheets/install.php` |
+| `tblstaff_training` | not present — likely belongs to `modules/hr_profile/` with different name | — |
+| `tblpur_request_approval` | `tblprz_purchase_request` + `tblprz_pur_request_approvers` + `tblprz_pur_request_approval_history` | `modules/przpurchase/install.php` |
+
+Inbox_api was written against the **actual** table names so it works on the real install.
 
 ---
 

@@ -2,6 +2,16 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Hotfix: session-expired now lands on Login (not red triangles)",
+      "highlights": [
+        "Server rotated its signing key on 2026-05-23 — every old cached token started failing",
+        "Before this fix the app showed red-triangle alerts on every module instead of asking for a relogin",
+        "Now: any 'Signature verification failed' / 401 response clears your session and routes you to the login screen",
+        "Sign in once with your password — your new token works for every screen again",
+        "Coalesced so 6 background queries don't trigger 6 redirects in a row"
+      ]
+    },
+    {
       "title": "My Expenses — track what you've claimed",
       "highlights": [
         "Settings → My Expenses: see every expense you've submitted",

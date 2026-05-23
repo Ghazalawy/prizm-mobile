@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { getAuthToken } from "../auth";
+import { parseApiResponse } from "../api";
 
 /**
  * Activity log feed. Backed by the universal /api/core_crm_api/entity
@@ -47,8 +48,9 @@ async function fetchActivity(opts: {
     },
     body: JSON.stringify(body),
   });
+  const { body: j, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
   if (!j?.status) throw new Error(j?.message || "Activity fetch failed");
   return (j.data || []) as ActivityRow[];
 }

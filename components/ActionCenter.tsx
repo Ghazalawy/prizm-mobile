@@ -14,6 +14,7 @@ import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth";
+import { parseApiResponse } from "@/lib/api";
 import {
   useInbox,
   type InboxCategory,
@@ -97,12 +98,13 @@ async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number])
     },
     body: action.body ? JSON.stringify(action.body) : undefined,
   });
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
-    const txt = await res.text().catch(() => "");
+    const txt = typeof body === "string" ? body : JSON.stringify(body ?? "");
     throw new Error(`HTTP ${res.status}: ${txt.slice(0, 120)}`);
   }
-  const j = await res.json().catch(() => ({}));
-  if (j && j.status === false) throw new Error(j.message || "Action failed");
+  if (body && body.status === false) throw new Error(body.message || "Action failed");
 }
 
 function InboxRow({

@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { getAuthToken } from "../auth";
+import { parseApiResponse } from "../api";
 
 /**
  * Action Center inbox — the "what needs my attention" surface.
@@ -67,12 +68,15 @@ async function fetchInbox(): Promise<InboxData> {
   const res = await fetch(`${API_URL}/inbox`, {
     headers: { ...(token ? { authtoken: token } : {}) },
   });
+  // Parse first so the invalid-token detector sees the body even on 404
+  // (Perfex returns 404 + signature-failed JSON when the JWT is bad).
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   // Endpoint not yet deployed — degrade silently so the UI still renders.
   if (res.status === 404) return EMPTY;
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  if (!j?.status) return EMPTY;
-  return (j.data || EMPTY) as InboxData;
+  if (!body?.status) return EMPTY;
+  return (body.data || EMPTY) as InboxData;
 }
 
 const POLL_MS = 90 * 1000; // 90 s — fresh enough without hammering

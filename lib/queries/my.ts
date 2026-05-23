@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { getAuthToken } from "../auth";
+import { parseApiResponse } from "../api";
 
 /**
  * Hooks for the /api/my/* employee self-service namespace.
@@ -71,13 +72,14 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
       ...(init?.headers || {}),
     },
   });
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
-    const txt = await res.text().catch(() => "");
+    const txt = typeof body === "string" ? body : JSON.stringify(body ?? "");
     throw new Error(`HTTP ${res.status}: ${txt.slice(0, 160)}`);
   }
-  const j = await res.json();
-  if (j?.status === false) throw new Error(j?.message || "Request failed");
-  return j as T;
+  if (body?.status === false) throw new Error(body?.message || "Request failed");
+  return body as T;
 }
 
 // ─── Dashboard ──────────────────────────────────────────────────────────

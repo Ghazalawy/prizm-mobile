@@ -3,6 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { API_URL } from "./config";
 import { getAuthToken } from "./auth";
+import { parseApiResponse } from "./api";
 
 /**
  * Picked file from any source (camera / gallery / document picker). Normalised
@@ -106,14 +107,13 @@ export async function uploadAttachment(params: UploadParams): Promise<{ id: numb
     }),
   });
 
+  const { body: j, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
-    const text = await res.text();
-    let message = `HTTP ${res.status}`;
-    try { message = JSON.parse(text).message || message; } catch {}
+    const message =
+      (j && typeof j === "object" && j.message) || `HTTP ${res.status}`;
     throw new Error(message);
   }
-
-  const j = await res.json();
   // upload_bytes_post returns { status: true, id: N, file_name: "..." }
   return { id: Number(j.id ?? j.data?.id ?? 0), file_name: j.file_name ?? params.file.name };
 }

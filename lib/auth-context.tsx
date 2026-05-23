@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
+import Toast from "react-native-toast-message";
 import {
   login as authLogin,
   loginViaAdmin,
@@ -14,6 +15,11 @@ import {
   promptBiometric,
   hasAskedAboutBiometric,
 } from "./biometric";
+import {
+  setInvalidTokenHandler,
+  resetInvalidTokenDebounce,
+} from "./auth-events";
+import { queryClient } from "./query-client";
 
 type LoginResult = {
   success: boolean;
@@ -72,6 +78,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     })();
   }, []);
 
+  // Register the global "token invalid" handler exactly once. When a fetch
+  // anywhere in the app sees a "Signature verification failed" response (or
+  // any other invalid-token signal — see lib/api.ts), it calls notifyInvalid
+  // Token() which lands here: clear the cached session, kill react-query
+  // caches, and let the Redirect in (tabs)/_layout.tsx route to /login.
+  useEffect(() => {
+    setInvalidTokenHandler(() => {
+      clearSession()
+        .catch(() => undefined)
+        .finally(() => {
+          // Clear any cached "red triangle" error states so the relogin
+          // flow starts clean.
+          queryClient.clear();
+          setIsAuthenticated(false);
+          setCurrentUser(null);
+          Toast.show({
+            type: "info",
+            text1: "Session expired",
+            text2: "Please sign in again to continue.",
+          });
+        });
+    });
+    return () => setInvalidTokenHandler(null);
+  }, []);
+
   const login = useCallback(
     async (email: string, password: string): Promise<LoginResult> => {
       setIsLoading(true);
@@ -90,6 +121,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const alreadyOn   = await isBiometricEnabled();
             shouldOffer = !askedBefore && !alreadyOn;
           }
+          // Fresh token → allow the invalid-token kick-out to fire again
+          // next time something goes wrong.
+          resetInvalidTokenDebounce();
           setIsAuthenticated(true);
           // Pick up the staff profile that authLogin just persisted.
           const profile = await getStaffProfile();

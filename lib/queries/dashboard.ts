@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { getAuthToken } from "../auth";
+import { parseApiResponse } from "../api";
 
 /**
  * Dashboard count tiles. Each tile hits a dedicated /api/<module>/count
@@ -16,9 +17,10 @@ async function fetchCount(module: string): Promise<number> {
   const res = await fetch(`${API_URL}/${module}/count`, {
     headers: { ...(token ? { authtoken: token } : {}) },
   });
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  return Number(j.count ?? 0);
+  return Number(body?.count ?? 0);
 }
 
 async function fetchTasksTotal(): Promise<number> {
@@ -26,9 +28,10 @@ async function fetchTasksTotal(): Promise<number> {
   const res = await fetch(`${API_URL}/tasks?limit=1`, {
     headers: { ...(token ? { authtoken: token } : {}) },
   });
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const j = await res.json();
-  return Number(j.total ?? 0);
+  return Number(body?.total ?? 0);
 }
 
 const FIVE_MIN = 5 * 60 * 1000;

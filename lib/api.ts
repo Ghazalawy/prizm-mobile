@@ -1,5 +1,66 @@
 import { API_URL, ADMIN_URL } from "./config";
 import { getAuthToken, getSessionCookie } from "./auth";
+import { notifyInvalidToken } from "./auth-events";
+
+// --- Invalid-token detection ----------------------------------------------
+//
+// After the JWT signing key rotated on 2026-05-23, every cached token began
+// failing server-side validation. Perfex returns this in two flavours:
+//   1. HTTP 401 / 403 with empty or short body, OR
+//   2. HTTP 404 (REST_Controller default for "missing creds") with body
+//      {"status":false,"message":"Signature verification failed"}.
+//
+// We treat #2 as the canonical case. Same handler also matches "Token is not
+// defined" / "Token is invalid" / "Token expired" so we cover the older
+// Authorization_Token messages.
+const INVALID_TOKEN_PATTERNS = [
+  /signature verification failed/i,
+  /token is not defined/i,
+  /token is invalid/i,
+  /token expired/i,
+  /invalid token/i,
+];
+
+export function isInvalidTokenResponse(
+  status: number,
+  body: any,
+  hadToken: boolean
+): boolean {
+  // No token sent → server's "401 / signature failed" is just the natural
+  // unauthenticated state, NOT a session-expiry event.
+  if (!hadToken) return false;
+  if (status === 401 || status === 403) return true;
+  if (body && body.status === false && typeof body.message === "string") {
+    for (const re of INVALID_TOKEN_PATTERNS) {
+      if (re.test(body.message)) return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Parse a response once (body is consumed) and detect invalid-token. If
+ * detected, fires the global handler (which AuthContext registers — see
+ * lib/auth-events.ts).
+ *
+ * Callers that do their own fetch should use this so every entry point goes
+ * through the same detection logic. Returns the parsed body for further use.
+ */
+export async function parseApiResponse(
+  res: Response,
+  hadToken: boolean
+): Promise<{ body: any; invalidToken: boolean }> {
+  const text = await res.text();
+  let body: any = text;
+  try {
+    body = JSON.parse(text);
+  } catch {
+    // Not JSON — leave as text
+  }
+  const invalidToken = isInvalidTokenResponse(res.status, body, hadToken);
+  if (invalidToken) notifyInvalidToken();
+  return { body, invalidToken };
+}
 
 // --- REST API client (JWT auth) ---
 
@@ -21,17 +82,18 @@ export async function apiRequest(
     },
   });
 
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) {
+    throw new Error("Session expired — please sign in again.");
+  }
+
   if (!res.ok) {
-    const body = await res.text();
-    let message = `HTTP ${res.status}`;
-    try {
-      const json = JSON.parse(body);
-      message = json.message || message;
-    } catch {}
+    const message =
+      (body && typeof body === "object" && body.message) || `HTTP ${res.status}`;
     throw new Error(message);
   }
 
-  return res.json();
+  return body;
 }
 
 // Some endpoints return a plain array, others return { status, data, total, limit, offset }.

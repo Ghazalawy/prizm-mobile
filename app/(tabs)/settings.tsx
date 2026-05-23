@@ -12,6 +12,7 @@ import {
   setBiometricEnabled,
   promptBiometric,
 } from "@/lib/biometric";
+import { CheckinCard } from "@/components/CheckinCard";
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
@@ -100,6 +101,9 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-surface">
+      {/* Daily-use check-in widget — primary CTA at the top */}
+      <CheckinCard />
+
       <View className="mx-4 mt-4">
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Security</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">

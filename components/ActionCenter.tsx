@@ -6,6 +6,7 @@ import {
   ScrollView,
   Pressable,
   ActivityIndicator,
+  Image,
 } from "react-native";
 import { useState, useMemo, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
@@ -15,6 +16,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth";
 import { parseApiResponse } from "@/lib/api";
+import { useCurrentUser } from "@/lib/auth-context";
 import {
   useInbox,
   type InboxCategory,
@@ -22,15 +24,15 @@ import {
 } from "@/lib/queries/inbox";
 
 /**
- * Action Center — the persistent "what needs my attention" strip pinned
- * at the top of every authenticated screen. Renders 4 chips with badge
- * counts; tap a chip to open a bottom sheet listing items in that
- * category. Each item drills into the relevant detail screen, or
- * exposes inline quick actions (approve / reject).
+ * Top bar (Action Center) — pinned at the top of every authenticated screen.
+ * Mirrors the Perfex web admin chrome: brand on the left, action icons on
+ * the right. Each icon shows a red badge with its inbox count; tapping
+ * opens a bottom sheet with the items in that category. The avatar at the
+ * far right routes to Settings (where Sign Out lives).
  *
- * Data: useInbox() (lib/queries/inbox.ts) polls GET /api/inbox every
- * 90 s. While the backend is being deployed, the hook returns an empty
- * shape and the strip collapses to "All caught up".
+ * Data: useInbox() (lib/queries/inbox.ts) polls GET /api/inbox every 90 s.
+ * Drill-down sheet uses the same data and quick-action runner as before —
+ * only the trigger UI changed (chips → icons).
  */
 
 type CategoryMeta = {
@@ -43,11 +45,16 @@ type CategoryMeta = {
 const CATEGORIES: CategoryMeta[] = [
   { key: "approvals", label: "Approvals", icon: "checkmark-done-circle-outline", color: "#DC2626" },
   { key: "tasks", label: "Tasks", icon: "list-outline", color: "#F59E0B" },
-  { key: "mentions", label: "Mentions", icon: "at-outline", color: "#0284C7" },
+  { key: "mentions", label: "Mentions", icon: "notifications-outline", color: "#0284C7" },
   { key: "compliance", label: "Compliance", icon: "shield-checkmark-outline", color: "#16A34A" },
 ];
 
-function Chip({
+/**
+ * Single icon button in the top bar. Shows the muted icon when there's
+ * nothing in this category, the category's colored icon + a red dot
+ * badge with the count when there is.
+ */
+function HeaderIcon({
   meta,
   count,
   onPress,
@@ -60,25 +67,42 @@ function Chip({
   return (
     <TouchableOpacity
       onPress={onPress}
-      activeOpacity={0.7}
-      className="flex-row items-center gap-1.5 px-2.5 py-1.5 rounded-full mr-1.5"
+      activeOpacity={0.6}
+      hitSlop={6}
+      accessibilityLabel={`${meta.label}${count > 0 ? `, ${count} pending` : ""}`}
       style={{
-        backgroundColor: hot ? `${meta.color}1A` : "#F1F5F9",
+        width: 36,
+        height: 36,
+        alignItems: "center",
+        justifyContent: "center",
+        marginLeft: 2,
       }}
     >
-      <Ionicons name={meta.icon} size={14} color={hot ? meta.color : "#64748B"} />
-      <Text
-        className="text-xs font-medium"
-        style={{ color: hot ? meta.color : "#475569" }}
-      >
-        {meta.label}
-      </Text>
+      <Ionicons
+        name={meta.icon}
+        size={22}
+        color={hot ? meta.color : "#475569"}
+      />
       {hot ? (
         <View
-          className="min-w-[18px] h-[18px] px-1 rounded-full items-center justify-center"
-          style={{ backgroundColor: meta.color }}
+          style={{
+            position: "absolute",
+            top: 4,
+            right: 2,
+            minWidth: 16,
+            height: 16,
+            paddingHorizontal: 3,
+            borderRadius: 8,
+            backgroundColor: "#DC2626",
+            alignItems: "center",
+            justifyContent: "center",
+            borderWidth: 1.5,
+            borderColor: "#FFFFFF",
+          }}
         >
-          <Text className="text-white text-[10px] font-bold">{count > 99 ? "99+" : count}</Text>
+          <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "700" }}>
+            {count > 99 ? "99+" : count}
+          </Text>
         </View>
       ) : null}
     </TouchableOpacity>
@@ -202,6 +226,7 @@ export function ActionCenter() {
   const [openCategory, setOpenCategory] = useState<InboxCategory | null>(null);
   const q = useInbox();
   const qc = useQueryClient();
+  const user = useCurrentUser();
 
   const counts = useMemo(
     () => ({
@@ -225,39 +250,89 @@ export function ActionCenter() {
     [qc]
   );
 
+  // First letter of the user's first name → fallback avatar when there's
+  // no profile_image on record.
+  const initial =
+    (user?.firstname?.[0] || user?.email?.[0] || "?").toUpperCase();
+
   return (
     <>
-      {/* Strip — always rendered, very thin */}
+      {/* Top bar — brand on the left, action icons on the right. Mirrors
+          the Perfex web admin chrome so users hit the same affordances on
+          web and mobile. */}
       <View
-        className="flex-row items-center px-3 py-2 bg-white border-b border-slate-200"
-        style={{ minHeight: 44 }}
+        className="flex-row items-center bg-white border-b border-slate-200"
+        style={{ minHeight: 48, paddingHorizontal: 12 }}
       >
-        <Ionicons name="notifications-outline" size={18} color="#0F172A" />
-        <Text className="text-xs font-semibold text-foreground ml-2 mr-3">
-          Inbox
-        </Text>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ alignItems: "center" }}
-          className="flex-1"
-        >
-          {total === 0 && !q.isLoading ? (
-            <Text className="text-xs text-muted">All caught up</Text>
-          ) : (
-            CATEGORIES.map((cat) => (
-              <Chip
-                key={cat.key}
-                meta={cat}
-                count={counts[cat.key]}
-                onPress={() => setOpenCategory(cat.key)}
+        {/* Left: brand */}
+        <View className="flex-row items-center flex-1">
+          <View
+            style={{
+              width: 26,
+              height: 26,
+              borderRadius: 7,
+              backgroundColor: "#0284C7",
+              alignItems: "center",
+              justifyContent: "center",
+              marginRight: 8,
+            }}
+          >
+            <Ionicons name="flash" size={16} color="#FFFFFF" />
+          </View>
+          <Text
+            className="text-base font-bold text-foreground"
+            style={{ letterSpacing: 0.2 }}
+          >
+            Prizm
+          </Text>
+          {q.isFetching && total > 0 ? (
+            <ActivityIndicator
+              size="small"
+              color="#94A3B8"
+              style={{ marginLeft: 8 }}
+            />
+          ) : null}
+        </View>
+
+        {/* Right: action icons + profile avatar */}
+        <View className="flex-row items-center">
+          {CATEGORIES.map((cat) => (
+            <HeaderIcon
+              key={cat.key}
+              meta={cat}
+              count={counts[cat.key]}
+              onPress={() => setOpenCategory(cat.key)}
+            />
+          ))}
+          {/* Profile / avatar — taps through to Settings. */}
+          <TouchableOpacity
+            onPress={() => router.push("/settings")}
+            activeOpacity={0.7}
+            hitSlop={6}
+            accessibilityLabel="Profile"
+            style={{
+              marginLeft: 6,
+              width: 30,
+              height: 30,
+              borderRadius: 15,
+              backgroundColor: "#E2E8F0",
+              alignItems: "center",
+              justifyContent: "center",
+              overflow: "hidden",
+            }}
+          >
+            {user?.profile_image ? (
+              <Image
+                source={{ uri: user.profile_image }}
+                style={{ width: 30, height: 30 }}
               />
-            ))
-          )}
-        </ScrollView>
-        {q.isFetching && total > 0 ? (
-          <ActivityIndicator size="small" color="#94A3B8" />
-        ) : null}
+            ) : (
+              <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 12 }}>
+                {initial}
+              </Text>
+            )}
+          </TouchableOpacity>
+        </View>
       </View>
 
       {/* Bottom sheet (modal) */}

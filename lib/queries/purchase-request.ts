@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { getAuthToken } from "../auth";
-import { parseApiResponse } from "../api";
+import { buildAuthHeaders, parseApiResponse } from "../api";
 
 /**
  * Hooks for the Purchase Request native approval screen.
@@ -40,24 +39,47 @@ export type PRStage = {
   approvers: Array<{ staffid: number; name: string }>;
 };
 
-export type PRHistoryItem = {
-  id: number;
+/**
+ * One row from tblprzpurcahse_req_statusdetail — the canonical
+ * "this approver's seat at this PR's stage" record. Each PR has one of
+ * these per (approver × stage) combination. The viewer's actionable
+ * row is the one with approver=me, is_current_status=1, status not
+ * yet 'Approved'/'Rejected'.
+ */
+export type PRApprovalRow = {
+  statusDetailID: number;
   statusID: number;
-  is_current_status: number | boolean | null;
   approver: number;
   approver_name: string | null;
-  requester?: number;
-  status: string;
+  requester: number | null;
+  requester_name: string | null;
+  status: string;            // 'Submitted', 'Approved', 'Rejected', ...
+  is_current_status: number;
+  is_optional: number;
+  is_final: number;
+  stageID: number;
+  stageLevel: number | null;
+  order_in_list: number;
+  status_name: string | null;
+  color: string | null;
+  rejection_reason: string | null;
   addeddate: string | null;
   updateddate: string | null;
+  /** True only for the row the viewer should act on (server-computed). */
+  can_act_now: boolean;
 };
 
 export type PRHeader = {
   id: number;
   staff_id: number;
   title: string | null;
+  /** Internal counter (not user-facing). */
   number: number | null;
   prefix: string | null;
+  /** User-facing PR number — what the web shows as "PR-26050023". */
+  sequence_number: number | null;
+  /** Server-formatted "PR-{sequence_number}" — preferred display. */
+  display_code: string | null;
   status: number | null;
   total_amount: string | null;
   requested_date: string | null;
@@ -72,22 +94,23 @@ export type PRHeader = {
 export type PRApproval = {
   request: PRHeader;
   line_items: PRLineItem[];
-  stages: PRStage[];
-  history: PRHistoryItem[];
+  /** All approval-row records for this PR (per-approver-per-stage). */
+  approval_rows: PRApprovalRow[];
   viewer: {
     staffid: number;
     is_current_approver: boolean;
     is_submitter: boolean;
     current_status: number;
+    /** The specific statusDetailID this viewer should pass to the
+     *  approve/reject endpoint. 0 if no actionable row exists. */
+    actionable_status_detail_id: number;
   };
 };
 
 async function fetchPRApproval(id: number): Promise<PRApproval> {
-  const token = await getAuthToken();
-  const res = await fetch(`${API_URL}/purchase_api/requests/${id}/approval`, {
-    headers: { ...(token ? { authtoken: token } : {}) },
-  });
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const headers = await buildAuthHeaders();
+  const res = await fetch(`${API_URL}/purchase_api/requests/${id}/approval`, { headers });
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error((body && (body as any).message) || `HTTP ${res.status}`);
   if (!body?.status) throw new Error((body && (body as any).message) || "Request failed");

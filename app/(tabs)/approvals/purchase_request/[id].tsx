@@ -89,27 +89,35 @@ export default function PurchaseRequestApprovalScreen() {
     );
   }
 
-  const { request, line_items, stages, history, viewer } = q.data;
+  const { request, line_items, approval_rows, viewer } = q.data;
+  // Display the SAME number the web shows ("PR-26050023" = prefix +
+  // sequence_number). server's `display_code` is already formatted;
+  // fall back if older backend.
   const code =
-    (request.prefix || "PR-") + (request.number != null ? request.number : request.id);
+    request.display_code ||
+    (request.prefix || "PR-") +
+      (request.sequence_number != null ? request.sequence_number : request.id);
 
   // Did anyone reject this PR already? Drives the status pill colour.
-  const rejected = history.some((h) => (h.status || "").toLowerCase().includes("reject"));
-  const finalStage = stages.find((s) => s.is_final);
-  const isFinal = finalStage && finalStage.id === viewer.current_status;
+  const rejected = approval_rows.some(
+    (r) => (r.status || "").toLowerCase() === "rejected",
+  );
+  const allApproved =
+    approval_rows.length > 0 &&
+    approval_rows.every((r) => (r.status || "").toLowerCase() === "approved");
 
   const tone = rejected
     ? "rejected"
     : viewer.is_current_approver
     ? "your-turn"
-    : isFinal
+    : allApproved
     ? "approved"
     : "pending";
   const statusLabel = rejected
     ? "Rejected"
     : viewer.is_current_approver
     ? "Your turn to approve"
-    : isFinal
+    : allApproved
     ? "Fully approved"
     : "In approval workflow";
 
@@ -252,19 +260,16 @@ export default function PurchaseRequestApprovalScreen() {
           )}
         </View>
 
-        {/* Workflow timeline */}
-        <ApprovalTimeline
-          stages={stages}
-          history={history}
-          currentStatusID={viewer.current_status}
-        />
+        {/* Workflow timeline driven by the canonical approval_rows
+            (one row per approver-per-stage). */}
+        <ApprovalTimeline rows={approval_rows} />
 
-        {/* Action panel — real native Approve / Reject buttons.
-            The note typed in the modal appears under the stamp in
-            ApprovalTimeline once the mutation succeeds and the parent
-            query re-fetches. */}
+        {/* Action panel — buttons appear ONLY when the viewer actually
+            has an actionable row. We pass the exact statusDetailID so
+            the write endpoint updates the right row, no guessing. */}
         <ApprovalActionPanel
           isCurrentApprover={viewer.is_current_approver}
+          statusDetailID={viewer.actionable_status_detail_id}
           requestId={request.id}
           webFallbackPath={`przpurchase/ag_view_purchase_request/${request.id}`}
         />

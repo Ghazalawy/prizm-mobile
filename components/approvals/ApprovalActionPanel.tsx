@@ -32,14 +32,20 @@ import { NoteModal, type NoteMode } from "./NoteModal";
  */
 export function ApprovalActionPanel({
   isCurrentApprover,
+  statusDetailID,
   webFallbackPath,
   requestId,
 }: {
   isCurrentApprover: boolean;
+  /** The specific tblprzpurcahse_req_statusdetail.id this viewer should
+   *  act on. From viewer.actionable_status_detail_id on the read endpoint.
+   *  Sent to the backend so it updates the EXACT row instead of guessing,
+   *  matching the web admin's approval_process(rowID, status) pattern. */
+  statusDetailID: number;
   /** Perfex web URL fragment for the rare "Open in web" backup link,
    *  relative to /MS/admin/. */
   webFallbackPath: string;
-  /** PR id — used by the approve/reject endpoint. */
+  /** PR id — used by the approve/reject endpoint URL. */
   requestId: number;
 }) {
   const qc = useQueryClient();
@@ -52,7 +58,14 @@ export function ApprovalActionPanel({
       const headers = await buildAuthHeaders();
       const res = await fetch(
         `${API_URL}/purchase_api/requests/${encodeURIComponent(String(requestId))}/${kind}`,
-        { method: "POST", headers, body: JSON.stringify({ note }) },
+        {
+          method: "POST",
+          headers,
+          // Send statusDetailID so the backend updates the right row.
+          // Backend re-verifies it belongs to the viewer before mutating,
+          // so a tampered ID can't approve someone else's stage.
+          body: JSON.stringify({ note, statusDetailID }),
+        },
       );
       const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
       if (invalidToken) throw new Error("Session expired");

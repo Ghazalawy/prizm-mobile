@@ -15,6 +15,8 @@ import {
   checkForUpdate,
   dismissUpdate,
   downloadAndInstall,
+  recordForegroundTimestamp,
+  shouldAutoInstall,
   UpdateInfo,
 } from "@/lib/updates";
 
@@ -72,15 +74,49 @@ export function UpdatePrompt() {
     if (phase === "downloading") return;
     const next = await checkForUpdate();
     if (!next) return;
+
+    // Quiet-hours auto-install: if it's 02:00–05:00 local AND the app has been
+    // idle (no recorded foreground touch) for ≥15 min, kick off the install
+    // without prompting. The user is presumably asleep — install completes
+    // by morning. Heuristic-only (foreground-driven, no background task —
+    // that needs expo-task-manager + SCHEDULE_EXACT_ALARM).
+    if (await shouldAutoInstall()) {
+      setInfo(next);
+      setPhase("downloading");
+      try {
+        await downloadAndInstall(next, (frac) =>
+          setProgress(Math.min(1, Math.max(0, frac))),
+        );
+        setProgress(1);
+        return;
+      } catch {
+        // Fall through to the normal banner — the user will see the offer
+        // when they wake up.
+        setPhase("idle");
+      }
+    }
+
     if (dismissedSha.current === next.remoteSha) return;
     if (info && info.remoteSha === next.remoteSha && phase === "available") return;
     showBanner(next);
   }, [info, phase, showBanner]);
 
   useEffect(() => {
+    // Initial foreground = "user is here right now"
+    recordForegroundTimestamp().catch(() => undefined);
     runCheck();
     const sub = AppState.addEventListener("change", (state) => {
-      if (state === "active") runCheck();
+      if (state === "active") {
+        // Re-check on foreground BEFORE updating the timestamp, so the
+        // shouldAutoInstall heuristic sees how long the app was backgrounded.
+        runCheck().finally(() => {
+          recordForegroundTimestamp().catch(() => undefined);
+        });
+      } else if (state === "background" || state === "inactive") {
+        // Stamp the moment the user left so shouldAutoInstall can compute
+        // idle-since-then accurately on next foreground.
+        recordForegroundTimestamp().catch(() => undefined);
+      }
     });
     return () => sub.remove();
   }, [runCheck]);

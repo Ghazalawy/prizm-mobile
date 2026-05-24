@@ -25,6 +25,7 @@ import {
   type DashboardCardKey,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { clearDismissedUpdate } from "@/lib/updates";
 
 type StatCardProps = {
   title: string;
@@ -124,6 +125,11 @@ export default function DashboardScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
+    // Pull-to-refresh is an explicit "give me fresh state" gesture — also
+    // clear any previously-dismissed update SHA so the banner re-appears
+    // if a newer build is out. The UpdatePrompt re-checks on every focus,
+    // so the banner will surface on the next render.
+    await clearDismissedUpdate().catch(() => undefined);
     await Promise.all([
       projects.refetch(),
       tasksSummary.refetch(),

@@ -96,6 +96,55 @@ export async function dismissUpdate(remoteSha: string): Promise<void> {
 }
 
 /**
+ * Wipe the dismissed-SHA marker. Called when the user pulls down to refresh
+ * the dashboard — pull-to-refresh is an explicit "I want fresh state" gesture,
+ * so the banner should reappear if there's still an update pending.
+ */
+export async function clearDismissedUpdate(): Promise<void> {
+  await SecureStore.deleteItemAsync(DISMISSED_KEY);
+}
+
+/**
+ * Auto-install policy for quiet hours.
+ *
+ * Returns true when the app foregrounds during the "auto-update window"
+ * (default 02:00–05:00 local) AND has been idle long enough that the user
+ * is clearly not in the middle of something. The caller is expected to
+ * follow up with downloadAndInstall(info) — no UI prompt.
+ *
+ * Heuristic-only — Android background tasks need expo-task-manager + the
+ * SCHEDULE_EXACT_ALARM permission which is a separate batch. This works
+ * the common case where the phone is sitting idle overnight and the user
+ * briefly unlocks (or the screen wakes from a notification) between 2-5 AM.
+ */
+export function isInAutoUpdateWindow(now: Date = new Date()): boolean {
+  const h = now.getHours();
+  return h >= 2 && h < 5;
+}
+
+const LAST_FOREGROUND_KEY = "prizm_last_foreground_at";
+const AUTO_UPDATE_IDLE_MS = 15 * 60 * 1000; // 15 min
+
+export async function recordForegroundTimestamp(): Promise<void> {
+  await SecureStore.setItemAsync(LAST_FOREGROUND_KEY, String(Date.now()));
+}
+
+export async function readForegroundTimestamp(): Promise<number | null> {
+  const raw = await SecureStore.getItemAsync(LAST_FOREGROUND_KEY);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export async function shouldAutoInstall(now: Date = new Date()): Promise<boolean> {
+  if (!isInAutoUpdateWindow(now)) return false;
+  const last = await readForegroundTimestamp();
+  if (last === null) return false;
+  const idleMs = now.getTime() - last;
+  return idleMs >= AUTO_UPDATE_IDLE_MS;
+}
+
+/**
  * Download the APK and hand it to Android's package installer. Caller should
  * show progress via the onProgress callback (0..1).
  *

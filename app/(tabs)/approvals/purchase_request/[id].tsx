@@ -1,13 +1,22 @@
-import { View, Text, ScrollView, ActivityIndicator, RefreshControl } from "react-native";
-import { Stack, useLocalSearchParams } from "expo-router";
+import {
+  View,
+  Text,
+  ScrollView,
+  ActivityIndicator,
+  RefreshControl,
+  TouchableOpacity,
+  Share,
+} from "react-native";
+import { Stack, useLocalSearchParams, router } from "expo-router";
 import { useCallback, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { usePRApproval } from "@/lib/queries/purchase-request";
+import { usePRApproval, type PRApproval } from "@/lib/queries/purchase-request";
 import { ApprovalHeader } from "@/components/approvals/ApprovalHeader";
 import { ApprovalTimeline } from "@/components/approvals/ApprovalTimeline";
 import { ApprovalActionPanel } from "@/components/approvals/ApprovalActionPanel";
 import { InfoRow } from "@/components/approvals/InfoRow";
 import { rtlTextStyle } from "@/lib/rtl";
+import { BASE_URL } from "@/lib/config";
 
 /**
  * Native Purchase Request approval screen.
@@ -36,10 +45,15 @@ export default function PurchaseRequestApprovalScreen() {
     setRefreshing(false);
   }, [q]);
 
+  // Hide the default Stack header everywhere — we render a compact inline
+  // back+title+share bar inside each render branch instead. The Stack header
+  // was rendering a tall white "PR-1666" container that ate vertical space.
+  const stackHeaderHidden = <Stack.Screen options={{ headerShown: false }} />;
+
   if (!validId) {
     return (
       <>
-        <Stack.Screen options={{ title: "Purchase Request" }} />
+        {stackHeaderHidden}
         <View className="flex-1 items-center justify-center bg-surface px-6">
           <Ionicons name="warning-outline" size={48} color="#EF4444" />
           <Text className="text-sm text-muted mt-2 text-center">
@@ -53,7 +67,7 @@ export default function PurchaseRequestApprovalScreen() {
   if (q.isLoading) {
     return (
       <>
-        <Stack.Screen options={{ title: "Purchase Request" }} />
+        {stackHeaderHidden}
         <View className="flex-1 items-center justify-center bg-surface">
           <ActivityIndicator color="#0284C7" />
         </View>
@@ -64,7 +78,7 @@ export default function PurchaseRequestApprovalScreen() {
   if (q.isError || !q.data) {
     return (
       <>
-        <Stack.Screen options={{ title: "Purchase Request" }} />
+        {stackHeaderHidden}
         <View className="flex-1 items-center justify-center bg-surface px-6">
           <Ionicons name="warning-outline" size={48} color="#EF4444" />
           <Text className="text-sm text-muted mt-2 text-center">
@@ -117,15 +131,54 @@ export default function PurchaseRequestApprovalScreen() {
       })
     : null;
 
+  const handleShare = async () => {
+    const summary =
+      `${code} · ${request.title || "Untitled"}\n` +
+      `Requested by ${request.requester_name?.trim() || `staff #${request.staff_id}`}\n` +
+      (displayedTotal ? `Total: ${displayedTotal.toLocaleString()}\n` : "") +
+      `Status: ${statusLabel}\n` +
+      `${BASE_URL}/MS/admin/przpurchase/ag_view_purchase_request/${request.id}`;
+    try {
+      await Share.share({ title: code, message: summary });
+    } catch {
+      /* user cancelled */
+    }
+  };
+
   return (
     <>
-      <Stack.Screen
-        options={{
-          title: code,
-          headerShown: true,
-          headerBackTitle: "Back",
-        }}
-      />
+      {stackHeaderHidden}
+      <View className="flex-1 bg-surface">
+        {/* Inline header bar — replaces the bulky Stack header. Same height
+            as the Action Center top bar above so they read as one row. */}
+        <View
+          className="flex-row items-center px-2 py-2 bg-surface"
+          style={{ minHeight: 44 }}
+        >
+          <TouchableOpacity
+            onPress={() => router.back()}
+            hitSlop={10}
+            className="p-2"
+          >
+            <Ionicons name="chevron-back" size={22} color="#0F172A" />
+          </TouchableOpacity>
+          <Text
+            className="text-base font-bold text-foreground flex-1"
+            numberOfLines={1}
+            style={rtlTextStyle(code)}
+          >
+            {code}
+          </Text>
+          <TouchableOpacity
+            onPress={handleShare}
+            hitSlop={10}
+            className="p-2"
+            accessibilityLabel="Share"
+          >
+            <Ionicons name="share-social-outline" size={20} color="#0F172A" />
+          </TouchableOpacity>
+        </View>
+
       <ScrollView
         className="flex-1 bg-surface"
         contentContainerClassName="p-3"
@@ -212,6 +265,7 @@ export default function PurchaseRequestApprovalScreen() {
           webFallbackPath={`przpurchase/ag_view_purchase_request/${request.id}`}
         />
       </ScrollView>
+      </View>
     </>
   );
 }

@@ -1,5 +1,11 @@
-import { View, Text } from "react-native";
+import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from "react-native";
+import { useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
+
+// Android: enable layout animation once. iOS doesn't need this.
+if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
+  UIManager.setLayoutAnimationEnabledExperimental(true);
+}
 
 /**
  * Approval workflow visualisation. Each stage shows as a row with:
@@ -29,27 +35,57 @@ export function ApprovalTimeline({
   stages,
   history,
   currentStatusID,
+  defaultOpen = false,
 }: {
   stages: StageItem[];
   history: HistoryItem[];
   currentStatusID: number;
+  /** Collapsed by default — user taps the header to expand. Pass true to
+   *  override (e.g. on a "Workflow" full-screen drilldown later). */
+  defaultOpen?: boolean;
 }) {
+  const [open, setOpen] = useState(defaultOpen);
+
   // Build a quick lookup: which stage IDs have already been acted on, and
   // whether the action was approve/reject.
   const acted = new Map<number, HistoryItem>();
   for (const h of history) {
     acted.set(h.statusID, h);
   }
+  const actedCount = acted.size;
+  const summary =
+    stages.length === 0
+      ? "No workflow"
+      : `${actedCount} of ${stages.length} stage${stages.length === 1 ? "" : "s"} acted`;
+
+  const toggle = () => {
+    LayoutAnimation.configureNext(LayoutAnimation.Presets.easeInEaseOut);
+    setOpen((v) => !v);
+  };
 
   return (
     <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm">
-      <Text className="text-xs uppercase tracking-wide text-muted mb-2">
-        Approval workflow
-      </Text>
-      {stages.length === 0 ? (
+      <TouchableOpacity
+        onPress={toggle}
+        activeOpacity={0.6}
+        className="flex-row items-center"
+      >
+        <View className="flex-1">
+          <Text className="text-xs uppercase tracking-wide text-muted">
+            Approval workflow
+          </Text>
+          <Text className="text-xs text-muted mt-0.5">{summary}</Text>
+        </View>
+        <Ionicons
+          name={open ? "chevron-up" : "chevron-down"}
+          size={18}
+          color="#64748B"
+        />
+      </TouchableOpacity>
+      {!open ? null : stages.length === 0 ? (
         <Text className="text-sm text-muted py-2">No workflow stages configured.</Text>
       ) : (
-        stages.map((s, idx) => {
+        <View className="mt-2">{stages.map((s, idx) => {
           const past = acted.get(s.id);
           const isCurrent = s.id === currentStatusID && !past;
           let icon: keyof typeof Ionicons.glyphMap = "ellipse-outline";
@@ -115,7 +151,7 @@ export function ApprovalTimeline({
               </View>
             </View>
           );
-        })
+        })}</View>
       )}
     </View>
   );

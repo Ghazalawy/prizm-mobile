@@ -154,9 +154,13 @@ async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number])
 function InboxRow({
   item,
   onRunAction,
+  onClose,
 }: {
   item: InboxItem;
   onRunAction: (a: NonNullable<InboxItem["actions"]>[number]) => Promise<void>;
+  /** Called before navigation so the floating popover doesn't linger
+   *  behind the destination screen. */
+  onClose: () => void;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
@@ -170,10 +174,14 @@ function InboxRow({
    *                    This is the graceful fallback for modules that don't
    *                    yet have a native mobile screen (materials/payment
    *                    requests today).
+   *
+   * Always closes the popover first — otherwise it sits on top of the
+   * destination screen and the user has to tap-out to dismiss.
    */
   const handleTap = () => {
     const link = item.deeplink;
     if (!link) return;
+    onClose();
     if (link.startsWith("/(tabs)/")) {
       router.push(link as any);
       return;
@@ -521,6 +529,7 @@ export function ActionCenter() {
                       key={`${it.type}-${it.id}`}
                       item={it}
                       onRunAction={runAction}
+                      onClose={closePopover}
                     />
                   ))}
                 </ScrollView>

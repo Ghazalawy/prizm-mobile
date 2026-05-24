@@ -36,7 +36,13 @@ type AuthState = {
   /** Current staff profile (staffid + name + email). Null until login completes
    * or while the persisted profile is being hydrated from SecureStore. */
   currentUser: StaffProfile | null;
+  /** True when a token + enabled biometric exist and the user just hasn't
+   *  passed the biometric prompt yet. Login screen uses this to render
+   *  the "Use fingerprint" retry button. */
+  biometricPending: boolean;
   login: (email: string, password: string) => Promise<LoginResult>;
+  /** Re-prompt biometric. Resolves to true on success → user is logged in. */
+  retryBiometric: () => Promise<boolean>;
   logout: () => Promise<void>;
 };
 
@@ -46,6 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [currentUser, setCurrentUser] = useState<StaffProfile | null>(null);
+  // True when there's still a valid token in SecureStore + biometric enabled,
+  // but the user cancelled / failed the prompt. Used by the login screen to
+  // render a "Use fingerprint" retry button.
+  const [biometricPending, setBiometricPending] = useState(false);
 
   // On mount: if a token exists, optionally gate it behind biometric.
   useEffect(() => {
@@ -61,8 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (biometricOn && (await isBiometricAvailable())) {
         const ok = await promptBiometric();
         if (!ok) {
-          // User cancelled or failed — clear session and force password
-          await clearSession();
+          // User cancelled / failed — do NOT clear the session. Leave the
+          // token in SecureStore so they can either tap "Use fingerprint"
+          // again from the login screen or sign in with the password.
+          // Only an explicit logout / invalid-token event clears the store.
+          setBiometricPending(true);
           setIsAuthenticated(false);
           setIsLoading(false);
           return;
@@ -70,6 +83,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       }
 
       setIsAuthenticated(true);
+      setBiometricPending(false);
       // Hydrate the persisted staff profile so currentUser is available on
       // app boot without waiting for a fresh login.
       const profile = await getStaffProfile();
@@ -125,6 +139,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           // next time something goes wrong.
           resetInvalidTokenDebounce();
           setIsAuthenticated(true);
+          setBiometricPending(false);
           // Pick up the staff profile that authLogin just persisted.
           const profile = await getStaffProfile();
           if (profile) setCurrentUser(profile);
@@ -143,14 +158,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     []
   );
 
+  /** Re-prompt biometric. Only valid when there's still a stored token
+   *  (i.e. the boot-time check pended without clearing the session).
+   *  Returns true on success → user is logged in. */
+  const retryBiometric = useCallback(async (): Promise<boolean> => {
+    const token = await getAuthToken();
+    if (!token) return false;
+    if (!(await isBiometricAvailable())) return false;
+    if (!(await isBiometricEnabled())) return false;
+    const ok = await promptBiometric();
+    if (!ok) return false;
+    setIsAuthenticated(true);
+    setBiometricPending(false);
+    const profile = await getStaffProfile();
+    if (profile) setCurrentUser(profile);
+    return true;
+  }, []);
+
   const logout = useCallback(async () => {
     await authLogout();
     setIsAuthenticated(false);
     setCurrentUser(null);
+    setBiometricPending(false);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, currentUser, login, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, currentUser, biometricPending, login, retryBiometric, logout }}>
       {children}
     </AuthContext.Provider>
   );

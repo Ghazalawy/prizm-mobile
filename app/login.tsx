@@ -9,21 +9,42 @@ import {
   Alert,
 } from "react-native";
 import { useState, useEffect } from "react";
+import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { setBiometricEnabled, markBiometricAsked } from "@/lib/biometric";
 
 export default function LoginScreen() {
-  const { isAuthenticated, isLoading, login } = useAuth();
+  const { isAuthenticated, isLoading, login, biometricPending, retryBiometric } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
+  const [biometricBusy, setBiometricBusy] = useState(false);
 
   useEffect(() => {
     if (isAuthenticated) {
       router.replace("/(tabs)");
     }
   }, [isAuthenticated]);
+
+  const handleBiometric = async () => {
+    if (biometricBusy) return;
+    setBiometricBusy(true);
+    try {
+      const ok = await retryBiometric();
+      if (ok) {
+        // Effect above will redirect once isAuthenticated flips. Don't push
+        // here — that'd race with the effect and could route twice.
+      } else {
+        Alert.alert(
+          "Fingerprint cancelled",
+          "Try again, or sign in with your password.",
+        );
+      }
+    } finally {
+      setBiometricBusy(false);
+    }
+  };
 
   const handleLogin = async () => {
     if (!email.trim() || !password.trim()) {
@@ -117,6 +138,37 @@ export default function LoginScreen() {
             <Text className="text-white font-semibold text-lg">Sign In</Text>
           )}
         </TouchableOpacity>
+
+        {/* Biometric retry — only shown when there's still a stored token
+            and the user just cancelled the boot-time prompt. Lets them
+            re-trigger the fingerprint scanner without having to retype
+            their password. */}
+        {biometricPending ? (
+          <View className="w-full mt-4 items-center">
+            <View className="flex-row items-center w-full mb-3">
+              <View className="flex-1 h-px bg-gray-200" />
+              <Text className="text-muted text-xs mx-3">OR</Text>
+              <View className="flex-1 h-px bg-gray-200" />
+            </View>
+            <TouchableOpacity
+              onPress={handleBiometric}
+              disabled={biometricBusy}
+              className="flex-row items-center px-4 py-3 rounded-xl border border-gray-200"
+              activeOpacity={0.7}
+            >
+              {biometricBusy ? (
+                <ActivityIndicator color="#0284C7" />
+              ) : (
+                <>
+                  <Ionicons name="finger-print" size={22} color="#0284C7" />
+                  <Text className="text-primary font-medium ml-2">
+                    Use fingerprint
+                  </Text>
+                </>
+              )}
+            </TouchableOpacity>
+          </View>
+        ) : null}
       </View>
     </KeyboardAvoidingView>
   );

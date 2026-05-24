@@ -126,7 +126,7 @@ export default function LeaveScreen() {
             balance.data.balance.map((b) => {
               const hasCap = b.max_days !== null && b.remaining !== null;
               return (
-                <View key={b.type_id} className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                <View key={b.type_id ?? b.type_slug ?? b.type_name} className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-0">
                   <View className="flex-1">
                     <Text className="text-sm font-medium text-foreground">{b.type_name}</Text>
                     <Text className="text-xs text-muted">

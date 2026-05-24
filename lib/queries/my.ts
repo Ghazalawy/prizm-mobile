@@ -241,13 +241,18 @@ export const TYPE_OF_LEAVE = [
 ] as const;
 
 export type LeaveBalance = {
-  type_id: number;
+  /** Numeric id for legacy magic codes (1=sick, 2=maternity, 4=unpaid,
+   *  8=annual). Null for slug-keyed rows. Exactly one of type_id /
+   *  type_slug is non-null. */
+  type_id: number | null;
+  /** Slug for custom types added via Settings UI (e.g. "sick-leave",
+   *  "maternity-leave"). Null for legacy integer rows. */
+  type_slug: string | null;
   type_name: string;
-  /** null when no per-type cap is configured in the source DB —
-   *  the schema's tbltimesheets_type_of_leave has no max_day column. */
+  /** null when no per-type cap is configured for this staff/year. */
   max_days: number | null;
   used_days: number;
-  /** null when max_days is null (no cap → "remaining" is undefined). */
+  /** null when max_days is null. */
   remaining: number | null;
 };
 

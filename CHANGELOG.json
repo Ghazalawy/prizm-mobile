@@ -2,6 +2,16 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Amber update ribbon + transparent logo + no more flicker",
+      "highlights": [
+        "Update banner is back to amber/yellow — the original color you wanted, not blue",
+        "Prizm logo in the top bar now has a transparent background (no white tile)",
+        "Inbox strip no longer flashes stale items for a frame on cold launch — steady from the first paint",
+        "Backend: /api/inbox endpoint deployed so the Approvals / Tasks / Mentions / Compliance icons actually pull real data instead of always saying \"All caught up\"",
+        "Backend: /api/my/payslips and /api/my/leave/balance HTTP 500 collation errors fixed"
+      ]
+    },
+    {
       "title": "Real Prizm logo + welcome card on the Dashboard",
       "highlights": [
         "The flash placeholder in the top-left is replaced with the actual Prizm brand mark",

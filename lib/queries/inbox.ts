@@ -87,6 +87,11 @@ export function useInbox() {
     queryFn: fetchInbox,
     staleTime: 30 * 1000,
     refetchInterval: POLL_MS,
+    // Without this, the cached data from the previous session renders for a
+    // frame on cold launch before the refetch resolves — items flash in and
+    // disappear. placeholderData makes the first render use EMPTY instead
+    // of cached, so the strip is steady until real data arrives.
+    placeholderData: EMPTY,
     // Don't burn battery polling when the app is backgrounded — React
     // Query's default behaviour pauses refetch on app blur (we wired
     // wireAppStateFocus() in query-client).

@@ -139,7 +139,7 @@ export function UpdatePrompt() {
           paddingTop: insets.top + 6,
           paddingHorizontal: 12,
           paddingBottom: 10,
-          backgroundColor: "#0284C7",
+          backgroundColor: "#F59E0B",
           shadowColor: "#000",
           shadowOpacity: 0.18,
           shadowOffset: { width: 0, height: 4 },
@@ -191,7 +191,7 @@ export function UpdatePrompt() {
                   marginRight: 6,
                 }}
               >
-                <Text style={{ color: "#0284C7", fontWeight: "700", fontSize: 12 }}>
+                <Text style={{ color: "#F59E0B", fontWeight: "700", fontSize: 12 }}>
                   Install
                 </Text>
               </TouchableOpacity>

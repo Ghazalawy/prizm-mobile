@@ -9,8 +9,10 @@ import {
   Image,
   Dimensions,
   Linking,
+  Platform,
 } from "react-native";
 import { useState, useMemo, useCallback, useRef } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
@@ -25,6 +27,12 @@ import {
   type InboxCategory,
   type InboxItem,
 } from "@/lib/queries/inbox";
+import {
+  inboxKey,
+  markRead,
+  markAllRead,
+  useReadInbox,
+} from "@/lib/inbox-read";
 
 /**
  * Top bar (Action Center) — pinned at the top of every authenticated screen.
@@ -153,10 +161,14 @@ async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number])
 
 function InboxRow({
   item,
+  unread,
   onRunAction,
   onClose,
 }: {
   item: InboxItem;
+  /** Pre-computed: parent does the lookup once per render against the
+   *  read-set so each row doesn't re-query the store. */
+  unread: boolean;
   onRunAction: (a: NonNullable<InboxItem["actions"]>[number]) => Promise<void>;
   /** Called before navigation so the floating popover doesn't linger
    *  behind the destination screen. */
@@ -176,11 +188,18 @@ function InboxRow({
    *                    requests today).
    *
    * Always closes the popover first — otherwise it sits on top of the
-   * destination screen and the user has to tap-out to dismiss.
+   * destination screen and the user has to tap-out to dismiss. Also
+   * marks the row as read so the bold/blue/dot styling drops away the
+   * next time the popover opens.
    */
   const handleTap = () => {
+    markRead(inboxKey(item.type, item.id));
     const link = item.deeplink;
-    if (!link) return;
+    if (!link) {
+      // No deeplink — closing on a "mark as seen" tap still feels right.
+      onClose();
+      return;
+    }
     onClose();
     if (link.startsWith("/(tabs)/")) {
       router.push(link as any);
@@ -207,15 +226,24 @@ function InboxRow({
       onPress={handleTap}
       android_ripple={{ color: "#E2E8F0" }}
       className="px-4 py-3 border-b border-slate-100"
+      // Unread = very light blue wash so the eye picks up "needs attention"
+      // at a glance. Read rows reset to white so the contrast does the work.
+      style={unread ? { backgroundColor: "#EFF6FF" } : undefined}
     >
       <View className="flex-row items-start gap-3">
-        <View
-          className="w-2 h-2 mt-2 rounded-full"
-          style={{ backgroundColor: priorityColor }}
-        />
+        {/* Unread dot — drops away once tapped. Reserve the slot when read
+            so the text doesn't jump horizontally between states. */}
+        {unread ? (
+          <View
+            className="w-2 h-2 mt-2 rounded-full"
+            style={{ backgroundColor: priorityColor }}
+          />
+        ) : (
+          <View className="w-2 mt-2" />
+        )}
         <View className="flex-1">
           <Text
-            className="text-sm font-medium text-foreground"
+            className={`text-sm ${unread ? "font-bold" : "font-normal"} text-foreground`}
             numberOfLines={2}
             style={rtlTextStyle(item.title)}
           >
@@ -223,7 +251,7 @@ function InboxRow({
           </Text>
           {item.subtitle ? (
             <Text
-              className="text-xs text-muted mt-0.5"
+              className={`text-xs mt-0.5 ${unread ? "text-foreground/80" : "text-muted"}`}
               numberOfLines={1}
               style={rtlTextStyle(item.subtitle)}
             >
@@ -296,16 +324,44 @@ export function ActionCenter() {
   const qc = useQueryClient();
   const user = useCurrentUser();
   const [avatarBroken, setAvatarBroken] = useState(false);
+  const insets = useSafeAreaInsets();
+  const readKeys = useReadInbox();
+  // On Android, Modal with statusBarTranslucent=true uses window-absolute
+  // coords (same as measureInWindow). On iOS, Modal already uses window
+  // coords. So no offset needed in either case — but if a device reports
+  // a custom translucent status bar height that React Native didn't pick
+  // up via insets.top, fall back to StatusBar.currentHeight as a safety
+  // net for the popover y math.
+  const statusBarOffset = useMemo(() => {
+    if (Platform.OS !== "android") return 0;
+    // React Native's measureInWindow on Android returns coords FROM THE TOP
+    // of the window. With statusBarTranslucent=true, the Modal's coord
+    // space also starts at the top of the window. So we don't subtract.
+    // But on some devices/RN versions measure returns coords excluding
+    // the status bar — in that case insets.top compensates.
+    return 0;
+  }, [insets.top]);
 
-  const counts = useMemo(
-    () => ({
-      approvals: q.data?.summary.approvals ?? 0,
-      tasks: q.data?.summary.tasks ?? 0,
-      mentions: q.data?.summary.mentions ?? 0,
-      compliance: q.data?.summary.compliance ?? 0,
-    }),
-    [q.data]
-  );
+  // Badge counts reflect *unread* (still-needs-attention) items, not the
+  // raw inbox size. Once the user taps an item it stops contributing to
+  // the red badge — matches every notification UI on the planet, and
+  // matches the user's expectation that reading clears the dot.
+  const counts = useMemo(() => {
+    const unreadFor = (cat: InboxCategory): number => {
+      const rows = q.data?.[cat] ?? [];
+      let n = 0;
+      for (const it of rows) {
+        if (!readKeys.has(inboxKey(it.type, it.id))) n++;
+      }
+      return n;
+    };
+    return {
+      approvals: unreadFor("approvals"),
+      tasks: unreadFor("tasks"),
+      mentions: unreadFor("mentions"),
+      compliance: unreadFor("compliance"),
+    };
+  }, [q.data, readKeys]);
 
   const total = counts.approvals + counts.tasks + counts.mentions + counts.compliance;
   const itemsForOpen: InboxItem[] = openCategory ? (q.data?.[openCategory] ?? []) : [];
@@ -339,8 +395,26 @@ export function ActionCenter() {
   const avatarUrl = staffAvatarUrl(user?.staffid, user?.profile_image, "thumb");
 
   // Popover anchor math — center under the tapped icon, clipped to screen.
+  //
+  // measureInWindow returns coords in the same space the Modal renders in
+  // (when statusBarTranslucent=true the Modal covers the full window, so
+  // anchor.y is correct as-is). On older Android builds without
+  // statusBarTranslucent, the Modal positions BELOW the status bar — in
+  // that case we'd need to subtract insets.top from anchor.y. We use
+  // statusBarTranslucent below so the simple math works everywhere.
   const screenW = Dimensions.get("window").width;
-  const popoverTop = anchor ? anchor.y + anchor.h + POPOVER_GAP_FROM_ANCHOR : 0;
+  const screenH = Dimensions.get("window").height;
+  // Tail: the rough bottom edge of the bell icon in window coords. The
+  // gap is small (8px) so the popover visually "grows out of" the bell.
+  const anchorBottom = anchor ? anchor.y + anchor.h : 0;
+  const popoverTop = anchor
+    ? anchorBottom + POPOVER_GAP_FROM_ANCHOR + statusBarOffset
+    : 0;
+  // Cap maxHeight so the popover never spills under the bottom tab bar.
+  const popoverAvailableHeight = anchor
+    ? Math.max(220, screenH - popoverTop - 80)
+    : POPOVER_MAX_HEIGHT;
+  const popoverEffectiveMaxHeight = Math.min(POPOVER_MAX_HEIGHT, popoverAvailableHeight);
   const popoverLeft = anchor
     ? Math.max(
         POPOVER_SCREEN_MARGIN,
@@ -351,9 +425,22 @@ export function ActionCenter() {
       )
     : 0;
   // X-position of the little arrow pointing at the icon, relative to popover.
+  // Clamp so it stays visually attached to the popover edge even when the
+  // bell is in the far-right corner (popover is left-clipped).
   const arrowLeft = anchor
-    ? Math.max(12, Math.min(POPOVER_WIDTH - 24, anchor.x + anchor.w / 2 - popoverLeft - 6))
+    ? Math.max(12, Math.min(POPOVER_WIDTH - 24, anchor.x + anchor.w / 2 - popoverLeft - 7))
     : 0;
+
+  // Compute unread counts per category once per render so each row doesn't
+  // run an O(n) lookup. Also drives the "Mark all read" affordance.
+  const unreadInOpen = openCategory
+    ? itemsForOpen.filter((it) => !readKeys.has(inboxKey(it.type, it.id))).length
+    : 0;
+  const markAllOpenRead = useCallback(() => {
+    if (!openCategory) return;
+    const keys = itemsForOpen.map((it) => inboxKey(it.type, it.id));
+    markAllRead(keys);
+  }, [openCategory, itemsForOpen]);
 
   return (
     <>
@@ -444,6 +531,13 @@ export function ActionCenter() {
         transparent
         animationType="fade"
         onRequestClose={closePopover}
+        // CRITICAL: with statusBarTranslucent the Modal covers the whole
+        // window. measureInWindow returns window-absolute coords, so the
+        // popover's "top" lines up with the bell's actual on-screen y. The
+        // previous behaviour (Modal positioned below the status bar) made
+        // the popover paint ON TOP of the bell on devices where the status
+        // bar height differed from RN's default inset.
+        statusBarTranslucent={Platform.OS === "android"}
       >
         <Pressable
           onPress={closePopover}
@@ -459,7 +553,7 @@ export function ActionCenter() {
               top: popoverTop,
               left: popoverLeft,
               width: POPOVER_WIDTH,
-              maxHeight: POPOVER_MAX_HEIGHT,
+              maxHeight: popoverEffectiveMaxHeight,
             }}
           >
             {/* Little arrow pointing up at the icon */}
@@ -488,7 +582,7 @@ export function ActionCenter() {
                 shadowRadius: 16,
                 elevation: 12,
                 overflow: "hidden",
-                maxHeight: POPOVER_MAX_HEIGHT,
+                maxHeight: popoverEffectiveMaxHeight,
               }}
             >
               <View
@@ -502,7 +596,7 @@ export function ActionCenter() {
                   borderBottomColor: "#E2E8F0",
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6, flex: 1 }}>
                   <Ionicons
                     name={CATEGORIES.find((c) => c.key === openCategory)!.icon}
                     size={16}
@@ -513,6 +607,18 @@ export function ActionCenter() {
                   </Text>
                   <Text className="text-xs text-muted">({itemsForOpen.length})</Text>
                 </View>
+                {unreadInOpen > 0 ? (
+                  <TouchableOpacity
+                    onPress={markAllOpenRead}
+                    hitSlop={6}
+                    style={{ marginRight: 10 }}
+                    accessibilityLabel={`Mark all ${unreadInOpen} as read`}
+                  >
+                    <Text className="text-[11px] font-medium text-primary">
+                      Mark all read
+                    </Text>
+                  </TouchableOpacity>
+                ) : null}
                 <TouchableOpacity onPress={closePopover} hitSlop={8}>
                   <Ionicons name="close" size={18} color="#64748B" />
                 </TouchableOpacity>
@@ -523,11 +629,12 @@ export function ActionCenter() {
                   <Text className="text-xs text-muted mt-2">Nothing here yet</Text>
                 </View>
               ) : (
-                <ScrollView style={{ maxHeight: POPOVER_MAX_HEIGHT - 50 }}>
+                <ScrollView style={{ maxHeight: popoverEffectiveMaxHeight - 50 }}>
                   {itemsForOpen.map((it) => (
                     <InboxRow
                       key={`${it.type}-${it.id}`}
                       item={it}
+                      unread={!readKeys.has(inboxKey(it.type, it.id))}
                       onRunAction={runAction}
                       onClose={closePopover}
                     />

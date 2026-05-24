@@ -21,11 +21,13 @@ import {
 import {
   DEFAULT_LAYOUT,
   getLayout,
+  setLayout,
   visibleCards,
   type DashboardCardKey,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
 import { clearDismissedUpdate } from "@/lib/updates";
+import { DraggableDashboardGrid } from "@/components/DraggableDashboardGrid";
 
 type StatCardProps = {
   title: string;
@@ -40,12 +42,27 @@ type StatCardProps = {
   footnote?: string;
 };
 
-function StatCard({ title, value, icon, color, isLoading, isError, onPress, footnote }: StatCardProps) {
+function StatCard({
+  title,
+  value,
+  icon,
+  color,
+  isLoading,
+  isError,
+  onPress,
+  footnote,
+  isDragging,
+}: StatCardProps & { isDragging?: boolean }) {
   return (
     <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.6}
-      className="bg-white rounded-2xl p-5 flex-1 min-w-[45%] m-1.5 shadow-sm"
+      // Suppress tap when the chip is mid-drag so finger-up after a drag
+      // doesn't accidentally navigate.
+      onPress={isDragging ? undefined : onPress}
+      activeOpacity={isDragging ? 1 : 0.6}
+      // Margin/min-width handled by the draggable grid's wrapper now —
+      // we keep flex:1 so the card fills its slot.
+      className="bg-white rounded-2xl p-5 flex-1 shadow-sm"
+      style={isDragging ? { opacity: 0.95 } : undefined}
     >
       <View className="flex-row items-center justify-between mb-3">
         <View
@@ -141,13 +158,12 @@ export default function DashboardScreen() {
     setRefreshing(false);
   }, [projects, tasksSummary, leads, invoices, customers, reloadLayout]);
 
-  // Map a card key to a fully-configured StatCard element.
-  const renderCard = (key: DashboardCardKey) => {
+  // Map a card key + drag-state to a fully-configured StatCard element.
+  const renderCard = (key: DashboardCardKey, isDragging: boolean) => {
     switch (key) {
       case "tasks_summary":
         return (
           <StatCard
-            key="tasks_summary"
             title="My Tasks"
             value={tasksSummary.data?.total_open}
             icon="checkbox-outline"
@@ -156,12 +172,12 @@ export default function DashboardScreen() {
             isError={tasksSummary.isError}
             onPress={() => router.push("/(tabs)/tasks" as any)}
             footnote={buildTasksFootnote(tasksSummary.data)}
+            isDragging={isDragging}
           />
         );
       case "projects":
         return (
           <StatCard
-            key="projects"
             title="Active Projects"
             value={projects.data as number | undefined}
             icon="folder-outline"
@@ -169,12 +185,12 @@ export default function DashboardScreen() {
             isLoading={projects.isLoading}
             isError={projects.isError}
             onPress={() => router.push("/(tabs)/erp/projects" as any)}
+            isDragging={isDragging}
           />
         );
       case "customers":
         return (
           <StatCard
-            key="customers"
             title="Customers"
             value={customers.data as number | undefined}
             icon="business-outline"
@@ -182,12 +198,12 @@ export default function DashboardScreen() {
             isLoading={customers.isLoading}
             isError={customers.isError}
             onPress={() => router.push("/(tabs)/customers" as any)}
+            isDragging={isDragging}
           />
         );
       case "leads":
         return (
           <StatCard
-            key="leads"
             title="Total Leads"
             value={leads.data as number | undefined}
             icon="people-outline"
@@ -195,12 +211,12 @@ export default function DashboardScreen() {
             isLoading={leads.isLoading}
             isError={leads.isError}
             onPress={() => router.push("/(tabs)/erp/leads" as any)}
+            isDragging={isDragging}
           />
         );
       case "invoices":
         return (
           <StatCard
-            key="invoices"
             title="Invoices"
             value={invoices.data as number | undefined}
             icon="document-text-outline"
@@ -208,6 +224,7 @@ export default function DashboardScreen() {
             isLoading={invoices.isLoading}
             isError={invoices.isError}
             onPress={() => router.push("/(tabs)/erp/invoices" as any)}
+            isDragging={isDragging}
           />
         );
       default:
@@ -216,6 +233,34 @@ export default function DashboardScreen() {
   };
 
   const cards = visibleCards(layout);
+
+  // Drop handler — the draggable grid hands us only the visible cards in
+  // their new order. We need to splice them back into the full `order`
+  // (preserving the position of hidden cards) before persisting.
+  const handleReorder = useCallback(
+    (nextVisible: DashboardCardKey[]) => {
+      const hiddenSet = new Set(layout.hidden);
+      const result: DashboardCardKey[] = [];
+      let vIdx = 0;
+      for (const k of layout.order) {
+        if (hiddenSet.has(k)) {
+          result.push(k);
+        } else {
+          result.push(nextVisible[vIdx]);
+          vIdx++;
+        }
+      }
+      // Add any keys that were in nextVisible but not in layout.order
+      // (defensive; shouldn't normally happen).
+      for (const k of nextVisible) {
+        if (!result.includes(k)) result.push(k);
+      }
+      const next = { ...layout, order: result };
+      setLocalLayout(next);
+      setLayout(next).catch(() => undefined);
+    },
+    [layout]
+  );
 
   return (
     <ScrollView
@@ -234,27 +279,36 @@ export default function DashboardScreen() {
           className="flex-row items-center px-2 py-1 rounded-lg"
         >
           <Ionicons name="options-outline" size={16} color="#0284C7" />
-          <Text className="text-xs font-medium text-primary ml-1">Customize</Text>
+          <Text className="text-xs font-medium text-primary ml-1">Show / Hide</Text>
         </TouchableOpacity>
       </View>
-      <Text className="text-sm text-muted mb-4">Tap any tile to drill in</Text>
+      <Text className="text-sm text-muted mb-4">
+        Tap any tile to drill in · long-press to rearrange
+      </Text>
 
-      <View className="flex-row flex-wrap -mx-1.5">{cards.map(renderCard)}</View>
-
-      {cards.length === 0 ? (
+      {cards.length > 0 ? (
+        <DraggableDashboardGrid<DashboardCardKey>
+          items={cards}
+          renderItem={renderCard}
+          onReorder={handleReorder}
+        />
+      ) : (
         <View className="mt-8 px-4 items-center">
           <Ionicons name="grid-outline" size={48} color="#CBD5E1" />
           <Text className="text-sm text-muted mt-2 text-center">
-            You've hidden every dashboard card.{"\n"}Tap Customize to bring some back.
-          </Text>
-        </View>
-      ) : (
-        <View className="mt-6 px-2">
-          <Text className="text-xs text-muted leading-relaxed">
-            Pull down to refresh counts. Tap a tile to see the list and drill into any record.
+            You've hidden every dashboard card.{"\n"}Tap Show / Hide to bring some back.
           </Text>
         </View>
       )}
+
+      {cards.length > 0 ? (
+        <View className="mt-6 px-2">
+          <Text className="text-xs text-muted leading-relaxed">
+            Pull down to refresh counts. Tap a tile to see the list, or long-press
+            to drag tiles into a new order.
+          </Text>
+        </View>
+      ) : null}
     </ScrollView>
   );
 }

@@ -1,7 +1,16 @@
 import { useLocalSearchParams } from "expo-router";
-import { CrudDetailScreen } from "@/components/crud/CrudDetailScreen";
+import { TaskDetailScreen } from "@/components/tasks/TaskDetailScreen";
 
-export default function TaskDetailScreen() {
+/**
+ * Task detail route.
+ *
+ * Tasks get a bespoke layout (TaskDetailScreen) instead of the generic
+ * CrudDetailScreen used by other modules — see TaskDetailScreen.tsx for
+ * the rationale. Every other module's [id].tsx still routes through the
+ * generic screen.
+ */
+export default function TaskDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <CrudDetailScreen moduleKey="tasks" id={id} basePath="/(tabs)/tasks" />;
+  if (!id) return null;
+  return <TaskDetailScreen id={id} />;
 }

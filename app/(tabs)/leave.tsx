@@ -123,31 +123,38 @@ export default function LeaveScreen() {
           ) : balance.isError ? (
             <Text className="text-sm text-rose-600">Could not load balance</Text>
           ) : balance.data && balance.data.balance.length > 0 ? (
-            balance.data.balance.map((b) => (
-              <View key={b.type_id} className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                <View className="flex-1">
-                  <Text className="text-sm font-medium text-foreground">{b.type_name}</Text>
-                  <Text className="text-xs text-muted">
-                    {b.used_days} of {b.max_days} used
-                  </Text>
-                </View>
-                <View
-                  className="px-3 py-1.5 rounded-full"
-                  style={{
-                    backgroundColor: b.remaining > 5 ? "#D1FAE5" : b.remaining > 0 ? "#FEF3C7" : "#FEE2E2",
-                  }}
-                >
-                  <Text
-                    className="text-sm font-bold"
+            balance.data.balance.map((b) => {
+              const hasCap = b.max_days !== null && b.remaining !== null;
+              return (
+                <View key={b.type_id} className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-0">
+                  <View className="flex-1">
+                    <Text className="text-sm font-medium text-foreground">{b.type_name}</Text>
+                    <Text className="text-xs text-muted">
+                      {hasCap ? `${b.used_days} of ${b.max_days} used` : `${b.used_days} day(s) used`}
+                    </Text>
+                  </View>
+                  <View
+                    className="px-3 py-1.5 rounded-full"
                     style={{
-                      color: b.remaining > 5 ? "#16A34A" : b.remaining > 0 ? "#B45309" : "#DC2626",
+                      backgroundColor: hasCap
+                        ? (b.remaining! > 5 ? "#D1FAE5" : b.remaining! > 0 ? "#FEF3C7" : "#FEE2E2")
+                        : "#F1F5F9",
                     }}
                   >
-                    {b.remaining} days
-                  </Text>
+                    <Text
+                      className="text-sm font-bold"
+                      style={{
+                        color: hasCap
+                          ? (b.remaining! > 5 ? "#16A34A" : b.remaining! > 0 ? "#B45309" : "#DC2626")
+                          : "#475569",
+                      }}
+                    >
+                      {hasCap ? `${b.remaining} days` : `${b.used_days} used`}
+                    </Text>
+                  </View>
                 </View>
-              </View>
-            ))
+              );
+            })
           ) : (
             <Text className="text-sm text-muted">No leave types configured</Text>
           )}

@@ -240,9 +240,12 @@ export const TYPE_OF_LEAVE = [
 export type LeaveBalance = {
   type_id: number;
   type_name: string;
-  max_days: number;
+  /** null when no per-type cap is configured in the source DB —
+   *  the schema's tbltimesheets_type_of_leave has no max_day column. */
+  max_days: number | null;
   used_days: number;
-  remaining: number;
+  /** null when max_days is null (no cap → "remaining" is undefined). */
+  remaining: number | null;
 };
 
 export type LeaveRequest = {

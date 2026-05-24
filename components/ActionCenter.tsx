@@ -332,15 +332,15 @@ export function ActionCenter() {
   // a custom translucent status bar height that React Native didn't pick
   // up via insets.top, fall back to StatusBar.currentHeight as a safety
   // net for the popover y math.
-  const statusBarOffset = useMemo(() => {
-    if (Platform.OS !== "android") return 0;
-    // React Native's measureInWindow on Android returns coords FROM THE TOP
-    // of the window. With statusBarTranslucent=true, the Modal's coord
-    // space also starts at the top of the window. So we don't subtract.
-    // But on some devices/RN versions measure returns coords excluding
-    // the status bar — in that case insets.top compensates.
-    return 0;
-  }, [insets.top]);
+  // Empirically on Android with statusBarTranslucent={true} on the Modal:
+  //   - Modal coord origin is at SCREEN top (y=0 = under status bar)
+  //   - But measureInWindow() returns the bell's y WITHOUT the status bar
+  //     offset (window = below status bar in the parent activity layout)
+  //   - So we add insets.top to anchor.y so the popover lands BELOW the
+  //     bell, not behind the status bar.
+  // On iOS this isn't a problem (insets.top is the safe-area top, Modal
+  // doesn't change coord systems).
+  const statusBarOffset = Platform.OS === "android" ? insets.top : 0;
 
   // Badge counts reflect *unread* (still-needs-attention) items, not the
   // raw inbox size. Once the user taps an item it stops contributing to

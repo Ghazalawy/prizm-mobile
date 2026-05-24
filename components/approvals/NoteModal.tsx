@@ -10,6 +10,7 @@ import {
   View,
 } from "react-native";
 import { useEffect, useState } from "react";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 
 /**
@@ -48,6 +49,7 @@ export function NoteModal({
   onConfirm: (note: string) => void;
 }) {
   const [note, setNote] = useState("");
+  const insets = useSafeAreaInsets();
 
   // Reset the field every time the modal re-opens so the user doesn't see
   // a stale note from a previous action.
@@ -88,6 +90,12 @@ export function NoteModal({
       animationType="slide"
       onRequestClose={onCancel}
       statusBarTranslucent={Platform.OS === "android"}
+      // navigationBarTranslucent on Android (RN 0.74+) lets the Modal
+      // draw under the system nav bar so our own paddingBottom (insets.bottom)
+      // is the SOLE thing keeping the action buttons clear of the nav bar.
+      // Without this, the OS draws an opaque nav bar over the modal and
+      // hides the Approve/Cancel buttons.
+      navigationBarTranslucent={Platform.OS === "android"}
     >
       {/* Backdrop — tap to dismiss (unless busy). */}
       <Pressable
@@ -107,7 +115,12 @@ export function NoteModal({
             borderTopRightRadius: 22,
             paddingHorizontal: 18,
             paddingTop: 14,
-            paddingBottom: 22,
+            // Bottom padding = visual gap + the device's bottom safe-area
+            // inset (nav bar / gesture pill). Without insets.bottom the
+            // Approve/Cancel buttons sink behind the Android nav bar on
+            // 3-button-nav phones AND under the gesture pill on
+            // gesture-nav phones. 16px floor for devices with zero inset.
+            paddingBottom: Math.max(16, insets.bottom) + 12,
             shadowColor: "#000",
             shadowOpacity: 0.15,
             shadowRadius: 14,

@@ -259,9 +259,13 @@ export default function PurchaseRequestApprovalScreen() {
           currentStatusID={viewer.current_status}
         />
 
-        {/* Action panel (web fallback for v1) */}
+        {/* Action panel — real native Approve / Reject buttons.
+            The note typed in the modal appears under the stamp in
+            ApprovalTimeline once the mutation succeeds and the parent
+            query re-fetches. */}
         <ApprovalActionPanel
           isCurrentApprover={viewer.is_current_approver}
+          requestId={request.id}
           webFallbackPath={`przpurchase/ag_view_purchase_request/${request.id}`}
         />
       </ScrollView>

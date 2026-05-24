@@ -29,6 +29,12 @@ export type HistoryItem = {
   status: string; // 'Approved' / 'Rejected' / 'Partial Approved' / ...
   approver_name?: string | null;
   addeddate?: string | null;
+  /** Optional note the approver typed under the green/red stamp.
+   *  - approve: optional approval comment
+   *  - reject:  required rejection reason (also surfaced via
+   *    `rejection_reason` for back-compat with old web-recorded data) */
+  note?: string | null;
+  rejection_reason?: string | null;
 };
 
 export function ApprovalTimeline({
@@ -133,10 +139,41 @@ export function ApprovalTimeline({
                   {s.status_name || `Stage ${s.id}`}
                 </Text>
                 {past ? (
-                  <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
-                    {stateLabel} — {past.approver_name?.trim() || `staff #${past.approver}`}
-                    {dateLabel ? ` · ${dateLabel}` : ""}
-                  </Text>
+                  <>
+                    <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
+                      {stateLabel} — {past.approver_name?.trim() || `staff #${past.approver}`}
+                      {dateLabel ? ` · ${dateLabel}` : ""}
+                    </Text>
+                    {/* Approver's typed signature note under the colored
+                        stamp — required for rejections, optional for
+                        approvals. Reads `note` (new unified column) or
+                        falls back to `rejection_reason` for rows recorded
+                        via the web admin before v2.0.4. */}
+                    {(past.note?.trim() || past.rejection_reason?.trim()) ? (
+                      <View
+                        style={{
+                          marginTop: 4,
+                          paddingHorizontal: 8,
+                          paddingVertical: 6,
+                          borderRadius: 8,
+                          backgroundColor: color === "#DC2626" ? "#FEF2F2" : "#F0FDF4",
+                          borderLeftWidth: 3,
+                          borderLeftColor: color,
+                        }}
+                      >
+                        <Text
+                          style={{
+                            fontSize: 12,
+                            color: "#0F172A",
+                            lineHeight: 16,
+                            fontStyle: "italic",
+                          }}
+                        >
+                          "{(past.note?.trim() || past.rejection_reason?.trim())}"
+                        </Text>
+                      </View>
+                    ) : null}
+                  </>
                 ) : isCurrent ? (
                   <Text className="text-xs text-muted mt-0.5" numberOfLines={2}>
                     Awaiting{" "}

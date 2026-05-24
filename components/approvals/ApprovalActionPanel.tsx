@@ -1,34 +1,114 @@
-import { View, Text, TouchableOpacity, Linking, Alert } from "react-native";
+import { ActivityIndicator, Alert, Linking, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { BASE_URL } from "@/lib/config";
+import { useCallback, useState } from "react";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { API_URL, BASE_URL } from "@/lib/config";
+import { getAuthToken } from "@/lib/auth";
+import { parseApiResponse } from "@/lib/api";
+import Toast from "react-native-toast-message";
+import { NoteModal, type NoteMode } from "./NoteModal";
 
 /**
- * Bottom action panel for an approval screen.
+ * Bottom action panel for a Purchase Request approval screen.
  *
- * v1 ships READ-ONLY: the actual approve/reject mutation requires the
- * web-side multi-stage advancement logic (which is too intertwined to
- * reimplement in one batch). For now we surface a clear "Approve in web"
- * fallback link plus a one-line note so users know native action is
- * coming. When the mutation endpoints land, swap this for two real
- * buttons + a note modal.
+ * v2 (this file) ships the REAL native approve/reject flow:
+ *   - "Approve" → opens NoteModal in approve-mode (note optional) →
+ *     POST /api/purchase_api/requests/{id}/approve { note? }
+ *   - "Reject"  → opens NoteModal in reject-mode  (note REQUIRED, 3+) →
+ *     POST /api/purchase_api/requests/{id}/reject  { note }
+ *
+ * On success: toast + invalidate the cached PR approval state so the
+ * parent screen redraws with the new stamp + the typed note under it.
+ *
+ * On failure: toast with the server message. The web-fallback link is
+ * kept as a tiny last-resort affordance for the rare edge case where
+ * the mobile endpoint returns 5xx — but it's no longer the primary
+ * action.
+ *
+ * Auth: backend enforces "you are the current approver for this PR's
+ * active stage" (via prz_purchase_request_statusdetail.is_current_status
+ * = 1 AND approver = caller). We additionally hide the buttons entirely
+ * for viewers who aren't currently the approver — the same flag the old
+ * read-only banner used.
  */
 export function ApprovalActionPanel({
   isCurrentApprover,
   webFallbackPath,
+  requestId,
 }: {
   isCurrentApprover: boolean;
-  /** Perfex web URL fragment for the "Open in web" link, relative to /MS/admin/. */
+  /** Perfex web URL fragment for the rare "Open in web" backup link,
+   *  relative to /MS/admin/. */
   webFallbackPath: string;
+  /** PR id — used by the approve/reject endpoint. */
+  requestId: number;
 }) {
-  const openInWeb = async () => {
+  const qc = useQueryClient();
+  const [modal, setModal] = useState<NoteMode | null>(null);
+
+  const mutation = useMutation({
+    mutationFn: async ({ kind, note }: { kind: NoteMode; note: string }) => {
+      const token = await getAuthToken();
+      const res = await fetch(
+        `${API_URL}/purchase_api/requests/${encodeURIComponent(String(requestId))}/${kind}`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { authtoken: token } : {}),
+          },
+          body: JSON.stringify({ note }),
+        },
+      );
+      const { body, invalidToken } = await parseApiResponse(res, !!token);
+      if (invalidToken) throw new Error("Session expired");
+      if (!res.ok) {
+        const msg =
+          (typeof body === "object" && body?.message) ||
+          (typeof body === "string" ? body : null) ||
+          `HTTP ${res.status}`;
+        throw new Error(String(msg).slice(0, 220));
+      }
+      if (body && body.status === false) {
+        throw new Error(body.message || "Action failed");
+      }
+      return body;
+    },
+    onSuccess: (_data, vars) => {
+      Toast.show({
+        type: "success",
+        text1: vars.kind === "approve" ? "Approved ✓" : "Rejected",
+        text2:
+          vars.kind === "approve"
+            ? "The next approver has been notified."
+            : "Reason recorded.",
+      });
+      setModal(null);
+      // Refresh both the approval-state query (drives the timeline) and
+      // the inbox (so the approval badge decrements). Key matches the
+      // shape used by lib/queries/purchase-request.ts.
+      qc.invalidateQueries({ queryKey: ["purchase_request_approval", requestId] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+    },
+    onError: (err: any) => {
+      Toast.show({
+        type: "error",
+        text1: "Action failed",
+        text2: err?.message?.slice(0, 140) ?? "Please try again.",
+      });
+    },
+  });
+
+  const openInWeb = useCallback(async () => {
     const url = `${BASE_URL}/MS/admin/${webFallbackPath.replace(/^\/+/, "")}`;
     try {
       await Linking.openURL(url);
     } catch {
       Alert.alert("Unable to open web", "Browser couldn't open the link.");
     }
-  };
+  }, [webFallbackPath]);
 
+  // Non-approver view stays unchanged — eye-only banner.
   if (!isCurrentApprover) {
     return (
       <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm flex-row items-center">
@@ -42,21 +122,90 @@ export function ApprovalActionPanel({
 
   return (
     <View className="bg-white rounded-2xl px-4 py-4 mb-3 shadow-sm">
-      <Text className="text-xs uppercase tracking-wide text-muted mb-2">
+      <Text className="text-xs uppercase tracking-wide text-muted mb-3">
         Your action
       </Text>
-      <Text className="text-sm text-foreground leading-relaxed mb-3">
-        Native approve / reject is coming in the next update. For now, open
-        this request in the web app to act on it.
-      </Text>
+
+      <View className="flex-row">
+        {/* Approve — green primary action */}
+        <TouchableOpacity
+          onPress={() => setModal("approve")}
+          disabled={mutation.isPending}
+          activeOpacity={0.85}
+          style={{
+            flex: 1,
+            paddingVertical: 13,
+            borderRadius: 12,
+            backgroundColor: "#16A34A",
+            alignItems: "center",
+            flexDirection: "row",
+            justifyContent: "center",
+            marginRight: 8,
+            opacity: mutation.isPending ? 0.7 : 1,
+          }}
+        >
+          {mutation.isPending && mutation.variables?.kind === "approve" ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <>
+              <Ionicons name="checkmark-done-circle-outline" size={18} color="white" />
+              <Text className="text-white font-semibold ml-1.5">Approve</Text>
+            </>
+          )}
+        </TouchableOpacity>
+
+        {/* Reject — red secondary action */}
+        <TouchableOpacity
+          onPress={() => setModal("reject")}
+          disabled={mutation.isPending}
+          activeOpacity={0.85}
+          style={{
+            flex: 1,
+            paddingVertical: 13,
+            borderRadius: 12,
+            backgroundColor: "#DC2626",
+            alignItems: "center",
+            flexDirection: "row",
+            justifyContent: "center",
+            opacity: mutation.isPending ? 0.7 : 1,
+          }}
+        >
+          {mutation.isPending && mutation.variables?.kind === "reject" ? (
+            <ActivityIndicator color="white" />
+          ) : (
+            <>
+              <Ionicons name="close-circle-outline" size={18} color="white" />
+              <Text className="text-white font-semibold ml-1.5">Reject</Text>
+            </>
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* Tiny tertiary fallback — only here for the rare 5xx case where
+          a stage's underlying state is corrupt and only the web admin
+          can untangle it. Most users will never tap this. */}
       <TouchableOpacity
         onPress={openInWeb}
-        activeOpacity={0.85}
-        className="flex-row items-center justify-center bg-primary rounded-xl py-3"
+        activeOpacity={0.7}
+        className="mt-3 self-center flex-row items-center"
       >
-        <Ionicons name="open-outline" size={18} color="#FFFFFF" />
-        <Text className="text-white font-semibold ml-2">Approve in web</Text>
+        <Ionicons name="open-outline" size={12} color="#94A3B8" />
+        <Text className="text-[11px] text-muted ml-1">Open in web admin</Text>
       </TouchableOpacity>
+
+      <NoteModal
+        visible={modal !== null}
+        mode={modal ?? "approve"}
+        busy={mutation.isPending}
+        onCancel={() => {
+          if (!mutation.isPending) setModal(null);
+        }}
+        onConfirm={(note) => {
+          if (modal) {
+            mutation.mutate({ kind: modal, note });
+          }
+        }}
+      />
     </View>
   );
 }

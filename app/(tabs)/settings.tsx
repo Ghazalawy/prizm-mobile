@@ -99,9 +99,9 @@ function ProfileHero() {
       </View>
       {joinedSince ? (
         <View className="flex-row items-center mt-4 pt-4 border-t border-slate-100">
-          <Ionicons name="business-outline" size={14} color="#64748B" />
+          <Ionicons name="ribbon-outline" size={14} color="#64748B" />
           <Text className="text-xs text-muted ml-2">
-            Joined Prizm Energy on {joinedSince}
+            Member since {joinedSince}
           </Text>
         </View>
       ) : staffid ? (
@@ -297,7 +297,7 @@ export default function SettingsScreen() {
             <Text className="text-foreground font-medium">Version</Text>
             <Text className="text-muted text-sm mt-1">{BUILD_VERSION}</Text>
             {BUILD_TIME !== "dev" ? (
-              <Text className="text-muted text-xs mt-0.5">Built {BUILD_TIME}</Text>
+              <Text className="text-muted text-xs mt-0.5">Released {BUILD_TIME}</Text>
             ) : null}
             {BUILD_SHA !== "dev" ? (
               <Text className="text-muted text-xs mt-0.5">Build {BUILD_SHA}</Text>

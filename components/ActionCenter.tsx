@@ -90,16 +90,16 @@ function HeaderIcon({
         hitSlop={6}
         accessibilityLabel={`${meta.label}${count > 0 ? `, ${count} pending` : ""}`}
         style={{
-          width: 36,
-          height: 36,
+          width: 44,
+          height: 44,
           alignItems: "center",
           justifyContent: "center",
-          marginLeft: 2,
+          marginLeft: 4,
         }}
       >
         <Ionicons
           name={meta.icon}
-          size={22}
+          size={24}
           color={hot ? meta.color : "#475569"}
         />
         {hot ? (
@@ -354,20 +354,27 @@ export function ActionCenter() {
           web and mobile. */}
       <View
         className="flex-row items-center bg-white border-b border-slate-200"
-        style={{ minHeight: 48, paddingHorizontal: 12 }}
+        style={{ minHeight: 56, paddingHorizontal: 12 }}
       >
-        {/* Left: brand */}
-        <View className="flex-row items-center flex-1">
+        {/* Left: brand — logo + "PRIZM ENERGY" wordmark, the whole block
+            bounces back to Home so the user can always escape to dashboard. */}
+        <Pressable
+          onPress={() => router.push("/(tabs)/" as any)}
+          accessibilityRole="link"
+          accessibilityLabel="Home"
+          className="flex-row items-center flex-1"
+          hitSlop={6}
+        >
           <Image
             source={require("@/assets/images/prizm_logo.png")}
-            style={{ width: 30, height: 30, marginRight: 8 }}
+            style={{ width: 34, height: 34, marginRight: 8 }}
             resizeMode="contain"
           />
           <Text
             className="text-base font-bold text-foreground"
-            style={{ letterSpacing: 0.2 }}
+            style={{ letterSpacing: 0.5 }}
           >
-            Prizm
+            PRIZM ENERGY
           </Text>
           {q.isFetching && total > 0 ? (
             <ActivityIndicator
@@ -376,7 +383,7 @@ export function ActionCenter() {
               style={{ marginLeft: 8 }}
             />
           ) : null}
-        </View>
+        </Pressable>
 
         {/* Right: action icons + profile avatar */}
         <View className="flex-row items-center">

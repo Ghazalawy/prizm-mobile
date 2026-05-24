@@ -6,17 +6,17 @@ import { Ionicons } from "@expo/vector-icons";
 import { ActionCenter } from "@/components/ActionCenter";
 
 /**
- * Bottom bar: Home / Customers / ERP / Settings.
+ * Bottom bar: Home / Tasks / ERP / Settings.
  *
  * - Home: dashboard summary tiles (counts)
- * - Customers: dedicated tab for the most-used module
- * - ERP: hub tab listing all 49 registered modules
- * - Settings
+ * - Tasks: my open tasks — primary daily-use surface
+ * - ERP: hub tab listing all 49 registered modules (Customers + everything else lives here)
+ * - Settings: profile + biometric + about
  *
- * Tasks / Projects / Leads / Invoices are reachable from dashboard tiles
- * (deep-link into the (tabs)/<module>/index.tsx route) but hidden from the
- * bottom bar via href:null. They use the same CrudListScreen/CrudDetailScreen
- * via the module-registry — no separate per-module code path.
+ * Other modules (Projects / Leads / Invoices / Customers) are reachable from
+ * dashboard tiles + the ERP hub but hidden from the bottom bar via href:null.
+ * They use the same CrudListScreen/CrudDetailScreen via the module-registry —
+ * no separate per-module code path.
  *
  * The update banner is rendered globally by <UpdatePrompt /> in the root
  * _layout.tsx, so it covers Login + Tabs + every screen.
@@ -67,11 +67,11 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="customers"
+          name="tasks"
           options={{
-            title: "Customers",
+            title: "Tasks",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="business-outline" size={size} color={color} />
+              <Ionicons name="checkbox-outline" size={size} color={color} />
             ),
           }}
         />
@@ -94,8 +94,10 @@ export default function TabLayout() {
           }}
         />
 
-        {/* Reachable via dashboard tile / router.push, hidden from bottom bar */}
-        <Tabs.Screen name="tasks"    options={{ href: null }} />
+        {/* Reachable via ERP hub / router.push, hidden from bottom bar */}
+        <Tabs.Screen name="customers" options={{ href: null }} />
+        <Tabs.Screen name="dashboard-customize" options={{ href: null }} />
+        <Tabs.Screen name="approvals" options={{ href: null }} />
         <Tabs.Screen name="projects" options={{ href: null }} />
         <Tabs.Screen name="leads"    options={{ href: null }} />
         <Tabs.Screen name="invoices" options={{ href: null }} />

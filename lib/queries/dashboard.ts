@@ -70,3 +70,46 @@ export const useCustomersCount = () =>
     queryFn: () => fetchCount("customers"),
     staleTime: FIVE_MIN,
   });
+
+// ─── My Tasks summary (Dashboard "My Tasks" tile) ────────────────────────
+
+export type MyTasksSummary = {
+  total_open: number;
+  not_started: number;
+  awaiting_feedback: number;
+  testing: number;
+  in_progress: number;
+  overdue: number;
+  stale: number;
+  completed_last_30d: number;
+};
+
+const EMPTY_SUMMARY: MyTasksSummary = {
+  total_open: 0,
+  not_started: 0,
+  awaiting_feedback: 0,
+  testing: 0,
+  in_progress: 0,
+  overdue: 0,
+  stale: 0,
+  completed_last_30d: 0,
+};
+
+async function fetchMyTasksSummary(): Promise<MyTasksSummary> {
+  const token = await getAuthToken();
+  const res = await fetch(`${API_URL}/my/tasks-summary`, {
+    headers: { ...(token ? { authtoken: token } : {}) },
+  });
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { ...EMPTY_SUMMARY, ...(body?.data || {}) };
+}
+
+export const useMyTasksSummary = () =>
+  useQuery({
+    queryKey: ["dashboard", "my-tasks-summary"],
+    queryFn: fetchMyTasksSummary,
+    staleTime: 60 * 1000, // fresher than the other tiles — this is "my" data
+    refetchInterval: 5 * 60 * 1000,
+  });

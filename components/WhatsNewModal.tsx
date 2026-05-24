@@ -8,7 +8,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
-import { BUILD_SHA, RELEASE_NOTES } from "@/lib/build-info";
+import { BUILD_SHA, BUILD_VERSION, RELEASE_NOTES } from "@/lib/build-info";
 
 /**
  * "What's new" modal shown once after each app update.
@@ -65,7 +65,7 @@ export function WhatsNewModal() {
                 <Ionicons name="sparkles" size={20} color="#FFFFFF" />
               </View>
               <Text className="text-white/80 text-xs uppercase tracking-wide ml-2">
-                What&apos;s new
+                What&apos;s new in v{BUILD_VERSION}
               </Text>
             </View>
             <Text className="text-white text-xl font-bold" numberOfLines={3}>

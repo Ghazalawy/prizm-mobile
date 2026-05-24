@@ -19,7 +19,7 @@ import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
 import { API_URL, BASE_URL, staffAvatarUrl } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
-import { useCurrentUser } from "@/lib/auth-context";
+import { useEffectiveUser } from "@/lib/effective-user";
 import { rtlTextStyle } from "@/lib/rtl";
 import {
   useInbox,
@@ -318,7 +318,10 @@ export function ActionCenter() {
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const q = useInbox();
   const qc = useQueryClient();
-  const user = useCurrentUser();
+  // Renders the IMPERSONATED user when in a View-As session, real user
+  // otherwise. Avatar in top-right thus reflects who you're acting as,
+  // matching the rest of the UI's perspective.
+  const user = useEffectiveUser();
   const [avatarBroken, setAvatarBroken] = useState(false);
   const insets = useSafeAreaInsets();
   const readKeys = useReadInbox();

@@ -1,8 +1,25 @@
 {
-  "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
+  "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
-      "title": "Popover polish + share button + fingerprint retry + quiet-hours auto-update",
+      "version": "1.5.0",
+      "date": "2026-05-25",
+      "title": "View As + smooth DnD + canonical PR approve",
+      "highlights": [
+        "View As — Settings → Admin Tools → View As lets admins see the app from any active staff's perspective. Amber banner stays on top so you never forget you're impersonating; tap Stop to revert. Avatar in the top bar reflects the impersonated user too.",
+        "PR approve actually works now — the API was hitting the wrong (typo'd) statusdetail table. Fixed to match the web admin's canonical logic. Notes you type appear under the green/red stamp in the timeline.",
+        "Notification counts now reflect only items where it's YOUR turn — used to count every PR at a stage you were a configured approver for, even if someone else had already taken it.",
+        "Dashboard drag-and-drop is smooth — rewrote the grid so all the math runs on the UI thread. Long-press a tile, drag, drop; neighbours animate into their new slots instead of jumping.",
+        "PR detail screen shows the real number (PR-26050023) instead of the internal id (PR-1666).",
+        "Broken 'approvals/purch...' bottom-tab icon is gone.",
+        "Approve/Cancel buttons in the note modal no longer hide behind the Android nav bar.",
+        "Tapping Approve no longer kicks you to the login screen on a 403 — that was a session-expiry false positive."
+      ]
+    },
+    {
+      "version": "1.4.0",
+      "date": "2026-05-24",
+      "title": "Popover polish + share + fingerprint retry + quiet-hours auto-update",
       "highlights": [
         "Tapping a notification now closes the popover (no more lingering window behind the destination)",
         "PR detail screen got a slim inline header — no more huge white container at the top",
@@ -15,194 +32,52 @@
       ]
     },
     {
-      "title": "Real approvals + native Purchase Request screen + customizable dashboard",
+      "version": "1.3.0",
+      "date": "2026-05-24",
+      "title": "Real approvals + native PR screen + customizable dashboard",
       "highlights": [
         "Approvals chip in the top bar now pulls REAL pending items (was always 0) — 15+ PR/PO/payment/expense requests where you're the approver",
-        "Tap a Purchase Request notification → opens a fully native approval screen: header + line items + workflow timeline + audit history (no more web-view fallback)",
+        "Tap a Purchase Request notification → fully native approval screen with header + line items + workflow timeline + audit history",
         "Dashboard has a new 'My Tasks' tile with sub-line breakdown: X new · Y overdue · Z stale",
         "Dashboard cards are now customizable — tap 'Customize' top-right to reorder + show/hide tiles, persisted per device",
         "Bottom bar: Customers is replaced by Tasks (Customers still in the ERP hub)",
-        "Top bar bigger + clickable: tap the PRIZM ENERGY logo / wordmark anywhere to go home",
-        "'What's new' modal now says 'What's new in v{version}'; Settings shows release date + 'Member since {start_date}'"
+        "Top bar bigger + clickable: tap the PRIZM ENERGY logo / wordmark anywhere to go home"
       ]
     },
     {
+      "version": "1.2.0",
+      "date": "2026-05-23",
       "title": "Notifications pop out from the bell + tap to open",
       "highlights": [
         "Inbox dropdown floats out of the icon you tapped (Approvals · Tasks · Bell · Compliance) with a little arrow pointing at it — no more bottom sheet",
-        "Every notification and approval row is now clickable: a PR / PO / task / budget item / gatepass opens straight into that record's screen",
-        "Notifications that don't have a native mobile screen yet (Materials Tracking, etc.) open the web view as a fallback so nothing's dead",
-        "Removed the welcome card from the dashboard — your avatar already lives in the top bar, the card was duplicating space",
-        "Arabic text in titles and descriptions now auto-detects and renders right-to-left (per-string, no full-app flip)",
-        "Customers tile shows active customers only (153 in production) — was including 18 inactive accounts in the count"
+        "Every notification and approval row is now clickable: opens straight into that record's screen",
+        "Notifications that don't have a native screen yet (Materials Tracking, etc.) open the web view as a fallback",
+        "Removed the welcome card from the dashboard — avatar in the top bar was already doing that job",
+        "Arabic text in titles and descriptions now auto-detects and renders right-to-left",
+        "Customers tile shows active customers only (153 in production) — was including 18 inactive accounts"
       ]
     },
     {
+      "version": "1.1.0",
+      "date": "2026-05-22",
       "title": "Real leave balances per UAE + KSA labor law",
       "highlights": [
-        "My Leave now shows actual quotas per type instead of all-null — Annual + Sick + Maternity (for female staff) for 2026 populated for all 42 active staff",
-        "Annual quota follows UAE Art. 29 (30 days at 1+yr, pro-rata 6-12mo, 0 under 6mo) and KSA Art. 109 (21 days 1-5yr, 30 days 5+yr, pro-rata under 1yr)",
+        "My Leave now shows real quotas per type instead of all-null — Annual + Sick + Maternity for all 42 active staff",
+        "Annual quota follows UAE Art. 29 + KSA Art. 109 with pro-rata under 1yr",
         "Sick quotas: 90 days UAE / 120 days KSA",
-        "Seniority resolved from your oldest contract start date (tblhr_staff_contract.start_valid)",
-        "15 UAE + 2 KSA public holidays seeded for 2026 (was empty)",
-        "Backend: /api/my/leave/balance now reads the real source (tbltimesheets_day_off) instead of the broken type-table path — was returning all-null"
+        "Seniority resolved from your oldest contract start date",
+        "15 UAE + 2 KSA public holidays seeded for 2026 (was empty)"
       ]
     },
     {
-      "title": "Real avatars + proper profile hero on Settings",
+      "version": "1.0.0",
+      "date": "2026-05-20",
+      "title": "Initial release",
       "highlights": [
-        "Top-bar avatar, Dashboard welcome card, and Settings now show your actual photo (was a gray circle because we used the bare filename instead of the full Perfex URL)",
-        "Settings opens with a real profile hero: large avatar, name, role · department, and 'Joined Prizm Energy on …' from your start date",
-        "Removed the duplicate 'Account' name/email card below since the hero already shows everything",
-        "Backend hotfix: /api/my no longer 500s on 'Column date is ambiguous' — CheckinCard now loads real data instead of spinning forever"
-      ]
-    },
-    {
-      "title": "Amber update ribbon + transparent logo + no more flicker",
-      "highlights": [
-        "Update banner is back to amber/yellow — the original color you wanted, not blue",
-        "Prizm logo in the top bar now has a transparent background (no white tile)",
-        "Inbox strip no longer flashes stale items for a frame on cold launch — steady from the first paint",
-        "Backend: /api/inbox endpoint deployed so the Approvals / Tasks / Mentions / Compliance icons actually pull real data instead of always saying \"All caught up\"",
-        "Backend: /api/my/payslips and /api/my/leave/balance HTTP 500 collation errors fixed"
-      ]
-    },
-    {
-      "title": "Real Prizm logo + welcome card on the Dashboard",
-      "highlights": [
-        "The flash placeholder in the top-left is replaced with the actual Prizm brand mark",
-        "Dashboard now opens with a welcome card: your avatar, time-of-day greeting, and role / department",
-        "Mirrors the web admin landing strip so the two surfaces feel like one product",
-        "Tap the welcome card to jump to your profile / sign out screen"
-      ]
-    },
-    {
-      "title": "New top bar — Prizm brand on the left, action icons on the right",
-      "highlights": [
-        "Matches the Perfex web admin chrome — brand on the left, action icons on the right",
-        "Five icons replace the old chip strip: Approvals · Tasks · Mentions · Compliance · Your avatar",
-        "Red dot with the count appears on any icon that has pending items — at a glance",
-        "Tap the avatar at the far right to jump to Settings (sign out lives there)",
-        "Bottom-sheet drill-down with quick approve/reject actions is unchanged"
-      ]
-    },
-    {
-      "title": "Update banner is back — with a real progress bar",
-      "highlights": [
-        "When a new APK is published you now see the blue 'Update available' banner sliding down again",
-        "Tap Install — the banner morphs into a live progress bar (X% + a sliding fill)",
-        "When the download finishes Android's installer opens automatically",
-        "Tap × to dismiss this build; the banner won't reappear for the same SHA",
-        "Was regressed to a plain Alert popup in the last few builds — fixed"
-      ]
-    },
-    {
-      "title": "Hotfix: session-expired now lands on Login (not red triangles)",
-      "highlights": [
-        "Server rotated its signing key on 2026-05-23 — every old cached token started failing",
-        "Before this fix the app showed red-triangle alerts on every module instead of asking for a relogin",
-        "Now: any 'Signature verification failed' / 401 response clears your session and routes you to the login screen",
-        "Sign in once with your password — your new token works for every screen again",
-        "Coalesced so 6 background queries don't trigger 6 redirects in a row"
-      ]
-    },
-    {
-      "title": "My Expenses — track what you've claimed",
-      "highlights": [
-        "Settings → My Expenses: see every expense you've submitted",
-        "Summary card up top: total submitted, total billed to customers",
-        "Each row shows date, category, amount, with BILLED / BILLABLE badges",
-        "Tap to drill into the full expense detail (same screen as web)",
-        "Submission form with receipt-photo capture coming next batch"
-      ]
-    },
-    {
-      "title": "My Payslips — view your pay history",
-      "highlights": [
-        "Settings → My Payslips: every payslip you've ever received, newest first",
-        "Each card shows the month, payslip number, and headline net pay",
-        "Tap to drill into the full breakdown: gross, deductions, PAYE, net",
-        "Workdays + paid/unpaid leave days included on each payslip",
-        "PDF download coming in the next update"
-      ]
-    },
-    {
-      "title": "Request leave from your phone",
-      "highlights": [
-        "Settings → My Leave: see your balance per type and your request history",
-        "Tap + to submit: pick leave type, dates, optional reason",
-        "Status pills show pending / approved / rejected at a glance",
-        "Cancel a pending request right from the list",
-        "Goes through the same approval flow as the web (your approver gets notified)"
-      ]
-    },
-    {
-      "title": "Check in / out from your phone",
-      "highlights": [
-        "Big primary card at the top of Settings — tap to clock in, tap again to clock out",
-        "Shows your current shift status: 'Working since 9:02' with running hours/minutes",
-        "Honors the same IP whitelist + workplace rules the web check-in uses",
-        "Geo-fence by location coming next batch (needs expo-location)",
-        "Foundation for the broader Me tab — payslips, leave requests, more next"
-      ]
-    },
-    {
-      "title": "Action Center: see what needs your attention from anywhere",
-      "highlights": [
-        "New top bar on every screen showing 4 chips: Approvals · Tasks · Mentions · Compliance",
-        "Approvals: budget items, gatepasses, purchase requests, expense requests waiting on you",
-        "Tasks: assigned to you, sorted by Overdue · Today · This week · Later — with a 'Done' quick-action",
-        "Mentions: unread notifications, tap to jump straight to the source",
-        "Compliance: leave requests to approve, contracts / gatepasses expiring soon",
-        "My Activity feed in Settings — see every action you took, with a 'Mobile only' filter"
-      ]
-    },
-    {
-      "title": "Projects, Proposals & Leads — full workflow on mobile",
-      "highlights": [
-        "Projects: ⋮ menu now does Mark in Progress / On Hold / Finished / Cancelled — fires the same hooks the web does",
-        "Proposals: Send to client, Copy, Mark Open / Sent / Revised / Accepted / Declined",
-        "Leads: change status from the ⋮ menu (no more editing the raw status field) — fires after_lead_status_change so notifications + automations still run",
-        "Every action lands in the activity log tagged [Mobile] so admins see the source"
-      ]
-    },
-    {
-      "title": "Workflow actions on 16 more modules + activity log tagging",
-      "highlights": [
-        "Tickets: reply, change status / priority / assignee — all from the ⋮ menu",
-        "Estimates: send, convert to invoice, mark sent / accepted / declined",
-        "Invoices: send, record payment with full form, mark cancelled",
-        "Contracts: mark signed, send for signature, renew with new dates",
-        "Expenses: mark billable / not billable, copy",
-        "Tasks: start / stop timer, mark complete, reopen",
-        "Goals / Surveys / Knowledge articles: publish / unpublish / mark complete",
-        "Recruitment: hire / reject / change candidate stage",
-        "HR Payroll: mark payslip paid",
-        "Gatepass: approve / reject / close — security workflow from the phone",
-        "Fixed Equipment: allocate to staff / return",
-        "Budget items: approve / reject classification",
-        "Every action lands in the activity log tagged [Mobile] so admins see the source"
-      ]
-    },
-    {
-      "title": "Tenders, Opportunities, Purchase, RFQs — full workflow on mobile",
-      "highlights": [
-        "Tap the ⋮ menu on any record to run workflow actions — no more 'view-only' on mobile",
-        "Tenders: mark Won / Lost / change status straight from the phone",
-        "Opportunities: change stage, change status, submit for approval",
-        "Purchase Orders: approve, reject, send to supplier, mark received, mark paid",
-        "Purchase Requests: publish or close",
-        "Every action shows up in the activity log (tagged [Mobile]) so admins see who did what from where"
-      ]
-    },
-    {
-      "title": "Custom fields, date pickers, file uploads",
-      "highlights": [
-        "Custom Fields section now appears on every record (whatever your admin defined in Settings)",
-        "Date and datetime fields use a native calendar picker — no more typing YYYY-MM-DD",
-        "Files tab on customers / projects / tasks / leads / invoices — upload from camera, gallery, or any document",
-        "Lead status/source and ticket priority/status show as readable labels instead of raw IDs",
-        "Searchable picker when editing relations (country, currency, staff, customer, source, status)"
+        "Native Android app for Prizm CRM with JWT auth + biometric unlock",
+        "Dashboard with live counts of customers, projects, leads, invoices, tasks",
+        "ERP hub listing all 49 modules with native list + detail screens",
+        "In-app auto-update from GitHub Releases"
       ]
     }
   ]

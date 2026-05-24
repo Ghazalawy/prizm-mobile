@@ -113,6 +113,7 @@ export default function TabLayout() {
         <Tabs.Screen name="payslip-detail"  options={{ href: null }} />
         <Tabs.Screen name="expenses-mine"   options={{ href: null }} />
         <Tabs.Screen name="view-as"         options={{ href: null }} />
+        <Tabs.Screen name="changelog"       options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
   );

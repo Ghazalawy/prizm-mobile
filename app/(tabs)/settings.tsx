@@ -4,7 +4,26 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth, useCurrentUser } from "@/lib/auth-context";
 import { BASE_URL, staffAvatarUrl } from "@/lib/config";
-import { BUILD_VERSION, BUILD_TIME, BUILD_SHA } from "@/lib/build-info";
+import { BUILD_VERSION, BUILD_TIME } from "@/lib/build-info";
+
+/** Convert the ISO build timestamp from CI into something human-friendly:
+ *  "May 25, 2026" rather than "2026-05-24T22:56:24Z". Defensive — if
+ *  the value isn't a valid ISO string, return it as-is. */
+function formatBuildTime(iso: string): string {
+  if (!iso || iso === "dev") return iso;
+  try {
+    const d = new Date(iso);
+    if (isNaN(d.getTime())) return iso;
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  } catch {
+    return iso;
+  }
+}
+
 import { checkForUpdate, downloadAndInstall } from "@/lib/updates";
 import {
   isBiometricAvailable,
@@ -303,16 +322,30 @@ export default function SettingsScreen() {
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">About</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
+          {/* Version + released date — no SHA visible. The internal
+              BUILD_SHA is still used by WhatsNewModal to know whether
+              to show the popup once per build, but it's an
+              implementation detail, not user-facing version info. */}
           <View className="px-4 py-4 border-b border-gray-100">
             <Text className="text-foreground font-medium">Version</Text>
-            <Text className="text-muted text-sm mt-1">{BUILD_VERSION}</Text>
+            <Text className="text-muted text-sm mt-1">v{BUILD_VERSION}</Text>
             {BUILD_TIME !== "dev" ? (
-              <Text className="text-muted text-xs mt-0.5">Released {BUILD_TIME}</Text>
-            ) : null}
-            {BUILD_SHA !== "dev" ? (
-              <Text className="text-muted text-xs mt-0.5">Build {BUILD_SHA}</Text>
+              <Text className="text-muted text-xs mt-0.5">
+                Released {formatBuildTime(BUILD_TIME)}
+              </Text>
             ) : null}
           </View>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/changelog" as any)}
+            className="flex-row items-center px-4 py-4 border-b border-gray-100"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="document-text-outline" size={22} color="#0284C7" />
+            <Text className="text-foreground font-medium ml-3">Changelog</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+            </View>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleCheckUpdate}
             disabled={checkingUpdate}

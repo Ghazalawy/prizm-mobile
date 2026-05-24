@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { useImpersonation } from "../impersonation";
 
 /**
  * Action Center inbox — the "what needs my attention" surface.
@@ -84,8 +85,16 @@ async function fetchInbox(): Promise<InboxData> {
 const POLL_MS = 90 * 1000; // 90 s — fresh enough without hammering
 
 export function useInbox() {
+  const impersonation = useImpersonation();
+  // Cache key includes the impersonated staffid so flipping View-As
+  // gets its own query bucket. Without this the previous user's bell
+  // counts render for a frame after the swap and tapping during that
+  // frame shows the "count says 19 but list is empty" mismatch — the
+  // counts come from the cached q.data while the list re-derives
+  // from the same q.data mid-refetch. Keying breaks the cache cleanly.
+  const target = impersonation ? `as:${impersonation.staffid}` : "self";
   return useQuery({
-    queryKey: ["inbox"],
+    queryKey: ["inbox", target],
     queryFn: fetchInbox,
     staleTime: 30 * 1000,
     refetchInterval: POLL_MS,

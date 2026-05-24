@@ -4,6 +4,7 @@ import { View, ActivityIndicator } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionCenter } from "@/components/ActionCenter";
+import { ImpersonationBanner } from "@/components/ImpersonationBanner";
 
 /**
  * Bottom bar: Home / Tasks / ERP / Settings.
@@ -45,6 +46,10 @@ export default function TabLayout() {
           GET /api/inbox (Inbox_api) — degrades to "All caught up" while
           the endpoint is being deployed. */}
       <ActionCenter />
+      {/* Amber banner that appears at the top of every authenticated
+          screen while an admin is in a View-As session. Null when not
+          impersonating, so zero footprint for the common case. */}
+      <ImpersonationBanner />
       <Tabs
         screenOptions={{
           tabBarActiveTintColor: "#0284C7",
@@ -107,6 +112,7 @@ export default function TabLayout() {
         <Tabs.Screen name="payslips"        options={{ href: null }} />
         <Tabs.Screen name="payslip-detail"  options={{ href: null }} />
         <Tabs.Screen name="expenses-mine"   options={{ href: null }} />
+        <Tabs.Screen name="view-as"         options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
   );

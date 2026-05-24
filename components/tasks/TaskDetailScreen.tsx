@@ -14,6 +14,7 @@ import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import {
+  buildAuthHeaders,
   createEntity,
   deleteEntity,
   getEntity,
@@ -23,7 +24,6 @@ import {
   updateEntity,
 } from "@/lib/api";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
-import { getAuthToken } from "@/lib/auth";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -901,17 +901,14 @@ async function quickTaskAction(
   successMessage: string
 ) {
   try {
-    const token = await getAuthToken();
+    const headers = await buildAuthHeaders();
     const res = await fetch(`${API_URL}/tasks/${encodeURIComponent(id)}/${endpoint}`, {
       method,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token ? { authtoken: token } : {}),
-      },
+      headers,
       // mark_complete/reopen don't need a body; Perfex accepts an empty {}.
       body: JSON.stringify({}),
     });
-    const { body, invalidToken } = await parseApiResponse(res, !!token);
+    const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
     if (invalidToken) throw new Error("Session expired");
     if (!res.ok) {
       const msg = typeof body === "string" ? body : JSON.stringify(body ?? "");

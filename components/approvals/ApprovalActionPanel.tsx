@@ -3,8 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL, BASE_URL } from "@/lib/config";
-import { getAuthToken } from "@/lib/auth";
-import { parseApiResponse } from "@/lib/api";
+import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 import Toast from "react-native-toast-message";
 import { NoteModal, type NoteMode } from "./NoteModal";
 
@@ -48,19 +47,14 @@ export function ApprovalActionPanel({
 
   const mutation = useMutation({
     mutationFn: async ({ kind, note }: { kind: NoteMode; note: string }) => {
-      const token = await getAuthToken();
+      // buildAuthHeaders adds authtoken + X-Impersonate-Staff-Id (View-As)
+      // so admin-while-viewing-as-X's approve action posts as X.
+      const headers = await buildAuthHeaders();
       const res = await fetch(
         `${API_URL}/purchase_api/requests/${encodeURIComponent(String(requestId))}/${kind}`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...(token ? { authtoken: token } : {}),
-          },
-          body: JSON.stringify({ note }),
-        },
+        { method: "POST", headers, body: JSON.stringify({ note }) },
       );
-      const { body, invalidToken } = await parseApiResponse(res, !!token);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) {
         const msg =

@@ -18,8 +18,7 @@ import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
 import { API_URL, BASE_URL, staffAvatarUrl } from "@/lib/config";
-import { getAuthToken } from "@/lib/auth";
-import { parseApiResponse } from "@/lib/api";
+import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth-context";
 import { rtlTextStyle } from "@/lib/rtl";
 import {
@@ -138,19 +137,16 @@ function HeaderIcon({
 }
 
 async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number]) {
-  const token = await getAuthToken();
+  const headers = await buildAuthHeaders();
   const url = action.endpoint.startsWith("http")
     ? action.endpoint
     : `${API_URL}/${action.endpoint.replace(/^\//, "")}`;
   const res = await fetch(url, {
     method: action.method || "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { authtoken: token } : {}),
-    },
+    headers,
     body: action.body ? JSON.stringify(action.body) : undefined,
   });
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     const txt = typeof body === "string" ? body : JSON.stringify(body ?? "");

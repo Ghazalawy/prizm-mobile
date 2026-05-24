@@ -1,6 +1,7 @@
 import { API_URL, ADMIN_URL } from "./config";
 import { getAuthToken, getSessionCookie } from "./auth";
 import { notifyInvalidToken } from "./auth-events";
+import { getCurrentImpersonation } from "./impersonation";
 
 // --- Invalid-token detection ----------------------------------------------
 //
@@ -83,6 +84,24 @@ export async function parseApiResponse(
   return { body, invalidToken };
 }
 
+/**
+ * Build the standard JWT-auth headers used by every Perfex API request,
+ * including the View-As impersonation header when active.
+ *
+ * Callers that do their own fetch (file downloads, multi-part uploads,
+ * direct mutations) should use this rather than re-deriving the
+ * headers — otherwise their requests bypass impersonation and continue
+ * acting as the real admin even mid-View-As.
+ */
+export async function buildAuthHeaders(): Promise<Record<string, string>> {
+  const token = await getAuthToken();
+  const impersonation = getCurrentImpersonation();
+  const out: Record<string, string> = { "Content-Type": "application/json" };
+  if (token) out["authtoken"] = token;
+  if (impersonation) out["X-Impersonate-Staff-Id"] = String(impersonation.staffid);
+  return out;
+}
+
 // --- REST API client (JWT auth) ---
 
 export async function apiRequest(
@@ -90,6 +109,11 @@ export async function apiRequest(
   options: RequestInit = {}
 ): Promise<any> {
   const token = await getAuthToken();
+  // View-As: append the impersonation header on every request. Backend
+  // silently ignores it if the real caller isn't admin, so this is safe
+  // for non-admin users too. See lib/impersonation.ts + modules/api/
+  // helpers/api_auth_helper.php on the backend.
+  const impersonation = getCurrentImpersonation();
 
   // Perfex's modules/api expects the JWT in a custom header called `authtoken`,
   // NOT in Authorization: Bearer. See modules/api/config/jwt.php (`token_header`)
@@ -99,6 +123,7 @@ export async function apiRequest(
     headers: {
       "Content-Type": "application/json",
       ...(token ? { authtoken: token } : {}),
+      ...(impersonation ? { "X-Impersonate-Staff-Id": String(impersonation.staffid) } : {}),
       ...(options.headers || {}),
     },
   });

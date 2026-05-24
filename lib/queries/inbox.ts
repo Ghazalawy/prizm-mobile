@@ -1,7 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { getAuthToken } from "../auth";
-import { parseApiResponse } from "../api";
+import { buildAuthHeaders, parseApiResponse } from "../api";
 
 /**
  * Action Center inbox — the "what needs my attention" surface.
@@ -64,10 +63,13 @@ const EMPTY: InboxData = {
 };
 
 async function fetchInbox(): Promise<InboxData> {
-  const token = await getAuthToken();
-  const res = await fetch(`${API_URL}/inbox`, {
-    headers: { ...(token ? { authtoken: token } : {}) },
-  });
+  // buildAuthHeaders bundles authtoken + X-Impersonate-Staff-Id so the
+  // inbox automatically reflects whoever the admin is viewing-as.
+  const headers = await buildAuthHeaders();
+  const res = await fetch(`${API_URL}/inbox`, { headers });
+  // hadToken bookkeeping for invalid-token detection — same shape as
+  // apiRequest uses.
+  const token = headers["authtoken"];
   // Parse first so the invalid-token detector sees the body even on 404
   // (Perfex returns 404 + signature-failed JSON when the JWT is bad).
   const { body, invalidToken } = await parseApiResponse(res, !!token);

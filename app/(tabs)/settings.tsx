@@ -14,6 +14,9 @@ import {
 } from "@/lib/biometric";
 import { CheckinCard } from "@/components/CheckinCard";
 import { useMyProfile } from "@/lib/queries/my";
+import { useQuery } from "@tanstack/react-query";
+import { API_URL } from "@/lib/config";
+import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 
 /**
  * Big profile hero pinned at the top of Settings. Mirrors the web admin's
@@ -291,6 +294,13 @@ export default function SettingsScreen() {
           </TouchableOpacity>
         </View>
 
+        {/* Admin tools — only renders if the backend says the user can
+            impersonate. /api/admin/me/can_impersonate is cheap (one DB
+            row lookup) and the response is cached for the session, so
+            non-admins pay one extra request per app launch at most. */}
+        <AdminSection />
+
+
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">About</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
           <View className="px-4 py-4 border-b border-gray-100">
@@ -326,3 +336,54 @@ export default function SettingsScreen() {
     </ScrollView>
   );
 }
+
+/**
+ * "Admin tools" section — only renders if the backend confirms the
+ * current user has admin role. The check hits GET /api/admin/me/can_impersonate
+ * which is a single-row tblstaff lookup; cheap enough to fire every
+ * Settings mount without caching gymnastics.
+ *
+ * On non-admin accounts: returns null. On error / unauthenticated:
+ * returns null. So the entry only appears when we're confident the
+ * user can actually use it.
+ */
+function AdminSection() {
+  const q = useQuery({
+    queryKey: ["admin", "can_impersonate"],
+    queryFn: async () => {
+      const headers = await buildAuthHeaders();
+      const res = await fetch(`${API_URL}/admin/me/can_impersonate`, { headers });
+      const { body } = await parseApiResponse(res, !!headers["authtoken"]);
+      if (!res.ok || body?.status !== true) return { can_impersonate: false };
+      return body.data as { can_impersonate: boolean };
+    },
+    staleTime: 5 * 60 * 1000,
+  });
+
+  if (!q.data?.can_impersonate) return null;
+
+  return (
+    <>
+      <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">
+        Admin Tools
+      </Text>
+      <View className="bg-white rounded-xl overflow-hidden mb-6">
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/view-as" as any)}
+          className="flex-row items-center px-4 py-4"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="eye-outline" size={22} color="#B45309" />
+          <View className="ml-3 flex-1">
+            <Text className="text-foreground font-medium">View As</Text>
+            <Text className="text-muted text-xs mt-0.5">
+              See the app from another staff member's perspective.
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+}
+

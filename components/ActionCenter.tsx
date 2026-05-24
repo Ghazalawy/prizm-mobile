@@ -7,16 +7,19 @@ import {
   Pressable,
   ActivityIndicator,
   Image,
+  Dimensions,
+  Linking,
 } from "react-native";
-import { useState, useMemo, useCallback } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
-import { API_URL, staffAvatarUrl } from "@/lib/config";
+import { API_URL, BASE_URL, staffAvatarUrl } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth";
 import { parseApiResponse } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth-context";
+import { rtlTextStyle } from "@/lib/rtl";
 import {
   useInbox,
   type InboxCategory,
@@ -49,10 +52,15 @@ const CATEGORIES: CategoryMeta[] = [
   { key: "compliance", label: "Compliance", icon: "shield-checkmark-outline", color: "#16A34A" },
 ];
 
+/** Screen-coord rect of an anchor element, captured at tap time so the
+ *  popover knows where to float from. */
+type AnchorRect = { x: number; y: number; w: number; h: number };
+
 /**
  * Single icon button in the top bar. Shows the muted icon when there's
  * nothing in this category, the category's colored icon + a red dot
- * badge with the count when there is.
+ * badge with the count when there is. On press, measures its own screen
+ * position and passes it up so the popover can anchor to it.
  */
 function HeaderIcon({
   meta,
@@ -61,51 +69,63 @@ function HeaderIcon({
 }: {
   meta: CategoryMeta;
   count: number;
-  onPress: () => void;
+  onPress: (anchor: AnchorRect) => void;
 }) {
   const hot = count > 0;
+  const ref = useRef<View | null>(null);
+
+  const handlePress = () => {
+    const node = ref.current;
+    if (!node) return;
+    node.measureInWindow((x, y, w, h) => {
+      onPress({ x, y, w, h });
+    });
+  };
+
   return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.6}
-      hitSlop={6}
-      accessibilityLabel={`${meta.label}${count > 0 ? `, ${count} pending` : ""}`}
-      style={{
-        width: 36,
-        height: 36,
-        alignItems: "center",
-        justifyContent: "center",
-        marginLeft: 2,
-      }}
-    >
-      <Ionicons
-        name={meta.icon}
-        size={22}
-        color={hot ? meta.color : "#475569"}
-      />
-      {hot ? (
-        <View
-          style={{
-            position: "absolute",
-            top: 4,
-            right: 2,
-            minWidth: 16,
-            height: 16,
-            paddingHorizontal: 3,
-            borderRadius: 8,
-            backgroundColor: "#DC2626",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1.5,
-            borderColor: "#FFFFFF",
-          }}
-        >
-          <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "700" }}>
-            {count > 99 ? "99+" : count}
-          </Text>
-        </View>
-      ) : null}
-    </TouchableOpacity>
+    <View ref={ref} collapsable={false}>
+      <TouchableOpacity
+        onPress={handlePress}
+        activeOpacity={0.6}
+        hitSlop={6}
+        accessibilityLabel={`${meta.label}${count > 0 ? `, ${count} pending` : ""}`}
+        style={{
+          width: 36,
+          height: 36,
+          alignItems: "center",
+          justifyContent: "center",
+          marginLeft: 2,
+        }}
+      >
+        <Ionicons
+          name={meta.icon}
+          size={22}
+          color={hot ? meta.color : "#475569"}
+        />
+        {hot ? (
+          <View
+            style={{
+              position: "absolute",
+              top: 4,
+              right: 2,
+              minWidth: 16,
+              height: 16,
+              paddingHorizontal: 3,
+              borderRadius: 8,
+              backgroundColor: "#DC2626",
+              alignItems: "center",
+              justifyContent: "center",
+              borderWidth: 1.5,
+              borderColor: "#FFFFFF",
+            }}
+          >
+            <Text style={{ color: "#FFFFFF", fontSize: 9, fontWeight: "700" }}>
+              {count > 99 ? "99+" : count}
+            </Text>
+          </View>
+        ) : null}
+      </TouchableOpacity>
+    </View>
   );
 }
 
@@ -140,10 +160,31 @@ function InboxRow({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
+  /**
+   * Tap dispatcher. Inbox items carry one of three deeplink shapes:
+   *
+   *   1. Mobile route — starts with "/(tabs)/" → router.push (in-app nav)
+   *   2. Full URL    — starts with "http(s)://" → Linking.openURL (system browser)
+   *   3. Bare path   — Perfex internal path (e.g. "przpurchase/Payment_Request/view_payment_request/1124")
+   *                    Prefix with BASE_URL + "/MS/" + "admin/" and open in browser.
+   *                    This is the graceful fallback for modules that don't
+   *                    yet have a native mobile screen (materials/payment
+   *                    requests today).
+   */
   const handleTap = () => {
-    if (item.deeplink) {
-      router.push(item.deeplink as any);
+    const link = item.deeplink;
+    if (!link) return;
+    if (link.startsWith("/(tabs)/")) {
+      router.push(link as any);
+      return;
     }
+    if (link.startsWith("http://") || link.startsWith("https://")) {
+      Linking.openURL(link).catch(() => undefined);
+      return;
+    }
+    // Bare Perfex path → open in web view
+    const url = `${BASE_URL}/MS/admin/${link.replace(/^\/+/, "")}`;
+    Linking.openURL(url).catch(() => undefined);
   };
 
   const priorityColor =
@@ -165,11 +206,19 @@ function InboxRow({
           style={{ backgroundColor: priorityColor }}
         />
         <View className="flex-1">
-          <Text className="text-sm font-medium text-foreground" numberOfLines={2}>
+          <Text
+            className="text-sm font-medium text-foreground"
+            numberOfLines={2}
+            style={rtlTextStyle(item.title)}
+          >
             {item.title}
           </Text>
           {item.subtitle ? (
-            <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
+            <Text
+              className="text-xs text-muted mt-0.5"
+              numberOfLines={1}
+              style={rtlTextStyle(item.subtitle)}
+            >
               {item.subtitle}
             </Text>
           ) : null}
@@ -222,11 +271,23 @@ function InboxRow({
   );
 }
 
+// Popover sizing — width clipped to the screen, height capped so it
+// never crowds the bottom tabs.
+const POPOVER_WIDTH = 320;
+const POPOVER_MAX_HEIGHT = 420;
+const POPOVER_GAP_FROM_ANCHOR = 8;
+const POPOVER_SCREEN_MARGIN = 8;
+
 export function ActionCenter() {
   const [openCategory, setOpenCategory] = useState<InboxCategory | null>(null);
+  // Screen-coord rect of the icon that opened the current popover.
+  // Captured at tap time via View.measureInWindow so the popover floats
+  // directly under that specific icon — not a generic bottom sheet.
+  const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const q = useInbox();
   const qc = useQueryClient();
   const user = useCurrentUser();
+  const [avatarBroken, setAvatarBroken] = useState(false);
 
   const counts = useMemo(
     () => ({
@@ -250,11 +311,41 @@ export function ActionCenter() {
     [qc]
   );
 
+  const openWithAnchor = useCallback(
+    (cat: InboxCategory) => (rect: AnchorRect) => {
+      setAnchor(rect);
+      setOpenCategory(cat);
+    },
+    [],
+  );
+
+  const closePopover = useCallback(() => {
+    setOpenCategory(null);
+    setAnchor(null);
+  }, []);
+
   // First letter of the user's first name → fallback avatar when there's
-  // no profile_image on record.
+  // no profile_image on record (or when the Image fetch fails).
   const initial =
     (user?.firstname?.[0] || user?.email?.[0] || "?").toUpperCase();
   const avatarUrl = staffAvatarUrl(user?.staffid, user?.profile_image, "thumb");
+
+  // Popover anchor math — center under the tapped icon, clipped to screen.
+  const screenW = Dimensions.get("window").width;
+  const popoverTop = anchor ? anchor.y + anchor.h + POPOVER_GAP_FROM_ANCHOR : 0;
+  const popoverLeft = anchor
+    ? Math.max(
+        POPOVER_SCREEN_MARGIN,
+        Math.min(
+          screenW - POPOVER_WIDTH - POPOVER_SCREEN_MARGIN,
+          anchor.x + anchor.w / 2 - POPOVER_WIDTH / 2,
+        ),
+      )
+    : 0;
+  // X-position of the little arrow pointing at the icon, relative to popover.
+  const arrowLeft = anchor
+    ? Math.max(12, Math.min(POPOVER_WIDTH - 24, anchor.x + anchor.w / 2 - popoverLeft - 6))
+    : 0;
 
   return (
     <>
@@ -294,7 +385,7 @@ export function ActionCenter() {
               key={cat.key}
               meta={cat}
               count={counts[cat.key]}
-              onPress={() => setOpenCategory(cat.key)}
+              onPress={openWithAnchor(cat.key)}
             />
           ))}
           {/* Profile / avatar — taps through to Settings. */}
@@ -314,10 +405,11 @@ export function ActionCenter() {
               overflow: "hidden",
             }}
           >
-            {avatarUrl ? (
+            {avatarUrl && !avatarBroken ? (
               <Image
                 source={{ uri: avatarUrl }}
                 style={{ width: 30, height: 30 }}
+                onError={() => setAvatarBroken(true)}
               />
             ) : (
               <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 12 }}>
@@ -328,48 +420,95 @@ export function ActionCenter() {
         </View>
       </View>
 
-      {/* Bottom sheet (modal) */}
+      {/* Floating popover — anchored to the tapped icon's screen position
+          (measureInWindow at tap time), not a bottom sheet. Mirrors the
+          web admin's dropdown UX where notifications inflate out of the
+          icon itself. */}
       <Modal
         visible={openCategory !== null}
         transparent
-        animationType="slide"
-        onRequestClose={() => setOpenCategory(null)}
+        animationType="fade"
+        onRequestClose={closePopover}
       >
         <Pressable
-          onPress={() => setOpenCategory(null)}
-          className="flex-1 bg-black/40"
+          onPress={closePopover}
+          style={{ flex: 1, backgroundColor: "rgba(0,0,0,0.15)" }}
         >
-          <View className="flex-1" />
+          <View style={{ flex: 1 }} />
         </Pressable>
-        <View
-          className="absolute bottom-0 left-0 right-0 bg-white rounded-t-2xl"
-          style={{ maxHeight: "75%" }}
-        >
-          {openCategory ? (
-            <View className="flex-1">
-              <View className="flex-row items-center justify-between px-4 py-3 border-b border-slate-200">
-                <View className="flex-row items-center gap-2">
+        {openCategory && anchor ? (
+          <View
+            pointerEvents="box-none"
+            style={{
+              position: "absolute",
+              top: popoverTop,
+              left: popoverLeft,
+              width: POPOVER_WIDTH,
+              maxHeight: POPOVER_MAX_HEIGHT,
+            }}
+          >
+            {/* Little arrow pointing up at the icon */}
+            <View
+              style={{
+                position: "absolute",
+                top: -7,
+                left: arrowLeft,
+                width: 14,
+                height: 14,
+                backgroundColor: "white",
+                transform: [{ rotate: "45deg" }],
+                shadowColor: "#000",
+                shadowOpacity: 0.08,
+                shadowOffset: { width: 0, height: -2 },
+                shadowRadius: 4,
+              }}
+            />
+            <View
+              style={{
+                backgroundColor: "white",
+                borderRadius: 14,
+                shadowColor: "#000",
+                shadowOpacity: 0.15,
+                shadowOffset: { width: 0, height: 6 },
+                shadowRadius: 16,
+                elevation: 12,
+                overflow: "hidden",
+                maxHeight: POPOVER_MAX_HEIGHT,
+              }}
+            >
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  paddingHorizontal: 14,
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: "#E2E8F0",
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center", gap: 6 }}>
                   <Ionicons
                     name={CATEGORIES.find((c) => c.key === openCategory)!.icon}
-                    size={20}
+                    size={16}
                     color={CATEGORIES.find((c) => c.key === openCategory)!.color}
                   />
-                  <Text className="text-base font-bold text-foreground capitalize">
+                  <Text className="text-sm font-bold text-foreground capitalize">
                     {openCategory}
                   </Text>
                   <Text className="text-xs text-muted">({itemsForOpen.length})</Text>
                 </View>
-                <TouchableOpacity onPress={() => setOpenCategory(null)} className="p-2">
-                  <Ionicons name="close" size={22} color="#64748B" />
+                <TouchableOpacity onPress={closePopover} hitSlop={8}>
+                  <Ionicons name="close" size={18} color="#64748B" />
                 </TouchableOpacity>
               </View>
               {itemsForOpen.length === 0 ? (
-                <View className="flex-1 items-center justify-center p-6">
-                  <Ionicons name="checkmark-circle-outline" size={36} color="#16A34A" />
-                  <Text className="text-sm text-muted mt-2">Nothing here yet</Text>
+                <View style={{ alignItems: "center", paddingVertical: 28 }}>
+                  <Ionicons name="checkmark-circle-outline" size={30} color="#16A34A" />
+                  <Text className="text-xs text-muted mt-2">Nothing here yet</Text>
                 </View>
               ) : (
-                <ScrollView>
+                <ScrollView style={{ maxHeight: POPOVER_MAX_HEIGHT - 50 }}>
                   {itemsForOpen.map((it) => (
                     <InboxRow
                       key={`${it.type}-${it.id}`}
@@ -380,8 +519,8 @@ export function ActionCenter() {
                 </ScrollView>
               )}
             </View>
-          ) : null}
-        </View>
+          </View>
+        ) : null}
       </Modal>
     </>
   );

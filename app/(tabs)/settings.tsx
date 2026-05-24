@@ -27,6 +27,7 @@ import { useMyProfile } from "@/lib/queries/my";
 function ProfileHero() {
   const user = useCurrentUser();
   const profile = useMyProfile();
+  const [avatarBroken, setAvatarBroken] = useState(false);
 
   const firstname = user?.firstname || profile.data?.firstname || "";
   const lastname  = user?.lastname  || profile.data?.lastname  || "";
@@ -68,8 +69,12 @@ function ProfileHero() {
             marginRight: 14,
           }}
         >
-          {avatarUrl ? (
-            <Image source={{ uri: avatarUrl }} style={{ width: 72, height: 72 }} />
+          {avatarUrl && !avatarBroken ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              style={{ width: 72, height: 72 }}
+              onError={() => setAvatarBroken(true)}
+            />
           ) : (
             <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 28 }}>
               {initial}

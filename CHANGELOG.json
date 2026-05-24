@@ -2,6 +2,17 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Notifications pop out from the bell + tap to open",
+      "highlights": [
+        "Inbox dropdown floats out of the icon you tapped (Approvals · Tasks · Bell · Compliance) with a little arrow pointing at it — no more bottom sheet",
+        "Every notification and approval row is now clickable: a PR / PO / task / budget item / gatepass opens straight into that record's screen",
+        "Notifications that don't have a native mobile screen yet (Materials Tracking, etc.) open the web view as a fallback so nothing's dead",
+        "Removed the welcome card from the dashboard — your avatar already lives in the top bar, the card was duplicating space",
+        "Arabic text in titles and descriptions now auto-detects and renders right-to-left (per-string, no full-app flip)",
+        "Customers tile shows active customers only (153 in production) — was including 18 inactive accounts in the count"
+      ]
+    },
+    {
       "title": "Real leave balances per UAE + KSA labor law",
       "highlights": [
         "My Leave now shows actual quotas per type instead of all-null — Annual + Sick + Maternity (for female staff) for 2026 populated for all 42 active staff",

@@ -13,7 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
-import { API_URL } from "@/lib/config";
+import { API_URL, staffAvatarUrl } from "@/lib/config";
 import { getAuthToken } from "@/lib/auth";
 import { parseApiResponse } from "@/lib/api";
 import { useCurrentUser } from "@/lib/auth-context";
@@ -254,6 +254,7 @@ export function ActionCenter() {
   // no profile_image on record.
   const initial =
     (user?.firstname?.[0] || user?.email?.[0] || "?").toUpperCase();
+  const avatarUrl = staffAvatarUrl(user?.staffid, user?.profile_image, "thumb");
 
   return (
     <>
@@ -313,9 +314,9 @@ export function ActionCenter() {
               overflow: "hidden",
             }}
           >
-            {user?.profile_image ? (
+            {avatarUrl ? (
               <Image
-                source={{ uri: user.profile_image }}
+                source={{ uri: avatarUrl }}
                 style={{ width: 30, height: 30 }}
               />
             ) : (

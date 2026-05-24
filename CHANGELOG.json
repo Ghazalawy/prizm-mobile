@@ -2,6 +2,15 @@
   "_comment": "Release notes shown to staff in the 'What's new' popup on first launch after an update. The CI 'Inject build metadata' step picks the TOP entry (latest) and injects its title + bullets into lib/build-info.ts. Add new entries to the TOP. Keep each entry's title under 50 chars and each bullet under 100 chars. Use empty strings or omit fields to skip them.",
   "releases": [
     {
+      "title": "Real avatars + proper profile hero on Settings",
+      "highlights": [
+        "Top-bar avatar, Dashboard welcome card, and Settings now show your actual photo (was a gray circle because we used the bare filename instead of the full Perfex URL)",
+        "Settings opens with a real profile hero: large avatar, name, role · department, and 'Joined Prizm Energy on …' from your start date",
+        "Removed the duplicate 'Account' name/email card below since the hero already shows everything",
+        "Backend hotfix: /api/my no longer 500s on 'Column date is ambiguous' — CheckinCard now loads real data instead of spinning forever"
+      ]
+    },
+    {
       "title": "Amber update ribbon + transparent logo + no more flicker",
       "highlights": [
         "Update banner is back to amber/yellow — the original color you wanted, not blue",

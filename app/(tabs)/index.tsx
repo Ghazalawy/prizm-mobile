@@ -19,6 +19,7 @@ import {
 } from "@/lib/queries/dashboard";
 import { useCurrentUser } from "@/lib/auth-context";
 import { useMyProfile } from "@/lib/queries/my";
+import { staffAvatarUrl } from "@/lib/config";
 
 type StatCardProps = {
   title: string;
@@ -76,6 +77,8 @@ function WelcomeCard() {
   const firstname = user?.firstname || profile.data?.firstname || "";
   const lastname = user?.lastname || profile.data?.lastname || "";
   const profileImage = user?.profile_image || profile.data?.profile_image || null;
+  const staffid = user?.staffid ?? profile.data?.staffid ?? null;
+  const avatarUrl = staffAvatarUrl(staffid, profileImage, "small");
   const role = profile.data?.role_name || null;
   const dept = profile.data?.departments?.[0]?.name || null;
 
@@ -107,8 +110,8 @@ function WelcomeCard() {
           marginRight: 12,
         }}
       >
-        {profileImage ? (
-          <Image source={{ uri: profileImage }} style={{ width: 48, height: 48 }} />
+        {avatarUrl ? (
+          <Image source={{ uri: avatarUrl }} style={{ width: 48, height: 48 }} />
         ) : (
           <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 18 }}>
             {initial}

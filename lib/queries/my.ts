@@ -20,6 +20,9 @@ export type MyProfile = {
   role?: number;
   role_name?: string | null;
   active?: number;
+  /** "YYYY-MM-DD HH:MM:SS" from tblstaff.datecreated. Older accounts may
+   *  carry "0000-00-00 00:00:00" — Settings's ProfileHero filters those. */
+  datecreated?: string | null;
   last_login?: string | null;
   default_language?: string | null;
   departments?: Array<{ departmentid: number; name: string }>;

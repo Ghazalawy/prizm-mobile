@@ -1,9 +1,9 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, Switch } from "react-native";
-import { useEffect, useState, useCallback } from "react";
+import { View, Text, TouchableOpacity, ScrollView, Alert, Switch, Image } from "react-native";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth, useCurrentUser } from "@/lib/auth-context";
-import { BASE_URL } from "@/lib/config";
+import { BASE_URL, staffAvatarUrl } from "@/lib/config";
 import { BUILD_VERSION, BUILD_TIME, BUILD_SHA } from "@/lib/build-info";
 import { checkForUpdate, downloadAndInstall } from "@/lib/updates";
 import {
@@ -13,10 +13,104 @@ import {
   promptBiometric,
 } from "@/lib/biometric";
 import { CheckinCard } from "@/components/CheckinCard";
+import { useMyProfile } from "@/lib/queries/my";
+
+/**
+ * Big profile hero pinned at the top of Settings. Mirrors the web admin's
+ * Profile page header: large round avatar, name, email, role + department,
+ * and "Joined Prizm Energy on …" pulled from tblstaff.datecreated.
+ *
+ * Renders instantly from the SecureStore-cached user (firstname/email),
+ * then progressively enriches with role / dept / datecreated from
+ * /api/my/profile once that hook resolves.
+ */
+function ProfileHero() {
+  const user = useCurrentUser();
+  const profile = useMyProfile();
+
+  const firstname = user?.firstname || profile.data?.firstname || "";
+  const lastname  = user?.lastname  || profile.data?.lastname  || "";
+  const email     = user?.email     || profile.data?.email     || "";
+  const staffid   = user?.staffid   ?? profile.data?.staffid   ?? null;
+  const profileImage = user?.profile_image || profile.data?.profile_image || null;
+  const avatarUrl    = staffAvatarUrl(staffid, profileImage, "small");
+  const role         = profile.data?.role_name || null;
+  const primaryDept  = profile.data?.departments?.[0]?.name || null;
+
+  const joinedSince = useMemo(() => {
+    const raw = profile.data?.datecreated;
+    if (!raw) return null;
+    // Perfex sometimes stores 0000-00-00 00:00:00 — surface nothing.
+    if (raw.startsWith("0000")) return null;
+    const d = new Date(raw.replace(" ", "T"));
+    if (isNaN(d.getTime())) return null;
+    return d.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    });
+  }, [profile.data?.datecreated]);
+
+  const initial = (firstname[0] || email[0] || "?").toUpperCase();
+
+  return (
+    <View className="mx-4 mt-3 bg-white rounded-2xl shadow-sm p-5">
+      <View className="flex-row items-center">
+        <View
+          style={{
+            width: 72,
+            height: 72,
+            borderRadius: 36,
+            backgroundColor: "#E2E8F0",
+            alignItems: "center",
+            justifyContent: "center",
+            overflow: "hidden",
+            marginRight: 14,
+          }}
+        >
+          {avatarUrl ? (
+            <Image source={{ uri: avatarUrl }} style={{ width: 72, height: 72 }} />
+          ) : (
+            <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 28 }}>
+              {initial}
+            </Text>
+          )}
+        </View>
+        <View className="flex-1">
+          <Text className="text-xl font-bold text-foreground" numberOfLines={1}>
+            {firstname ? `${firstname} ${lastname}`.trim() : email || "—"}
+          </Text>
+          {email ? (
+            <Text className="text-sm text-muted mt-0.5" numberOfLines={1}>
+              {email}
+            </Text>
+          ) : null}
+          {role || primaryDept ? (
+            <Text className="text-xs text-muted mt-1" numberOfLines={1}>
+              {[role, primaryDept].filter(Boolean).join(" · ")}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      {joinedSince ? (
+        <View className="flex-row items-center mt-4 pt-4 border-t border-slate-100">
+          <Ionicons name="business-outline" size={14} color="#64748B" />
+          <Text className="text-xs text-muted ml-2">
+            Joined Prizm Energy on {joinedSince}
+          </Text>
+        </View>
+      ) : staffid ? (
+        <View className="flex-row items-center mt-4 pt-4 border-t border-slate-100">
+          <Ionicons name="person-outline" size={14} color="#64748B" />
+          <Text className="text-xs text-muted ml-2">Staff #{staffid}</Text>
+        </View>
+      ) : null}
+    </View>
+  );
+}
 
 export default function SettingsScreen() {
   const { logout } = useAuth();
-  const currentUser = useCurrentUser();
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
@@ -101,7 +195,10 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-surface">
-      {/* Daily-use check-in widget — primary CTA at the top */}
+      {/* Profile hero — name, avatar, "joined since". Mirrors web admin chrome. */}
+      <ProfileHero />
+
+      {/* Daily-use check-in widget */}
       <CheckinCard />
 
       <View className="mx-4 mt-4">
@@ -135,15 +232,6 @@ export default function SettingsScreen() {
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Account</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
-          {currentUser ? (
-            <View className="px-4 py-4 border-b border-gray-100">
-              <Text className="text-foreground font-medium">
-                {currentUser.firstname} {currentUser.lastname}
-              </Text>
-              <Text className="text-muted text-sm mt-1">{currentUser.email}</Text>
-              <Text className="text-muted text-xs mt-0.5">Staff #{currentUser.staffid}</Text>
-            </View>
-          ) : null}
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/leave" as any)}
             className="flex-row items-center px-4 py-4 border-b border-gray-100"

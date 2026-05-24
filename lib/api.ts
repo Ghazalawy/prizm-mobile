@@ -32,8 +32,18 @@ export function isInvalidTokenResponse(
   // No token sent → server's "401 / signature failed" is just the natural
   // unauthenticated state, NOT a session-expiry event.
   if (!hadToken) return false;
-  // 401/403 with auth header set = the canonical session-expiry signal.
-  if (status === 401 || status === 403) return true;
+  // 401 (Unauthorized) with auth header set = the canonical session-expiry
+  // signal. HTTP semantics: 401 means "your credentials are invalid or
+  // missing", which on our backend means the JWT couldn't be decoded or
+  // the user record behind it can't be resolved.
+  if (status === 401) return true;
+  // 403 (Forbidden) is NOT session-expiry — it's "you're authenticated
+  // fine, you just lack permission for THIS specific action" (e.g. you're
+  // not the current approver of a PR). Signing the user out here was the
+  // bug behind the "Approve → toast → kicked to login" symptom: the
+  // backend was correctly saying "you can't approve this stage, it's
+  // someone else's turn" with a 403, and the mobile was interpreting that
+  // as "your whole session is dead."
   // 404 with a SPECIFIC JWT-layer message = stale-token edge case (see #2
   // above). Anything else with status 404 is treated as "route not found"
   // and bubbled up as a normal error — the user stays signed in.

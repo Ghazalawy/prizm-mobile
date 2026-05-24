@@ -24,8 +24,16 @@ let cache: Set<string> | null = null;
 let order: string[] = []; // FIFO eviction
 const listeners = new Set<Listener>();
 
+// CRITICAL: must be a stable singleton reference. useSyncExternalStore's
+// getSnapshot contract is "return the same value between notifications".
+// Returning `new Set()` on every call when cache is null caused React to
+// think the store changed every render → infinite re-render loop in
+// ActionCenter → "Maximum update depth exceeded" crash on app launch.
+const EMPTY_SET: ReadonlySet<string> = new Set<string>();
+
 function snapshot(): Set<string> {
-  return cache ?? new Set<string>();
+  // Cast is safe: callers only `.has()` against it — they never mutate.
+  return (cache ?? EMPTY_SET) as Set<string>;
 }
 
 function notify() {

@@ -10,15 +10,18 @@ import { notifyInvalidToken } from "./auth-events";
 //   2. HTTP 404 (REST_Controller default for "missing creds") with body
 //      {"status":false,"message":"Signature verification failed"}.
 //
-// We treat #2 as the canonical case. Same handler also matches "Token is not
-// defined" / "Token is invalid" / "Token expired" so we cover the older
-// Authorization_Token messages.
-const INVALID_TOKEN_PATTERNS = [
+// We treat both as token-expiry, but ONLY when the response body's message
+// is specific enough to unambiguously point at the JWT layer.
+//
+// The previous broader pattern list ("Token is not defined", "Token is
+// invalid", "invalid token") matched too eagerly — Perfex's REST module
+// returns "Token is not defined" from its DEFAULT 404 handler when a route
+// doesn't exist at all (not just when the token failed), which falsely
+// signed out users hitting a not-yet-deployed endpoint. Only the JWT-
+// specific phrases stay in the unambiguous list now.
+const UNAMBIGUOUS_JWT_PATTERNS = [
   /signature verification failed/i,
-  /token is not defined/i,
-  /token is invalid/i,
   /token expired/i,
-  /invalid token/i,
 ];
 
 export function isInvalidTokenResponse(
@@ -29,9 +32,17 @@ export function isInvalidTokenResponse(
   // No token sent → server's "401 / signature failed" is just the natural
   // unauthenticated state, NOT a session-expiry event.
   if (!hadToken) return false;
+  // 401/403 with auth header set = the canonical session-expiry signal.
   if (status === 401 || status === 403) return true;
-  if (body && body.status === false && typeof body.message === "string") {
-    for (const re of INVALID_TOKEN_PATTERNS) {
+  // 404 with a SPECIFIC JWT-layer message = stale-token edge case (see #2
+  // above). Anything else with status 404 is treated as "route not found"
+  // and bubbled up as a normal error — the user stays signed in.
+  if (
+    body &&
+    body.status === false &&
+    typeof body.message === "string"
+  ) {
+    for (const re of UNAMBIGUOUS_JWT_PATTERNS) {
       if (re.test(body.message)) return true;
     }
   }

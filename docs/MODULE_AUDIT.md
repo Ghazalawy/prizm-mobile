@@ -571,3 +571,122 @@ These are deliberately on hold per user decision 2026-05-23:
 ## Changelog
 
 - **2026-05-23 — Initial doc** (post-batch-7): captures batches 1–7 from memory + structure for future batches. Action Center planned. My Activity feed shipped.
+- **2026-05-25 — Round 2 audit added** (post-batch-12): re-audited 10 module groups (Tasks, Opportunities, Purchase, Tenders, HR Records, HR Payroll, Timesheets & Leave, Support, Perfex Settings, Prizm Reports) against the broader ERP surface (including `mcp__da28e037-…` analytics endpoints and admin-config tables). Identified ~80 gaps. Six-phase back-fill plan published below. Handoff to local prizm331 session: see `docs/ERP_BACKFILL_HANDOFF.md`.
+
+---
+
+# Round 2 — 10-module audit (2026-05-25)
+
+This section is the second-round audit. It supplements (does not replace)
+the executive summary table above. Round 1 covered the 49 modules already
+in `lib/module-registry.ts`; Round 2 looks at the wider ERP surface and
+maps gaps for back-fill.
+
+## Round 2 — Per-module audit
+
+Legend:
+- ✅ wired end-to-end · 🟡 partial · 🔴 broken/stub · ❌ absent
+
+### Tasks
+- ERP: `modules/tasks` + `Tasks_api` + templates + bulk-assign + analytics + overdue + primary-assignments report.
+- Mobile ✅ core (CRUD + tabs + custom fields + timer + mark/reopen).
+- Gaps ❌: task_templates, task_template_groups, task_template_milestones, bulk_assign_tasks_with_primary, set_task_primary_assignee, task_analytics, get_overdue_tasks admin view, get_primary_assignments_report.
+
+### Opportunities
+- ERP: `modules/przoppurtunities` + `Opportunities_api` + BOQ + notes + members + stage staff + analytics + get-by-number.
+- Mobile ✅ core (CRUD + BOQ + notes + submit/stage/status).
+- Gaps ❌: add_opportunity_member / remove_opportunity_member, assign_opportunity_stage_staff, get_opportunity_by_number, opportunity_analytics.
+
+### Purchase (broadest gap)
+- ERP: `modules/przpurchase` + `Purchase_api` + RFQs (`Rfq_model`) + Materials catalog + Deployment plans + Site requests + Completion certificates + Received vouchers + Delivery notes + Purchase quotes + `prz_payment_requests` + analytics.
+- Mobile 🟡: purchase_requests + purchase_orders + purchase_vendors + materials (minimal).
+- Gaps:
+  - 🔴 PR approval flow — read-only screen at `app/(tabs)/approvals/purchase_request/[id].tsx`; native approve/reject still web-only (`NEXT_BUILD_TODO.md` §2).
+  - ❌ rfqs CRUD + add_rfq_attribute / add_rfq_cc_email / add_rfq_supplier / update_rfq_supplier_response / post_rfq / update_rfq_status / delete_rfq.
+  - ❌ suppliers + supplier_contacts + supplier_quotations (only `purchase_vendors` exists).
+  - 🟡 materials catalog — only `materials` minimal registry; missing material_categories, manufacturers, item_specs, catalog_item_specs, kits, kit_items, UNSPSC search, AI classify, classification reviews, bulk update.
+  - ❌ purchase_analytics, purchase_log, purchase_stages, purchase_statuses.
+  - ❌ deployment_plans + deployment_plan_details + deployment_relocations + deployment_po_items.
+  - ❌ site_requests, completion_certificates, received_vouchers, delivery_notes, purchase_quotes, prz_payment_requests.
+  - ❌ PR/PO line-item CRUD (currently header-only).
+
+### Tenders
+- ERP: `modules/prz_tenders` + `Tenders_api` + BOQ + requirements + risks + documents + analytics.
+- Mobile ✅ core (CRUD + sub-tabs + won/lost/status).
+- Gaps ❌: tender_documents (only generic files tab), tender_analytics.
+
+### HR Records
+- ERP: `modules/hr_profile` + `modules/recruitment` + KPI + training + terminations + dependents + contracts.
+- Mobile 🟡: staff (basic) + recruitment_candidates + recruitment_positions + goals.
+- Gaps ❌: staff_dependents, staff_training, staff_terminations, hr_contracts (+ sign), contract_types, departments, prizm_job_positions, recruitment_proposals, candidate_pipeline kanban, recruitment_analytics, get_employee_profile, get_staff_kpi_dashboard, get_staff_workload, get_staff_salary_history, get_staff_assets, get_staff_commissions, get_staff_contracts, kpi_definitions, kpi_snapshots, hr_kb_groups, hr_knowledge_base articles.
+
+### HR Payroll
+- ERP: `modules/hr_payroll` + payslip_details + earning_types + deduction_types + payroll_templates + payroll_summary + commissions.
+- Mobile 🟡: hr_payslips (admin) + self-service payslips screen.
+- Gaps ❌: payslip_details CRUD (admin), earning_types CRUD, deduction_types CRUD, payroll_templates CRUD, payroll_summary report, commissions CRUD; 🟡 payslip PDF download from self-service.
+- 🔴 **`Hr_payroll_api.php` references non-existent tables — must be fixed before any admin payroll mobile work** (see Known Gaps table above).
+
+### Timesheets & Leave
+- ERP: timesheets + checkin + leave (`hr_leave`) + workplaces + leave-type config.
+- Mobile 🟡: self-service My-Leave + My-Checkin + admin timesheets registry.
+- Gaps ❌: approve_subordinates_leave (`POST /api/my/leave/approve/{id}`), timesheet_summary, staff_timesheets_payroll, project_time_tracking, staff_workload_summary, workplaces CRUD, leave_types config.
+
+### Support
+- ERP: `modules/tickets` + `modules/knowledge_base` + `modules/surveys`.
+- Mobile ✅ core (tickets reply/status/assign/priority + knowledge publish + surveys publish).
+- Gaps ❌: close_ticket / reopen_ticket actions, knowledge_groups CRUD, search_knowledge_base UI, survey_results detail, survey_send_log, ticket_analytics, knowledge_analytics.
+
+### Perfex Settings (🔴 nearly absent)
+- ERP: ~25 config tables under `application/controllers/admin/Settings.php` + sub-controllers.
+- Mobile: only automation (CRUD) + otpmanager (list).
+- Gaps ❌: custom_statuses, payment_modes, lead_sources, lead_statuses, expense_categories, customer_groups, vendor_categories, partner_groups, departments, services, uom_units, workplaces, manufacturers, material_categories, contract_types, keywords, keyword_groups, mail_lists, task_templates, kpi_definitions, deduction_types, earning_types, asset_categories, asset_locations, hr_kb_groups, dewa_contacts.
+
+### Prizm Reports (❌ essentially absent)
+- ERP: financial (AR/AP aging, P&L, balance sheet, cash flow, trial balance, tax) + CRM analytics + operations analytics + HR analytics + payment/subscription analytics + corporate metrics + system usage.
+- Mobile ✅: dashboard count tiles + ActionCenter + activity feed.
+- Gaps ❌: all 30+ analytics dashboards — see ERP_BACKFILL_HANDOFF.md §Phase 6.
+
+## Round 2 — Six-phase back-fill plan (summary)
+
+Full plan with ERP-side endpoint specs in `docs/ERP_BACKFILL_HANDOFF.md`.
+
+| Phase | Theme | ERP work scope | Mobile work scope |
+|---|---|---|---|
+| 1 | Purchase deepening | RFQs / Suppliers / Materials catalog / Deployment plans / PR line items / PR native approve+reject (NEXT_BUILD_TODO §2) / PR-PO get-by-number / purchase_analytics | rfqs + sub-modules; suppliers; material_categories/manufacturers/item_specs/kits; deployment_plans; PR/PO `items` tabs; rewrite `app/(tabs)/approvals/purchase_request/[id].tsx` to native approve/reject |
+| 2 | HR Records | `Hr_profile_api` (dependents/training/terminations/contracts/contract_types/departments/job_positions/employee_profile/workload/salary/kpi); `Kpi_api` | staff_* registry entries; `app/staff/[id]/profile.tsx`; `app/staff/[id]/kpi.tsx`; `app/recruitment/pipeline.tsx` kanban |
+| 3 | HR Payroll + Timesheets/Leave admin | **Fix Hr_payroll_api table names**; earning_types/deduction_types/payroll_templates/commissions/payslip_details; Timesheets_api summary/workload/workplaces/leave_types; `/api/my/leave/approve` | payroll registry entries; `app/payroll/summary.tsx`; `app/leave/approve/[id].tsx`; payslip PDF download; receipt photo capture |
+| 4 | Support / Opp / Tenders / Tasks polish | tickets close/reopen/search; knowledge_groups + KB search; opportunity members/stages/by-number/analytics; tender_documents/analytics; task_templates + bulk_assign_with_primary + set_primary | new ticket actions; `knowledge_groups`; `tender_documents`; task_templates registry; `app/support/knowledge-search.tsx` |
+| 5 | Generalized approvals | Inbox per-user filter (NEXT_BUILD_TODO §1); approve/reject for PO/budget/expense/gatepass/payslip mirroring PR | `components/approvals/ApprovalScreen.tsx` generic; `app/(tabs)/approvals/[type]/[id].tsx`; ActionCenter deeplinks → typed route |
+| 6 | Reports + Settings | `Reports_api` consolidator for every `*_analytics` endpoint; verify all MCP-only analytics have HTTP twins | `lib/report-registry.ts`; `app/reports/*`; victory-native + react-native-svg; ~25 Perfex Settings registry entries |
+
+## Round 2 — Mobile native build & release conventions
+
+- CI: `.github/workflows/*.yml` builds APK on push to `main`. Bake `BUILD_SHA` + top `CHANGELOG.json` entry into `lib/build-info.ts`.
+- Per batch: bump `package.json#version`, prepend `CHANGELOG.json`, keep `BUILD_FLAGS` in `lib/build-info.ts` to gate not-yet-live modules.
+- Charts (Phase 6): adds `victory-native` + `react-native-svg`. Both bare-Expo compatible via `expo-build-properties` config-plugin.
+
+## Round 2 — QC plan (Chrome MCP — web ↔ mobile parity)
+
+For each batch, against `https://ms.prizm-energy.com/MS/admin/authentication`:
+
+1. **Universal checks**
+   - Top-bar counter parity: Approvals / Tasks / Mentions / Compliance chip counts must equal web admin counts for the SAME user.
+   - Module list counts: web list total vs mobile list total, after each filter.
+   - Detail field parity: 3 random records per new module, every web "View"-page field appears on mobile.
+   - Workflow actions: trigger on mobile → confirm same state transition in web; `[Mobile]` row in `tblactivity_log`.
+   - View-As: counts/permissions reflect the impersonated user, not the admin.
+2. **User-flagged headline checks** (run first; these are the acceptance test for the whole round):
+   - **Approval count delta** — web "My Approvals" count must equal mobile ActionCenter Approvals badge for ≥10 test users (closes `NEXT_BUILD_TODO.md` §1).
+   - **PR "my turn" routing** — for a PR where user IS the active approver, mobile shows enabled Approve/Reject; user who already acted at current stage sees disabled state; user out-of-turn sees "not your turn" with same wording as web.
+3. **Per-batch QC docs** live at `docs/qc/round2-batch-{N}.md` with PASS / FAIL / N/A + screenshot pairs + Defects-to-fix-before-merge.
+4. **Credentials** are NEVER committed. Use a gitignored `.env.qc` or shell-env injection.
+
+See full QC matrix in the approved plan at
+`/root/.claude/plans/conduct-comprehensive-audit-on-smooth-honey.md` §D.
+
+## Round 2 — Handoff to local prizm331 session
+
+The mobile session (this repo) cannot read `C:/wamp64/www/prizm331`. All
+ERP-side endpoint work lives in `docs/ERP_BACKFILL_HANDOFF.md` as a
+checklist the local Windows session ticks off. Sync via git — both
+sessions push commits, this doc is the contract.

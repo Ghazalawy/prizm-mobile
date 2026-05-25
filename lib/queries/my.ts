@@ -1,7 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { getAuthToken } from "../auth";
-import { parseApiResponse } from "../api";
+import { buildAuthHeaders, parseApiResponse } from "../api";
+import { useImpersonation } from "../impersonation";
 
 /**
  * Hooks for the /api/my/* employee self-service namespace.
@@ -66,15 +66,15 @@ export type MyNotification = {
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
-  const token = await getAuthToken();
+  const authHeaders = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${path.replace(/^\//, "")}`, {
     ...init,
     headers: {
-      "Content-Type": "application/json",
-      ...(token ? { authtoken: token } : {}),
+      ...authHeaders,
       ...(init?.headers || {}),
     },
   });
+  const token = authHeaders["authtoken"];
   const { body, invalidToken } = await parseApiResponse(res, !!token);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
@@ -85,11 +85,17 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return body as T;
 }
 
+function useMyQueryScope(): string {
+  const impersonation = useImpersonation();
+  return impersonation ? `as:${impersonation.staffid}` : "self";
+}
+
 // ─── Dashboard ──────────────────────────────────────────────────────────
 
 export function useMyDashboard() {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "dashboard"],
+    queryKey: ["my", "dashboard", scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: MyDashboard }>("my");
       return r.data;
@@ -100,8 +106,9 @@ export function useMyDashboard() {
 }
 
 export function useMyProfile() {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "profile"],
+    queryKey: ["my", "profile", scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: MyProfile }>("my/profile");
       return r.data;
@@ -142,8 +149,9 @@ export function useCheckin() {
 }
 
 export function useCheckinToday() {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "checkin", "today"],
+    queryKey: ["my", "checkin", "today", scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: CheckinEvent[] }>("my/checkin/today");
       return r.data || [];
@@ -153,8 +161,9 @@ export function useCheckinToday() {
 }
 
 export function useCheckinHistory(days = 30) {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "checkin", "history", days],
+    queryKey: ["my", "checkin", "history", days, scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: CheckinEvent[] }>(
         `my/checkin/history?days=${days}`
@@ -175,8 +184,9 @@ export type NotificationsResponse = {
 
 export function useMyNotifications(opts: { limit?: number; unreadOnly?: boolean } = {}) {
   const { limit = 50, unreadOnly = false } = opts;
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "notifications", limit, unreadOnly],
+    queryKey: ["my", "notifications", limit, unreadOnly, scope],
     queryFn: async () => {
       const q = new URLSearchParams({ limit: String(limit) });
       if (unreadOnly) q.set("unread", "1");
@@ -273,8 +283,9 @@ export type LeaveRequest = {
 };
 
 export function useLeaveBalance(year?: number) {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "leave", "balance", year],
+    queryKey: ["my", "leave", "balance", year, scope],
     queryFn: async () => {
       const q = year ? `?year=${year}` : "";
       const r = await api<{ status: true; data: { year: number; balance: LeaveBalance[] } }>(
@@ -288,8 +299,9 @@ export function useLeaveBalance(year?: number) {
 
 export function useLeaveRequests(opts: { status?: number; limit?: number } = {}) {
   const { status, limit = 100 } = opts;
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "leave", "requests", status, limit],
+    queryKey: ["my", "leave", "requests", status, limit, scope],
     queryFn: async () => {
       const params = new URLSearchParams({ limit: String(limit) });
       if (status !== undefined) params.set("status", String(status));
@@ -375,8 +387,9 @@ export type PayslipDetail = PayslipRow & {
 };
 
 export function useMyPayslips(limit = 24) {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "payslips", limit],
+    queryKey: ["my", "payslips", limit, scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: PayslipRow[] }>(
         `my/payslips?limit=${limit}`
@@ -388,8 +401,9 @@ export function useMyPayslips(limit = 24) {
 }
 
 export function useMyPayslip(id: number | null | undefined) {
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "payslip", id],
+    queryKey: ["my", "payslip", id, scope],
     queryFn: async () => {
       const r = await api<{ status: true; data: PayslipDetail }>(
         `my/payslips/${id}`
@@ -432,8 +446,9 @@ export type ExpensesResponse = {
 
 export function useMyExpenses(opts: { from?: string; to?: string; limit?: number } = {}) {
   const { from, to, limit = 60 } = opts;
+  const scope = useMyQueryScope();
   return useQuery({
-    queryKey: ["my", "expenses", from, to, limit],
+    queryKey: ["my", "expenses", from, to, limit, scope],
     queryFn: async () => {
       const params = new URLSearchParams({ limit: String(limit) });
       if (from) params.set("from", from);

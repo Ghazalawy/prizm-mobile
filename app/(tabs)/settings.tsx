@@ -2,7 +2,7 @@ import { View, Text, TouchableOpacity, ScrollView, Alert, Switch, Image } from "
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useAuth, useCurrentUser } from "@/lib/auth-context";
+import { useAuth } from "@/lib/auth-context";
 import { BASE_URL, staffAvatarUrl } from "@/lib/config";
 import { BUILD_VERSION, BUILD_TIME } from "@/lib/build-info";
 
@@ -33,6 +33,7 @@ import {
 } from "@/lib/biometric";
 import { CheckinCard } from "@/components/CheckinCard";
 import { useMyProfile } from "@/lib/queries/my";
+import { useEffectiveUser } from "@/lib/effective-user";
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
@@ -47,7 +48,7 @@ import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
  * /api/my/profile once that hook resolves.
  */
 function ProfileHero() {
-  const user = useCurrentUser();
+  const user = useEffectiveUser();
   const profile = useMyProfile();
   const [avatarBroken, setAvatarBroken] = useState(false);
 
@@ -59,6 +60,10 @@ function ProfileHero() {
   const avatarUrl    = staffAvatarUrl(staffid, profileImage, "small");
   const role         = profile.data?.role_name || null;
   const primaryDept  = profile.data?.departments?.[0]?.name || null;
+
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [avatarUrl]);
 
   const joinedSince = useMemo(() => {
     const raw = profile.data?.datecreated;
@@ -419,4 +424,3 @@ function AdminSection() {
     </>
   );
 }
-

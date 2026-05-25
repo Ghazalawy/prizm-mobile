@@ -108,26 +108,16 @@ export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
-  const token = await getAuthToken();
-  // View-As: append the impersonation header on every request. Backend
-  // silently ignores it if the real caller isn't admin, so this is safe
-  // for non-admin users too. See lib/impersonation.ts + modules/api/
-  // helpers/api_auth_helper.php on the backend.
-  const impersonation = getCurrentImpersonation();
-
-  // Perfex's modules/api expects the JWT in a custom header called `authtoken`,
-  // NOT in Authorization: Bearer. See modules/api/config/jwt.php (`token_header`)
-  // and Authorization_Token::tokenIsExist().
+  const authHeaders = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${endpoint}`, {
     ...options,
     headers: {
-      "Content-Type": "application/json",
-      ...(token ? { authtoken: token } : {}),
-      ...(impersonation ? { "X-Impersonate-Staff-Id": String(impersonation.staffid) } : {}),
+      ...authHeaders,
       ...(options.headers || {}),
     },
   });
 
+  const token = authHeaders["authtoken"];
   const { body, invalidToken } = await parseApiResponse(res, !!token);
   if (invalidToken) {
     throw new Error("Session expired — please sign in again.");

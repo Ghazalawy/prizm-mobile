@@ -40,7 +40,7 @@ export default function TabLayout() {
   return (
     <SafeAreaView edges={["top"]} className="flex-1 bg-white">
       {/* Persistent Action Center strip on every authenticated screen.
-          Categories: Approvals / Tasks / Mentions / Compliance. Tap a chip
+          Categories: Approvals / To Do / Mentions / Notifications / Compliance. Tap a chip
           opens a bottom sheet with the items in that category, each with
           inline quick actions (approve/reject/mark done). Data via
           GET /api/inbox (Inbox_api) — degrades to "All caught up" while

@@ -2,8 +2,7 @@ import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { API_URL } from "./config";
-import { getAuthToken } from "./auth";
-import { parseApiResponse } from "./api";
+import { buildAuthHeaders, parseApiResponse } from "./api";
 
 /**
  * Picked file from any source (camera / gallery / document picker). Normalised
@@ -86,27 +85,26 @@ type UploadParams = {
  * Returns the created tblfiles row on success.
  */
 export async function uploadAttachment(params: UploadParams): Promise<{ id: number; file_name: string }> {
-  const token = await getAuthToken();
+  const headers = await buildAuthHeaders();
   const content_base64 = await FileSystem.readAsStringAsync(params.file.uri, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
   const res = await fetch(`${API_URL}/files/upload_bytes`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { authtoken: token } : {}),
-    },
+    headers,
     body: JSON.stringify({
       rel_type: params.relType,
       rel_id: params.relId,
       file_name: params.file.name,
+      filetype: params.file.mimeType,
       file_mime_type: params.file.mimeType,
       visible_to_customer: params.visibleToCustomer ? 1 : 0,
       content_base64,
     }),
   });
 
+  const token = headers["authtoken"];
   const { body: j, invalidToken } = await parseApiResponse(res, !!token);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {

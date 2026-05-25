@@ -11,7 +11,7 @@ import {
   Linking,
   Platform,
 } from "react-native";
-import { useState, useMemo, useCallback, useRef } from "react";
+import { useState, useMemo, useCallback, useRef, useEffect } from "react";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -55,8 +55,9 @@ type CategoryMeta = {
 
 const CATEGORIES: CategoryMeta[] = [
   { key: "approvals", label: "Approvals", icon: "checkmark-done-circle-outline", color: "#DC2626" },
-  { key: "tasks", label: "Tasks", icon: "list-outline", color: "#F59E0B" },
-  { key: "mentions", label: "Mentions", icon: "notifications-outline", color: "#0284C7" },
+  { key: "todos", label: "To Do", icon: "checkbox-outline", color: "#F59E0B" },
+  { key: "mentions", label: "Mentions", icon: "list-outline", color: "#CA8A04" },
+  { key: "notifications", label: "Notifications", icon: "notifications-outline", color: "#0284C7" },
   { key: "compliance", label: "Compliance", icon: "shield-checkmark-outline", color: "#16A34A" },
 ];
 
@@ -98,11 +99,11 @@ function HeaderIcon({
         hitSlop={6}
         accessibilityLabel={`${meta.label}${count > 0 ? `, ${count} pending` : ""}`}
         style={{
-          width: 44,
-          height: 44,
+          width: 36,
+          height: 42,
           alignItems: "center",
           justifyContent: "center",
-          marginLeft: 4,
+          marginLeft: 2,
         }}
       >
         <Ionicons
@@ -383,13 +384,15 @@ export function ActionCenter() {
     };
     return {
       approvals: Number(q.data?.summary?.approvals ?? unreadFor("approvals")),
+      todos: Number(q.data?.summary?.todos ?? unreadFor("todos")),
       tasks: unreadFor("tasks"),
       mentions: unreadFor("mentions"),
+      notifications: unreadFor("notifications"),
       compliance: unreadFor("compliance"),
     };
   }, [q.data, readKeys]);
 
-  const total = counts.approvals + counts.tasks + counts.mentions + counts.compliance;
+  const total = counts.approvals + counts.todos + counts.mentions + counts.notifications + counts.compliance;
   const itemsForOpen: InboxItem[] = openCategory ? (q.data?.[openCategory] ?? []) : [];
 
   const runAction = useCallback(
@@ -419,6 +422,9 @@ export function ActionCenter() {
   const initial =
     (user?.firstname?.[0] || user?.email?.[0] || "?").toUpperCase();
   const avatarUrl = staffAvatarUrl(user?.staffid, user?.profile_image, "thumb");
+  useEffect(() => {
+    setAvatarBroken(false);
+  }, [avatarUrl]);
 
   // Popover anchor math — center under the tapped icon, clipped to screen.
   //
@@ -488,12 +494,13 @@ export function ActionCenter() {
         >
           <Image
             source={require("@/assets/images/prizm_logo.png")}
-            style={{ width: 34, height: 34, marginRight: 8 }}
+            style={{ width: 32, height: 32, marginRight: 7 }}
             resizeMode="contain"
           />
           <Text
             className="text-base font-bold text-foreground"
-            style={{ letterSpacing: 0.5 }}
+            numberOfLines={1}
+            style={{ letterSpacing: 0.5, flexShrink: 1 }}
           >
             PRIZM ENERGY
           </Text>
@@ -629,7 +636,7 @@ export function ActionCenter() {
                     color={CATEGORIES.find((c) => c.key === openCategory)!.color}
                   />
                   <Text className="text-sm font-bold text-foreground capitalize">
-                    {openCategory}
+                    {CATEGORIES.find((c) => c.key === openCategory)?.label ?? openCategory}
                   </Text>
                   <Text className="text-xs text-muted">({itemsForOpen.length})</Text>
                 </View>

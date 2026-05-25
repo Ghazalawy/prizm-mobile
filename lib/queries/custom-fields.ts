@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { getAuthToken } from "../auth";
+import { buildAuthHeaders } from "../api";
 
 /**
  * Perfex custom fields per entity. Each ERP install can define arbitrary
@@ -55,12 +55,12 @@ export type CustomFieldRow = {
 };
 
 async function fetchCustomFields(perfexType: string, id?: string | number): Promise<CustomFieldRow[]> {
-  const token = await getAuthToken();
+  const headers = await buildAuthHeaders();
   const url = id
     ? `${API_URL}/custom_fields/${encodeURIComponent(perfexType)}/${encodeURIComponent(String(id))}`
     : `${API_URL}/custom_fields/${encodeURIComponent(perfexType)}`;
   const res = await fetch(url, {
-    headers: { ...(token ? { authtoken: token } : {}) },
+    headers,
   });
   if (!res.ok) {
     // 404 here usually means "no custom fields defined for this type" —

@@ -11,7 +11,13 @@ import { useImpersonation } from "../impersonation";
  * is being built we return a zero-state shape so the UI ships first.
  */
 
-export type InboxCategory = "approvals" | "tasks" | "mentions" | "compliance";
+export type InboxCategory =
+  | "approvals"
+  | "todos"
+  | "tasks"
+  | "mentions"
+  | "notifications"
+  | "compliance";
 
 export type InboxItem = {
   /** Sub-type discriminator within a category. e.g. "budget_item",
@@ -48,24 +54,38 @@ export type InboxItem = {
 export type InboxSummary = {
   total: number;
   approvals: number;
+  todos: number;
   tasks: number;
   mentions: number;
+  notifications: number;
   compliance: number;
 };
 
 export type InboxData = {
   summary: InboxSummary;
   approvals: InboxItem[];
+  todos: InboxItem[];
   tasks: InboxItem[];
   mentions: InboxItem[];
+  notifications: InboxItem[];
   compliance: InboxItem[];
 };
 
 const EMPTY: InboxData = {
-  summary: { total: 0, approvals: 0, tasks: 0, mentions: 0, compliance: 0 },
+  summary: {
+    total: 0,
+    approvals: 0,
+    todos: 0,
+    tasks: 0,
+    mentions: 0,
+    notifications: 0,
+    compliance: 0,
+  },
   approvals: [],
+  todos: [],
   tasks: [],
   mentions: [],
+  notifications: [],
   compliance: [],
 };
 

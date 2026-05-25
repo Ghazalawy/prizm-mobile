@@ -2,6 +2,17 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.6.3",
+      "date": "2026-05-26",
+      "title": "View-As, ribbon, and purchase file fixes",
+      "highlights": [
+        "Settings, dashboard counters, and the top avatar now follow the impersonated staff during View-As.",
+        "Top ribbon now separates To Do, Mentions, Notifications, Approvals, and Compliance.",
+        "Purchase PR/PO lists show real numbers; MT, Expense, RV, DN, Quotation, and CC open natively.",
+        "Attachment taps now preview images in-app first and keep device-viewer fallback for other files."
+      ]
+    },
+    {
       "version": "1.6.2",
       "date": "2026-05-25",
       "title": "Approval counter matches the web header",

@@ -5,8 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-24 (after batch 12 — My Expenses)
-**Recent:** batches 9-12 completed the employee self-service core (Check-in, My Leave, My Payslips, My Expenses) on top of the new `/api/my/*` namespace. See section "Recently shipped: employee self-service" below.
+**Last updated:** 2026-05-26 (after batch 13 — View-As/ribbon/purchase hardening)
+**Recent:** batch 13 hardened View-As query scoping/header usage, split top-ribbon To Do/Mentions/Notifications/Approvals/Compliance, fixed PR/PO display/file rel_types, and made attachment taps preview in-app before opening a device viewer.
 **Maintained by:** the Claude session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -48,8 +48,14 @@ Status legend:
 | 14 | Subscriptions | Sales | ✅ | ✅ CRUD | ✅ | — | 🟡 cancel/pause deferred |
 | 15 | Tenders | PRIZM | ✅ | ✅ + status/won/lost (b1) | ✅ + actions | 3 | ✅ |
 | 16 | Opportunities | PRIZM | ✅ | ✅ + stage/status (b1) | ✅ + actions | 2 | ✅ |
-| 17 | Purchase Orders | PRIZM | ✅ | ✅ + 5 workflow (b1) | ✅ + 5 actions | 5 | ✅ |
-| 18 | Purchase Requests (RFQs) | PRIZM | ✅ | ✅ + publish/close (b1) | ✅ + 2 actions | 2 | ✅ |
+| 17 | Purchase Orders | PRIZM | ✅ | ✅ + 5 workflow (b1), list/detail parity hardening (b13) | ✅ + 5 actions/files | 5 | ✅ |
+| 18 | Purchase Requests (RFQs) | PRIZM | ✅ | ✅ + approve/reject/publish/close, list/detail parity hardening (b13) | ✅ + actions/files | 4 | ✅ |
+| 18a | Payment Requests (MT) | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18b | Expense Requests | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18c | Received Vouchers | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18d | Delivery Notes | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18e | Supplier Quotations | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18f | Completion Certificates | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read | — | 🟡 workflow native pending |
 | 19 | Materials | PRIZM | ✅ | ✅ CRUD + AI classify | 🟡 fields only | — | 🟡 |
 | 20 | Technical Inquiries | PRIZM | ✅ | ✅ CRUD | 🟡 fields only | — | 🟡 convert-to-RFQ deferred |
 | 21 | Goals | HR | ✅ | ✅ + publish/complete (b3) | ✅ + 2 actions | 2 | ✅ |
@@ -65,7 +71,7 @@ Status legend:
 | 31 | Cost Centers | Ops | ✅ | ✅ CRUD + members | ✅ | — | ⚫ admin-rare on mobile |
 | 32 | Timesheets | Work | ✅ | ✅ CRUD | ✅ | — | 🟡 covered by Tasks timer |
 | 33 | Milestones | Work | ✅ | ✅ CRUD | ✅ | — | 🟡 no workflow needed |
-| 34 | Files | Cross-cut | ✅ | ✅ upload/list | ✅ FilesTab | — | ✅ |
+| 34 | Files | Cross-cut | ✅ | ✅ upload/list/download, purchase rel_type aliases (b13) | ✅ FilesTab preview/upload | — | ✅ |
 | 35 | Staff | Admin | ✅ | ✅ CRUD | ✅ | — | ⚫ admin-only |
 | 36 | Items (catalog) | Sales | ✅ | ✅ CRUD | ✅ | — | ⚫ config |
 | 37 | Calendar | Work | ✅ | ✅ list | 🟡 stub | — | 🔴 needs calendar UI |
@@ -83,7 +89,7 @@ Status legend:
 | 49 | Tickets replies / statuses / priorities | Support child | ✅ | ✅ ref-data | ✅ relations | — | ✅ |
 
 **Totals:**
-- **49 modules registered** in `lib/module-registry.ts`
+- **55 modules registered** in `lib/module-registry.ts`
 - **23 modules with workflow actions wired** (⋮ menu in detail screen)
 - **~60 mobile workflow endpoints added to the API** across 7 CRM PRs (PRs #264 → #270)
 - **8 controllers instrumented with `Mobile_audit`** library (`[Mobile]` prefix in `tblactivity_log`)

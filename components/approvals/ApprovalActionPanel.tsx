@@ -35,6 +35,9 @@ export function ApprovalActionPanel({
   statusDetailID,
   webFallbackPath,
   requestId,
+  endpointBase = "purchase_api/requests",
+  queryKey,
+  entityLabel = "request",
 }: {
   isCurrentApprover: boolean;
   /** The specific tblprzpurcahse_req_statusdetail.id this viewer should
@@ -47,6 +50,12 @@ export function ApprovalActionPanel({
   webFallbackPath: string;
   /** PR id — used by the approve/reject endpoint URL. */
   requestId: number;
+  /** API endpoint root, e.g. purchase_api/orders. */
+  endpointBase?: string;
+  /** Query key to invalidate after mutation. */
+  queryKey?: readonly unknown[];
+  /** Human-readable record label for toasts. */
+  entityLabel?: string;
 }) {
   const qc = useQueryClient();
   const [modal, setModal] = useState<NoteMode | null>(null);
@@ -57,7 +66,7 @@ export function ApprovalActionPanel({
       // so admin-while-viewing-as-X's approve action posts as X.
       const headers = await buildAuthHeaders();
       const res = await fetch(
-        `${API_URL}/purchase_api/requests/${encodeURIComponent(String(requestId))}/${kind}`,
+        `${API_URL}/${endpointBase.replace(/^\/+/, "")}/${encodeURIComponent(String(requestId))}/${kind}`,
         {
           method: "POST",
           headers,
@@ -94,6 +103,10 @@ export function ApprovalActionPanel({
       // Refresh both the approval-state query (drives the timeline) and
       // the inbox (so the approval badge decrements). Key matches the
       // shape used by lib/queries/purchase-request.ts.
+      if (queryKey) {
+        qc.invalidateQueries({ queryKey: queryKey as any });
+      }
+      qc.invalidateQueries({ queryKey: ["purchase_approval"] });
       qc.invalidateQueries({ queryKey: ["purchase_request_approval", requestId] });
       qc.invalidateQueries({ queryKey: ["inbox"] });
     },
@@ -101,7 +114,7 @@ export function ApprovalActionPanel({
       Toast.show({
         type: "error",
         text1: "Action failed",
-        text2: err?.message?.slice(0, 140) ?? "Please try again.",
+        text2: err?.message?.slice(0, 140) ?? `Could not update this ${entityLabel}.`,
       });
     },
   });

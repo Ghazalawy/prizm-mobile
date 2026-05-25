@@ -51,8 +51,10 @@ export type PRApprovalRow = {
   statusID: number;
   approver: number;
   approver_name: string | null;
+  approver_profile_image?: string | null;
   requester: number | null;
   requester_name: string | null;
+  requester_profile_image?: string | null;
   status: string;            // 'Submitted', 'Approved', 'Rejected', ...
   is_current_status: number;
   is_optional: number;
@@ -73,6 +75,7 @@ export type PRHeader = {
   id: number;
   staff_id: number;
   title: string | null;
+  request_title?: string | null;
   /** Internal counter (not user-facing). */
   number: number | null;
   prefix: string | null;
@@ -80,7 +83,10 @@ export type PRHeader = {
   sequence_number: number | null;
   /** Server-formatted "PR-{sequence_number}" — preferred display. */
   display_code: string | null;
-  status: number | null;
+  display_number?: string | null;
+  web_path?: string | null;
+  approval_endpoint?: string | null;
+  status: number | string | null;
   total_amount: string | null;
   requested_date: string | null;
   department_id: number | null;
@@ -123,6 +129,10 @@ export type PRQuotationSummaryRow = {
 };
 
 export type PRApproval = {
+  kind?: PurchaseApprovalKind;
+  label?: string;
+  endpoint?: string;
+  web_path?: string;
   request: PRHeader;
   line_items: PRLineItem[];
   /** All approval-row records for this PR (per-approver-per-stage). */
@@ -141,14 +151,41 @@ export type PRApproval = {
   };
 };
 
-async function fetchPRApproval(id: number): Promise<PRApproval> {
+export type PurchaseApprovalKind =
+  | "purchase_request"
+  | "purchase_order"
+  | "payment_request"
+  | "expense_request";
+
+const ENDPOINT_BY_KIND: Record<PurchaseApprovalKind, string> = {
+  purchase_request: "requests",
+  purchase_order: "orders",
+  payment_request: "payment_requests",
+  expense_request: "expense_requests",
+};
+
+async function fetchPurchaseApproval(kind: PurchaseApprovalKind, id: number): Promise<PRApproval> {
   const headers = await buildAuthHeaders();
-  const res = await fetch(`${API_URL}/purchase_api/requests/${id}/approval`, { headers });
+  const endpoint = ENDPOINT_BY_KIND[kind];
+  const res = await fetch(`${API_URL}/purchase_api/${endpoint}/${id}/approval`, { headers });
   const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error((body && (body as any).message) || `HTTP ${res.status}`);
   if (!body?.status) throw new Error((body && (body as any).message) || "Request failed");
-  return (body as any).data as PRApproval;
+  return { kind, ...(body as any).data } as PRApproval;
+}
+
+async function fetchPRApproval(id: number): Promise<PRApproval> {
+  return fetchPurchaseApproval("purchase_request", id);
+}
+
+export function usePurchaseApproval(kind: PurchaseApprovalKind, id: number | null | undefined) {
+  return useQuery({
+    queryKey: ["purchase_approval", kind, id],
+    queryFn: () => fetchPurchaseApproval(kind, id as number),
+    enabled: typeof id === "number" && id > 0,
+    staleTime: 30 * 1000,
+  });
 }
 
 export function usePRApproval(id: number | null | undefined) {

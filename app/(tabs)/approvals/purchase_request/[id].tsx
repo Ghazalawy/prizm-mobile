@@ -17,13 +17,14 @@ import { Stack, useLocalSearchParams, router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import {
-  usePRApproval,
+  usePurchaseApproval,
   type PRApproval,
   type PRApprovalRow,
   type PRAttachment,
   type PRActivityLogItem,
   type PRLineItem,
   type PRQuotationSummaryRow,
+  type PurchaseApprovalKind,
 } from "@/lib/queries/purchase-request";
 import { ApprovalActionPanel } from "@/components/approvals/ApprovalActionPanel";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -62,11 +63,50 @@ if (
  */
 type TabKey = "info" | "attachments" | "comparison" | "activity";
 
-export default function PurchaseRequestApprovalScreen() {
+const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
+  fallbackPrefix: string;
+  label: string;
+  endpointBase: string;
+  webPath: (id: number) => string;
+}> = {
+  purchase_request: {
+    fallbackPrefix: "PR-",
+    label: "request",
+    endpointBase: "purchase_api/requests",
+    webPath: (id) => `przpurchase/ag_view_purchase_request/${id}`,
+  },
+  purchase_order: {
+    fallbackPrefix: "PO-",
+    label: "purchase order",
+    endpointBase: "purchase_api/orders",
+    webPath: (id) => `przpurchase/PurOrder/ag_view_purchase_order/${id}`,
+  },
+  payment_request: {
+    fallbackPrefix: "MT-",
+    label: "payment request",
+    endpointBase: "purchase_api/payment_requests",
+    webPath: (id) => `przpurchase/Payment_Request/view_payment_request/${id}`,
+  },
+  expense_request: {
+    fallbackPrefix: "ER-",
+    label: "expense request",
+    endpointBase: "purchase_api/expense_requests",
+    webPath: (id) => `przpurchase/Expense_Request/view_expense_request/${id}`,
+  },
+};
+
+export function PurchaseWorkflowApprovalScreen({
+  kind = "purchase_request",
+  id,
+}: {
+  kind?: PurchaseApprovalKind;
+  id?: string;
+}) {
   const params = useLocalSearchParams<{ id?: string }>();
-  const idNum = Number(params.id);
+  const cfg = APPROVAL_CONFIG[kind];
+  const idNum = Number(id ?? params.id);
   const validId = Number.isFinite(idNum) && idNum > 0 ? idNum : null;
-  const q = usePRApproval(validId);
+  const q = usePurchaseApproval(kind, validId);
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<TabKey>("info");
 
@@ -102,7 +142,7 @@ export default function PurchaseRequestApprovalScreen() {
         {stackHeaderHidden}
         <ErrorState
           message={
-            (q.error as any)?.message || "Couldn't load this purchase request."
+            (q.error as any)?.message || `Couldn't load this ${cfg.label}.`
           }
         />
       </>
@@ -112,7 +152,8 @@ export default function PurchaseRequestApprovalScreen() {
   const { request, viewer } = q.data;
   const code =
     request.display_code ||
-    (request.prefix || "PR-") +
+    request.display_number ||
+    (request.prefix || cfg.fallbackPrefix) +
       (request.sequence_number != null ? request.sequence_number : request.id);
 
   // Status pill tone shown in the hero.
@@ -134,7 +175,7 @@ export default function PurchaseRequestApprovalScreen() {
       `${code} · ${request.title || "Untitled"}\n` +
       `Requested by ${request.requester_name?.trim() || `staff #${request.staff_id}`}\n` +
       (cur ? `Total: ${cur}\n` : "") +
-      `${BASE_URL}/MS/admin/przpurchase/ag_view_purchase_request/${request.id}`;
+      `${BASE_URL}/MS/admin/${(request.web_path || cfg.webPath(request.id)).replace(/^\/+/, "")}`;
     try {
       await Share.share({ title: code, message: summary });
     } catch {
@@ -190,7 +231,14 @@ export default function PurchaseRequestApprovalScreen() {
           }
         >
           {tab === "info" ? (
-            <InfoTab data={q.data} code={code} rejected={rejected} allApproved={allApproved} />
+            <InfoTab
+              data={q.data}
+              code={code}
+              rejected={rejected}
+              allApproved={allApproved}
+              config={cfg}
+              kind={kind}
+            />
           ) : null}
           {tab === "attachments" ? <AttachmentsTab attachments={q.data.attachments} /> : null}
           {tab === "comparison" ? (
@@ -206,6 +254,10 @@ export default function PurchaseRequestApprovalScreen() {
   );
 }
 
+export default function PurchaseRequestApprovalScreen() {
+  return <PurchaseWorkflowApprovalScreen kind="purchase_request" />;
+}
+
 /* ───────────────────────────────────────────────────────────── */
 /*                          Sub-views                            */
 /* ───────────────────────────────────────────────────────────── */
@@ -215,11 +267,15 @@ function InfoTab({
   code,
   rejected,
   allApproved,
+  config,
+  kind,
 }: {
   data: PRApproval;
   code: string;
   rejected: boolean;
   allApproved: boolean;
+  config: (typeof APPROVAL_CONFIG)[PurchaseApprovalKind];
+  kind: PurchaseApprovalKind;
 }) {
   const { request, line_items, approval_rows, viewer } = data;
   const sumItems = useMemo(() => sumLineItems(line_items), [line_items]);
@@ -341,7 +397,10 @@ function InfoTab({
         isCurrentApprover={viewer.is_current_approver}
         statusDetailID={viewer.actionable_status_detail_id}
         requestId={request.id}
-        webFallbackPath={`przpurchase/ag_view_purchase_request/${request.id}`}
+        webFallbackPath={request.web_path || config.webPath(request.id)}
+        endpointBase={request.approval_endpoint || config.endpointBase}
+        entityLabel={config.label}
+        queryKey={["purchase_approval", kind, request.id]}
       />
 
       {/* Resubmit button — only when the viewer is the requester AND
@@ -350,7 +409,7 @@ function InfoTab({
       {viewer.is_submitter && rejected ? (
         <TouchableOpacity
           onPress={async () => {
-            const url = `${BASE_URL}/MS/admin/przpurchase/ag_view_purchase_request/${request.id}`;
+            const url = `${BASE_URL}/MS/admin/${(request.web_path || config.webPath(request.id)).replace(/^\/+/, "")}`;
             try {
               await Linking.openURL(url);
             } catch {}
@@ -646,7 +705,7 @@ function ApproverChip({ row }: { row: PRApprovalRow }) {
     >
       <Avatar
         staffid={row.approver}
-        profileImage={null}
+        profileImage={row.approver_profile_image ?? null}
         name={row.approver_name || `Staff #${row.approver}`}
         size={24}
       />

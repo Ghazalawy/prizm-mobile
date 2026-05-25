@@ -5,8 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-26 (after batch 13 — View-As/ribbon/purchase hardening)
-**Recent:** batch 13 hardened View-As query scoping/header usage, split top-ribbon To Do/Mentions/Notifications/Approvals/Compliance, fixed PR/PO display/file rel_types, and made attachment taps preview in-app before opening a device viewer.
+**Last updated:** 2026-05-26 (after batch 14 — native purchase approval siblings)
+**Recent:** batch 14 moved Purchase Order, Payment Request, and Expense Request approval detail/actions onto the same native approval screen pattern as Purchase Request, with avatar approval chains and permission-checked workflow endpoints.
 **Maintained by:** the Claude session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -48,10 +48,10 @@ Status legend:
 | 14 | Subscriptions | Sales | ✅ | ✅ CRUD | ✅ | — | 🟡 cancel/pause deferred |
 | 15 | Tenders | PRIZM | ✅ | ✅ + status/won/lost (b1) | ✅ + actions | 3 | ✅ |
 | 16 | Opportunities | PRIZM | ✅ | ✅ + stage/status (b1) | ✅ + actions | 2 | ✅ |
-| 17 | Purchase Orders | PRIZM | ✅ | ✅ + 5 workflow (b1), list/detail parity hardening (b13) | ✅ + 5 actions/files | 5 | ✅ |
+| 17 | Purchase Orders | PRIZM | ✅ | ✅ + workflow + approval detail (b14) | ✅ native approval/actions/files | 5 | ✅ |
 | 18 | Purchase Requests (RFQs) | PRIZM | ✅ | ✅ + approve/reject/publish/close, list/detail parity hardening (b13) | ✅ + actions/files | 4 | ✅ |
-| 18a | Payment Requests (MT) | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
-| 18b | Expense Requests | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
+| 18a | Payment Requests (MT) | PRIZM | ✅ | ✅ read/list/detail + approve/reject (b14) | ✅ native approval/files | 2 | ✅ |
+| 18b | Expense Requests | PRIZM | ✅ | ✅ read/list/detail + approve/reject (b14) | ✅ native approval/files | 2 | ✅ |
 | 18c | Received Vouchers | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
 | 18d | Delivery Notes | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
 | 18e | Supplier Quotations | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |

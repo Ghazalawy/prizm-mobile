@@ -5,8 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-24 (after batch 12 — My Expenses)
-**Recent:** batches 9-12 completed the employee self-service core (Check-in, My Leave, My Payslips, My Expenses) on top of the new `/api/my/*` namespace. See section "Recently shipped: employee self-service" below.
+**Last updated:** 2026-05-25 (Round 2 — operations modules audit, batch 13a — vendor/supplier enrichment)
+**Recent:** Round 2 audit kicked off (10 modules: Tasks, Opportunities, Purchase, Tenders, HR Records, HR Payroll, Timesheets & Leave, Support, Perfex Settings, Prizm Reports). Batch 13a enriched `purchase_vendors` with the rich `tblsuppliers` column set (TRN, supplier_category, mobile, is_verified, supply_domain, modern address columns). See "Round 2 — Operations modules audit" below for the full gap analysis + back-fill plan.
 **Maintained by:** the Claude session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -690,3 +690,53 @@ The mobile session (this repo) cannot read `C:/wamp64/www/prizm331`. All
 ERP-side endpoint work lives in `docs/ERP_BACKFILL_HANDOFF.md` as a
 checklist the local Windows session ticks off. Sync via git — both
 sessions push commits, this doc is the contract.
+
+## Round 2 — Batch 13a shipped (2026-05-25)
+
+Mobile-only batch. Confines itself to endpoints I could probe live as
+working today. Nothing speculative.
+
+**Probed live endpoints (Phase 1 sampling, 2026-05-25):**
+
+| MCP tool | HTTP path | Status |
+|---|---|---|
+| `get_suppliers` | `purchase_api/vendors` (existing) | ✅ live, returns rich `tblsuppliers` shape |
+| `get_vendor_categories` | (unknown) | ✅ live, labels-only (no id — config table) |
+| `get_supplier_quotations` | (unknown) | ✅ live (returned 3.5MB sample, endpoint works) |
+| `get_rfqs` | `/api/rfq` | 🔴 **404** — endpoint not deployed |
+| `get_purchase_analytics` | `/api/purchase_api/analytics` | 🔴 **500** — references missing table `tblprz_purchase_requests` |
+| `get_deployment_plans`, `get_manufacturers`, `get_material_categories`, `get_supplier_contacts`, `get_completion_certificates`, `get_delivery_notes`, `get_purchase_quotes`, `get_prz_payment_requests`, `get_site_requests`, `get_kits`, `get_purchase_stages`, `get_purchase_log`, `get_received_vouchers` | (unknown) | ⚠️ Unprobed — MCP server rate-limited after parallel calls; the local prizm331 session should `curl` these from a JWT-authenticated client and tick `ERP_BACKFILL_HANDOFF.md` for each that returns 200. |
+
+**Shipped (mobile-side):**
+
+- `lib/module-registry.ts` — `purchase_vendors` enriched with the rich
+  `tblsuppliers` columns I confirmed from the live API:
+  - New fields: `supplier_code`, `supplier_category`, `supplier_speciality`,
+    `status` (Active/Inactive select), `is_verified` (boolean),
+    `mobile`, `supply_domain`, `trn` (Tax Registration No.), `vat`,
+    `currency_id` (FK to currency reference data),
+    `preferred_payment_method`, `preferred_delivery_method`, `terms`,
+    `note`, `keywords`, `created_at` (read-only datetime).
+  - New address fields (the modern columns `city_town` /
+    `state_province` / `postal_code` that the API actually writes to —
+    the legacy `city/state/zip` are kept for old records).
+  - Updated `subtitleFields`: `["supplier_category", "country", "email", "phone"]`
+    so the list view shows the most useful info.
+  - Updated `searchFields`: `["company", "email", "phone", "trn",
+    "supplier_code", "supply_domain"]`.
+  - Plural label changed to "Vendors / Suppliers" to reflect the alias
+    (per the live `get_suppliers` MCP description: "this is an alias —
+    suppliers and vendors are the same entity").
+
+**Deferred until local prizm331 session ships ERP-side fixes:**
+
+- RFQ mobile work — depends on `Rfq_api` controller being shipped to
+  prizm331 + deployed. See `ERP_BACKFILL_HANDOFF.md` §Phase 1.
+- Purchase analytics dashboard — depends on
+  `Purchase_api::analytics_get` being fixed (the SQL references a
+  non-existent table; correct one is `tblprz_purchase_request`
+  singular, per `CLAUDE.md`'s table-name reality).
+- All other Phase 1 modules (deployment plans, material categories,
+  manufacturers, etc.) — endpoint paths not verified yet. Mobile
+  registry entries WILL be added in batch 13b once the local prizm331
+  session ticks them live in the handoff doc.

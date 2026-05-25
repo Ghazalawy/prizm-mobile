@@ -1090,22 +1090,51 @@ export const MODULES: ModuleDefinition[] = [
     ],
   },
   {
+    // Vendors and suppliers are the SAME entity in this ERP — the `get_suppliers`
+    // MCP tool docs confirm "this is an alias". Keep the `purchase_vendors` key
+    // for backwards-compat with deeplinks and dashboard tiles; surface the
+    // richer column set that the underlying `tblsuppliers` actually carries.
     key: "purchase_vendors",
     title: "Vendor",
-    plural: "Vendors",
+    plural: "Vendors / Suppliers",
     group: "Purchase",
     endpoint: "purchase_api/vendors",
     idKey: "id",
     icon: "storefront-outline",
     color: "#CA8A04",
-    titleFields: ["company", "name"],
-    subtitleFields: ["email", "phone"],
+    titleFields: ["company"],
+    subtitleFields: ["supplier_category", "country", "email", "phone"],
+    searchFields: ["company", "email", "phone", "trn", "supplier_code", "supply_domain"],
     fields: [
       { key: "company", label: "Company", section: "Vendor", required: true },
-      { key: "email", label: "Email", section: "Vendor", type: "email" },
-      { key: "phone", label: "Phone", section: "Vendor", type: "phone" },
-      { key: "website", label: "Website", section: "Vendor", type: "url" },
-      ...addressFields,
+      { key: "supplier_code", label: "Supplier Code", section: "Vendor" },
+      { key: "supplier_category", label: "Category", section: "Vendor", placeholder: "e.g. manufacturer, retailer, subcontractor" },
+      { key: "supplier_speciality", label: "Speciality", section: "Vendor" },
+      { key: "status", label: "Status", section: "Vendor", type: "select", options: statusOptions, defaultValue: "1" },
+      { key: "is_verified", label: "Verified", section: "Vendor", type: "boolean" },
+      { key: "email", label: "Email", section: "Contact", type: "email" },
+      { key: "phone", label: "Phone", section: "Contact", type: "phone" },
+      { key: "mobile", label: "Mobile", section: "Contact", type: "phone" },
+      { key: "website", label: "Website", section: "Contact", type: "url" },
+      { key: "supply_domain", label: "Supply Domain", section: "Contact", placeholder: "e.g. falconpower.sa" },
+      { key: "trn", label: "Tax Registration No. (TRN)", section: "Tax" },
+      { key: "vat", label: "VAT", section: "Tax" },
+      { key: "currency_id", label: "Default Currency", section: "Billing", type: "number", relation: "currency", hideIfZero: true },
+      { key: "preferred_payment_method", label: "Preferred Payment Method", section: "Billing" },
+      { key: "preferred_delivery_method", label: "Preferred Delivery Method", section: "Billing" },
+      { key: "terms", label: "Terms", section: "Billing", type: "multiline" },
+      // Modern address columns (city_town / state_province / postal_code) —
+      // new supplier records populate THIS set, not the legacy address/city/
+      // state/zip set below. Keep both: legacy values still surface for old
+      // records, modern set is what the API writes back today.
+      { key: "address", label: "Street", section: "Address", type: "multiline" },
+      { key: "city_town", label: "City / Town", section: "Address" },
+      { key: "state_province", label: "State / Province", section: "Address" },
+      { key: "postal_code", label: "Postal Code", section: "Address" },
+      { key: "country", label: "Country", section: "Address" },
+      { key: "note", label: "Note", section: "Notes", type: "multiline" },
+      { key: "keywords", label: "Keywords", section: "Notes" },
+      { key: "created_at", label: "Created", section: "Audit", type: "datetime", readOnly: true },
     ],
     tabs: [
       { key: "contacts", title: "Contacts", moduleKey: "purchase_vendor_contacts", endpointTemplate: "purchase_api/vendor_contacts/{id}", createDefaults: { vendor_id: "{id}" } },

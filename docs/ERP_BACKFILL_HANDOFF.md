@@ -320,6 +320,55 @@ After a batch ships, optionally append a short note to
 mobile session will pick up the new endpoint list on its next pull and
 plan the mobile-side wiring accordingly.
 
+## Confirmed broken endpoints (mobile-session probe, 2026-05-25)
+
+The mobile session probed several endpoints directly via the production
+MCP gateway (`mcp__da28e037-…` against `ms.prizm-energy.com/MS/api/…`).
+The following are **confirmed broken** and should be fixed before
+mobile can ship Phase 1:
+
+| MCP tool | URL hit | HTTP | Body snippet | Fix |
+|---|---|---|---|---|
+| `get_rfqs` | `GET /api/rfq` | **404** | Default REST 404 page | `Rfq_api` controller (or `purchase_api/rfqs` route) is not deployed. Either add it under `modules/api/controllers/Purchase_api.php` (`rfqs_get`, `rfqs_post`, `rfqs_put`, `rfqs_delete`) or as a standalone `Rfq_api.php`. Mirror the `Rfq_model` web controller for permission triple. |
+| `get_purchase_analytics` | `GET /api/purchase_api/analytics` | **500** | `Table 'prizmene_MS.tblprz_purchase_requests' doesn't exist` (`mysqli_sql_exception` at `mysqli_driver.php:307`) | The SQL references `tblprz_purchase_requests` (plural) but the install table is `tblprz_purchase_request` (singular — see `CLAUDE.md`'s Table name reality + `MODULE_AUDIT.md`'s Known Gaps table). Repoint the query to the singular name, or rename via migration. |
+
+**Action for the local prizm331 session:**
+
+1. Pull these two endpoint fixes into the **earliest** Phase 1 sub-batch
+   — the mobile registry can be filled in immediately after they deploy.
+2. After fixing, verify with the curl snippet in §"Endpoint sign-off
+   checkpoint" above (substitute the actual JWT + endpoint), then tick
+   the corresponding row in the Phase 1 checklist and append the
+   deploy SHA.
+3. While you're in `Purchase_api.php`, please also `curl`-probe the
+   following sibling endpoints from a JWT-authenticated client and
+   write back which return 200 vs 404 vs 500. The mobile session
+   couldn't probe them — the MCP gateway rate-limited after parallel
+   calls. List of endpoints needing a status check:
+   - `purchase_api/site_requests`
+   - `purchase_api/completion_certificates`
+   - `purchase_api/received_vouchers`
+   - `purchase_api/delivery_notes`
+   - `purchase_api/quotes` (or `purchase_quotes`)
+   - `purchase_api/payment_requests` (or `prz_payment_requests`)
+   - `purchase_api/log` (or `purchase_log`)
+   - `purchase_api/stages` (or `purchase_stages`)
+   - `purchase_api/statuses` (or `purchase_statuses`)
+   - `purchase_api/supplier_contacts`
+   - `purchase_api/supplier_quotations` (works via MCP — verify URL)
+   - `purchase_api/vendor_categories` (works via MCP — verify URL)
+   - `materials_catalog/categories`
+   - `materials_catalog/manufacturers`
+   - `materials_catalog/item_specs`
+   - `materials_catalog/catalog_item_specs`
+   - `materials_catalog/kits`
+   - `materials_catalog/kit_items`
+   - `deployment_plans_api` (or wherever the controller actually lives)
+
+   Append a "Probe results" subsection beneath this one with the
+   findings. Once each row is ticked live + URL confirmed, the mobile
+   session will ship the matching registry entry in batch 13b.
+
 ## See also
 
 - `docs/MODULE_AUDIT.md` — full Round 1 + Round 2 audit, mobile-side

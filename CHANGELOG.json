@@ -2,6 +2,25 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.6.0",
+      "date": "2026-05-25",
+      "title": "PR detail mirrors the web admin — 4 tabs, currency, approvers grid, collapsible items",
+      "highlights": [
+        "Purchase Request screen rebuilt to mirror the web admin's Info / Attachments / Comparison / Activity tab layout.",
+        "Approvers grid: every configured approver per stage shows their stamp (green check / red X / clock / empty) — no more 'view only' placeholder when you're just spectating.",
+        "Total now shows currency (e.g. '600.00 AED'); the screen flags a discrepancy badge if the stored total disagrees with the sum of line items by more than 0.01.",
+        "Line items collapsed by default — tap a row to expand long description, spec, and any approved-qty/price overrides.",
+        "Notes preserve line breaks and detect URLs (https links are tappable).",
+        "Hero now shows the requester's avatar, department, and cost center chips.",
+        "Attachments tab lists every file linked to the PR; tap to open in browser.",
+        "Comparison tab ranks supplier quotations cheapest-first with a green ribbon on the leader.",
+        "Activity tab shows the full purchase log (who did what, when) — same source as the web's Activity Log tab.",
+        "Resubmit button appears when you're the requester AND a row is rejected — opens the web admin's edit flow.",
+        "Pull-to-refresh on the PR screen — no more back-out-and-re-enter to see new actions.",
+        "Backend: check-in 500 fixed (timesheets helper wasn't being loaded by the API path)."
+      ]
+    },
+    {
       "version": "1.5.0",
       "date": "2026-05-25",
       "title": "View As + smooth DnD + canonical PR approve",

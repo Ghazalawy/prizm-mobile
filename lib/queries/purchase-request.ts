@@ -84,11 +84,42 @@ export type PRHeader = {
   total_amount: string | null;
   requested_date: string | null;
   department_id: number | null;
+  department_name: string | null;
+  currency_id: number | null;
+  currency_symbol: string | null;
+  currency_name: string | null;
+  cost_centers: Array<{ id: number; code: string; title: string }>;
   notes: string | null;
   rel_type: string | null;
   rel_id: number | null;
   project_id: number | null;
   requester_name: string | null;
+  requester_profile_image: string | null;
+};
+
+export type PRAttachment = {
+  id: number;
+  file_name: string;
+  filetype: string;
+  dateadded: string;
+  staffid: number;
+};
+
+export type PRActivityLogItem = {
+  id: number;
+  log_details: string;
+  add_date: string;
+  staff_id: number;
+  staff_name: string;
+  profile_image: string | null;
+};
+
+export type PRQuotationSummaryRow = {
+  supplier_id: number;
+  supplier_name: string;
+  currency_id: number;
+  supplier_total: number;
+  items_quoted: number;
 };
 
 export type PRApproval = {
@@ -96,6 +127,9 @@ export type PRApproval = {
   line_items: PRLineItem[];
   /** All approval-row records for this PR (per-approver-per-stage). */
   approval_rows: PRApprovalRow[];
+  attachments: PRAttachment[];
+  activity_log: PRActivityLogItem[];
+  quotation_summary: PRQuotationSummaryRow[];
   viewer: {
     staffid: number;
     is_current_approver: boolean;

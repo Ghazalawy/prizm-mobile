@@ -367,10 +367,11 @@ export function ActionCenter() {
   // doesn't change coord systems).
   const statusBarOffset = Platform.OS === "android" ? insets.top : 0;
 
-  // Badge counts reflect *unread* (still-needs-attention) items, not the
-  // raw inbox size. Once the user taps an item it stops contributing to
-  // the red badge — matches every notification UI on the planet, and
-  // matches the user's expectation that reading clears the dot.
+  // Approval badge follows the web header's pending-action count from
+  // tblapprovals. Local read-state may soften a row after it is tapped,
+  // but it must not reduce the approval counter; only the server-side
+  // approval notification state does that. Other categories keep the
+  // local unread behavior.
   const counts = useMemo(() => {
     const unreadFor = (cat: InboxCategory): number => {
       const rows = q.data?.[cat] ?? [];
@@ -381,7 +382,7 @@ export function ActionCenter() {
       return n;
     };
     return {
-      approvals: unreadFor("approvals"),
+      approvals: Number(q.data?.summary?.approvals ?? unreadFor("approvals")),
       tasks: unreadFor("tasks"),
       mentions: unreadFor("mentions"),
       compliance: unreadFor("compliance"),
@@ -458,11 +459,11 @@ export function ActionCenter() {
 
   // Compute unread counts per category once per render so each row doesn't
   // run an O(n) lookup. Also drives the "Mark all read" affordance.
-  const unreadInOpen = openCategory
+  const unreadInOpen = openCategory && openCategory !== "approvals"
     ? itemsForOpen.filter((it) => !readKeys.has(inboxKey(it.type, it.id))).length
     : 0;
   const markAllOpenRead = useCallback(() => {
-    if (!openCategory) return;
+    if (!openCategory || openCategory === "approvals") return;
     const keys = itemsForOpen.map((it) => inboxKey(it.type, it.id));
     markAllRead(keys);
   }, [openCategory, itemsForOpen]);

@@ -2,36 +2,14 @@
 
 Items the user explicitly flagged "don't rebuild now, write down for next."
 
-## 1. Per-user approval filter — show only what's _actually pending me_
+## Resolved in 1.6.2. Approval counter parity
 
-**Symptom.** Top-bar Approvals chip shows 15 on mobile; ERP web shows 5 for the
-same user. The mobile is over-counting because `Inbox_api::_approvals` returns
-**every** transaction whose `status` matches a stage where the caller is
-listed as an approver — including transactions where the caller has already
-acted, or where _another_ approver at the same stage already approved.
+The top-bar Approvals badge now mirrors the ERP web header by using
+`tblapprovals` rows where `touserid=me AND isread=0 AND is_action_taken!=1`.
+Do not reintroduce a `*_statusdetail` reconstruction for the ribbon counter;
+the web notification stream is the source of truth for this badge.
 
-**Fix.** Add a second filter: only surface transactions where there's NO
-matching row in the per-transaction `*_statusdetail` audit table for
-`(staffid = me AND statusID = current_status AND is_current_status = 1)`.
-
-Audit tables to query per type:
-- PR  → `tblprz_purchase_request_statusdetail`
-- PO  → `tblprz_po_statusdetail` (verify name)
-- Pay → `tblprz_payment_statusdetail`
-- Exp → `tblprz_expense_req_statusdetail`
-
-Pattern (SQL pseudo-code):
-```sql
-LEFT JOIN tblprz_purchase_request_statusdetail sd
-  ON sd.purchase_request_id = pr.id
- AND sd.statusID = pr.status
- AND sd.approver = :me
-WHERE sd.id IS NULL  -- I haven't acted at the current stage
-```
-
-Verify against ERP web's exact count — that's the source of truth.
-
-## 2. Native approve / reject (with mandatory rejection note + signature)
+## 1. Native approve / reject (with mandatory rejection note + signature)
 
 Right now the native PR screen is **read-only** — `<ApprovalActionPanel>`
 shows an "Approve in web" fallback because the multi-stage advancement
@@ -62,7 +40,7 @@ Server-side logic must:
 After PR works end-to-end, extract `<ApprovalScreen>` into a shared component
 keyed by entity type — PO / Budget / Leave / Expense become thin wrappers.
 
-## 3. PDF / PNG share for transactions
+## 2. PDF / PNG share for transactions
 
 The PR screen now has a `<Share />` button that exports text + URL. Real
 PDF + PNG visual export needs:
@@ -73,7 +51,7 @@ PDF + PNG visual export needs:
 Defer until we have a quiet CI day — these don't ship cleanly in a hotfix
 batch.
 
-## 4. Dashboard "Tasks" count discrepancy
+## 3. Dashboard "Tasks" count discrepancy
 
 Web shows "1" pending; mobile My Tasks tile shows 55 total open. Web is
 probably showing only `status = 1` (not_started) tasks assigned to the

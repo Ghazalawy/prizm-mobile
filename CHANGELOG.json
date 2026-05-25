@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.6.2",
+      "date": "2026-05-25",
+      "title": "Approval counter matches the web header",
+      "highlights": [
+        "Approvals badge now uses the web header's pending-action count instead of local read-state.",
+        "Tapping an approval can soften the row, but the badge follows the server-side web count.",
+        "Backend inbox approvals now come from the same tblapprovals source as the web UI."
+      ]
+    },
+    {
       "version": "1.6.1",
       "date": "2026-05-25",
       "title": "PR approval timeline populates (no more 'no workflow configured') + cleaner non-approver view",

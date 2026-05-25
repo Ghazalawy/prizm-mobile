@@ -342,9 +342,19 @@ mobile can ship Phase 1:
    deploy SHA.
 3. While you're in `Purchase_api.php`, please also `curl`-probe the
    following sibling endpoints from a JWT-authenticated client and
-   write back which return 200 vs 404 vs 500. The mobile session
-   couldn't probe them — the MCP gateway rate-limited after parallel
-   calls. List of endpoints needing a status check:
+   write back which return 200 vs 404 vs 500.
+
+   > **Why curl, not MCP:** the mobile session tried to probe these
+   > via the `mcp__da28e037-…` gateway. Two reached the ERP and gave
+   > clean answers (rfqs 404, purchase_analytics 500). The rest
+   > returned Anthropic-side transport errors (`mcp_sse_error 400`,
+   > `502 origin_bad_gateway`, `MCP server connection lost`) —
+   > those are **proxy issues, not ERP issues**, but they mean MCP
+   > probing is unreliable right now. A direct `curl` from the local
+   > session bypasses the MCP layer entirely and will give a clean
+   > 200/404/500 every time.
+
+   List of endpoints needing a status check:
    - `purchase_api/site_requests`
    - `purchase_api/completion_certificates`
    - `purchase_api/received_vouchers`

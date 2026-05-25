@@ -32,6 +32,7 @@ import {
   markAllRead,
   useReadInbox,
 } from "@/lib/inbox-read";
+import { formatRelativeShort, formatAbsolute } from "@/lib/time";
 
 /**
  * Top bar (Action Center) — pinned at the top of every authenticated screen.
@@ -217,9 +218,20 @@ function InboxRow({
       ? "#94A3B8"
       : "#475569";
 
+  // Compact "3h" / "2d" / "Sep 12" label for the right corner.
+  // Source order: triggered_at (backend ISO) → due_at (futures show as
+  // absolute date). Falls back to null which suppresses the badge.
+  const relLabel = formatRelativeShort(item.triggered_at ?? item.due_at);
+  const absLabel = formatAbsolute(item.triggered_at ?? item.due_at);
+
   return (
     <Pressable
       onPress={handleTap}
+      // Long-press to surface the exact timestamp — mirrors the web
+      // tooltip pattern ("25-05-2026 5:21 PM"). No-op if no time data.
+      onLongPress={absLabel ? () => Toast.show({
+        type: "info", text1: item.title.slice(0, 60), text2: absLabel,
+      }) : undefined}
       android_ripple={{ color: "#E2E8F0" }}
       className="px-4 py-3 border-b border-slate-100"
       // Unread = very light blue wash so the eye picks up "needs attention"
@@ -238,13 +250,27 @@ function InboxRow({
           <View className="w-2 mt-2" />
         )}
         <View className="flex-1">
-          <Text
-            className={`text-sm ${unread ? "font-bold" : "font-normal"} text-foreground`}
-            numberOfLines={2}
-            style={rtlTextStyle(item.title)}
-          >
-            {item.title}
-          </Text>
+          <View className="flex-row items-start justify-between gap-2">
+            <Text
+              className={`text-sm flex-1 ${unread ? "font-bold" : "font-normal"} text-foreground`}
+              numberOfLines={2}
+              style={rtlTextStyle(item.title)}
+            >
+              {item.title}
+            </Text>
+            {/* Right-aligned compact time-ago badge. Mirrors the web's
+                'hrs ago' label but in the Gmail-style short form so it
+                doesn't crowd the row. Long-press the row to see the
+                full timestamp. */}
+            {relLabel ? (
+              <Text
+                className="text-[11px] text-muted shrink-0 mt-0.5"
+                style={{ fontVariant: ["tabular-nums"] }}
+              >
+                {relLabel}
+              </Text>
+            ) : null}
+          </View>
           {item.subtitle ? (
             <Text
               className={`text-xs mt-0.5 ${unread ? "text-foreground/80" : "text-muted"}`}

@@ -37,6 +37,12 @@ export type InboxItem = {
   due_at?: string | null;
   /** Days the item has been pending. Higher = redder. */
   age_days?: number;
+  /** ISO 8601 of when the item was triggered/created/submitted. Drives
+   *  the right-aligned time-ago badge ("3h", "2d") on inbox rows.
+   *  Backend emits as date('c', $ts) so it parses cleanly via
+   *  Date.parse on the client. Null when the source row has no
+   *  usable timestamp (degrades gracefully — no badge rendered). */
+  triggered_at?: string | null;
 };
 
 export type InboxSummary = {

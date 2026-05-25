@@ -115,17 +115,12 @@ export function ApprovalActionPanel({
     }
   }, [webFallbackPath]);
 
-  // Non-approver view stays unchanged — eye-only banner.
-  if (!isCurrentApprover) {
-    return (
-      <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm flex-row items-center">
-        <Ionicons name="eye-outline" size={18} color="#64748B" />
-        <Text className="text-sm text-muted ml-2 flex-1">
-          You're not the current approver — view only.
-        </Text>
-      </View>
-    );
-  }
+  // Non-approver path: render NOTHING. The Approvers grid above this
+  // panel already shows every approver's stamp + the viewer's "YOU"
+  // pill, which is plenty of "what's my role here?" signal. The old
+  // eye-banner ("You're not the current approver — view only") was
+  // redundant and the user explicitly asked for it gone.
+  if (!isCurrentApprover) return null;
 
   return (
     <View className="bg-white rounded-2xl px-4 py-4 mb-3 shadow-sm">

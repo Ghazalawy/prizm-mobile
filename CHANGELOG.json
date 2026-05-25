@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.6.1",
+      "date": "2026-05-25",
+      "title": "PR approval timeline populates (no more 'no workflow configured') + cleaner non-approver view",
+      "highlights": [
+        "Approval timeline + Approvers grid now populate for every Purchase Request — a backend SQL bug was crashing the read endpoint silently and returning an empty list, which the app rendered as 'No approval workflow configured' even on PRs that had real approvers.",
+        "Non-approver view no longer shows the redundant 'view only' eye-banner — the Approvers grid above already tells you who's in the loop and whose turn it is.",
+        "Backend error logging hardened: queries that crash inside try/catch are now logged to error.log instead of being silently swallowed, so future regressions show up immediately."
+      ]
+    },
+    {
       "version": "1.6.0",
       "date": "2026-05-25",
       "title": "PR detail mirrors the web admin — 4 tabs, currency, approvers grid, collapsible items",

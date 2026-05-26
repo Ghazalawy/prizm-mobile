@@ -153,7 +153,7 @@ jobs:
 
       - name: Render audit doc to HTML
         run: |
-          npm install --no-save marked@12
+          npm install --no-save --legacy-peer-deps marked@12
           node .github/scripts/render-audit.js
           sed -i "s|__SHORT_SHA__|${{ needs.build-apk.outputs.short_sha }}|g" _site/audit.html
           sed -i "s|__BUILD_TIME__|${{ needs.build-apk.outputs.build_time }}|g" _site/audit.html

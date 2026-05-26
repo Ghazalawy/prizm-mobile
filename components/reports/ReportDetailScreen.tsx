@@ -4,8 +4,6 @@ import {
   Alert,
   Dimensions,
   Image,
-  Modal,
-  Pressable,
   RefreshControl,
   ScrollView,
   Text,
@@ -25,6 +23,7 @@ import {
 import { colors, statusBadge } from "@/lib/theme";
 import { rtlTextStyle } from "@/lib/rtl";
 import { usePermissions } from "@/lib/permission-context";
+import { FilePreview, type PreviewFile } from "@/components/FilePreview";
 
 const SCREEN_W = Dimensions.get("window").width;
 const ACCENT = colors.primary;
@@ -36,7 +35,8 @@ export function ReportDetailScreen({ id }: Props) {
   const { data: report, isLoading, isError, error, refetch } = useReportDetail(id);
   const deleteMutation = useDeleteReport();
   const [refreshing, setRefreshing] = useState(false);
-  const [lightbox, setLightbox] = useState<string | null>(null);
+  const [lightboxFile, setLightboxFile] = useState<PreviewFile | null>(null);
+  const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
   const { canEdit, canDelete } = usePermissions();
   const canEditReport = canEdit("prizm_reports");
   const canDeleteReport = canDelete("prizm_reports");
@@ -253,7 +253,15 @@ export function ReportDetailScreen({ id }: Props) {
                 <PhotoThumb
                   key={img.id}
                   image={img}
-                  onPress={() => setLightbox(reportImageUrl(img.image_path))}
+                  onPress={() => {
+                    const url = reportImageUrl(img.image_path);
+                    setLightboxUrl(url);
+                    setLightboxFile({
+                      id: img.id,
+                      file_name: img.image_path || `photo-${img.id}`,
+                      filetype: "image/jpeg",
+                    });
+                  }}
                 />
               ))}
             </ScrollView>
@@ -292,27 +300,16 @@ export function ReportDetailScreen({ id }: Props) {
         ) : null}
       </ScrollView>
 
-      {/* ── Lightbox modal ───────────────────────────────────── */}
-      <Modal visible={!!lightbox} transparent animationType="fade" onRequestClose={() => setLightbox(null)}>
-        <Pressable
-          className="flex-1 bg-black/90 items-center justify-center"
-          onPress={() => setLightbox(null)}
-        >
-          <TouchableOpacity
-            onPress={() => setLightbox(null)}
-            className="absolute top-12 right-4 z-10 w-10 h-10 rounded-full bg-white/20 items-center justify-center"
-          >
-            <Ionicons name="close" size={24} color="#FFF" />
-          </TouchableOpacity>
-          {lightbox ? (
-            <Image
-              source={{ uri: lightbox }}
-              style={{ width: SCREEN_W - 32, height: SCREEN_W - 32 }}
-              resizeMode="contain"
-            />
-          ) : null}
-        </Pressable>
-      </Modal>
+      {/* ── Full-screen photo preview with pinch-to-zoom ───── */}
+      <FilePreview
+        file={lightboxFile}
+        directUrl={lightboxUrl}
+        color={ACCENT}
+        onClose={() => {
+          setLightboxFile(null);
+          setLightboxUrl(null);
+        }}
+      />
     </View>
   );
 }

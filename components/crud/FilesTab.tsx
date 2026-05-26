@@ -2,14 +2,10 @@ import {
   ActivityIndicator,
   Alert,
   FlatList,
-  Image,
-  Modal,
-  Pressable,
   Text,
   TouchableOpacity,
   View,
 } from "react-native";
-import * as WebBrowser from "expo-web-browser";
 import { Ionicons } from "@expo/vector-icons";
 import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -22,6 +18,7 @@ import {
 } from "@/lib/files";
 import { API_URL } from "@/lib/config";
 import Toast from "react-native-toast-message";
+import { FilePreview, type PreviewFile } from "@/components/FilePreview";
 
 type FilesTabProps = {
   /** Perfex rel_type — "customer", "project", "task", "invoice", "lead", ... */
@@ -36,11 +33,16 @@ type FilesTabProps = {
  * Attachments tab. Lists tblfiles rows scoped by rel_type+rel_id, with
  * Camera / Gallery / Document buttons up top to upload. Each row shows the
  * filename, size, who added it, and tappable open-in-app + delete.
+ *
+ * All files now open in-app via the FilePreview modal — images with
+ * pinch-to-zoom, PDFs via Google Docs viewer, Office docs via Office
+ * Online, and everything else with download-and-share.
  */
 export function FilesTab({ relType, relId, color }: FilesTabProps) {
   const queryClient = useQueryClient();
   const [uploading, setUploading] = useState(false);
-  const [preview, setPreview] = useState<{ file: FileRow; url: string } | null>(null);
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
 
   const q = useQuery({
     queryKey: ["files", relType, relId],
@@ -101,33 +103,22 @@ export function FilesTab({ relType, relId, color }: FilesTabProps) {
     [deleteMutation]
   );
 
-  const downloadUrlFor = useCallback(async (file: FileRow) => {
-    const headers = await buildAuthHeaders();
-    return `${API_URL}/files/download/${encodeURIComponent(file.id)}${buildQS({
-      authtoken: headers["authtoken"] ?? "",
-    })}`;
-  }, []);
-
   const handleOpen = useCallback(async (file: FileRow) => {
     try {
-      const url = await downloadUrlFor(file);
-      setPreview({ file, url });
+      const headers = await buildAuthHeaders();
+      const url = `${API_URL}/files/download/${encodeURIComponent(file.id)}${buildQS({
+        authtoken: headers["authtoken"] ?? "",
+      })}`;
+      setPreviewUrl(url);
+      setPreviewFile(file as PreviewFile);
     } catch (err: any) {
       Alert.alert("Couldn't preview", err?.message || "Unknown error");
     }
-  }, [downloadUrlFor]);
-
-  const handleOpenPreview = useCallback(async (file: FileRow) => {
-    try {
-      const url = await downloadUrlFor(file);
-      await WebBrowser.openBrowserAsync(url);
-    } catch {
-      Alert.alert("Couldn't open", "This file could not be opened on the device.");
-    }
-  }, [downloadUrlFor]);
+  }, []);
 
   const closePreview = useCallback(() => {
-    setPreview(null);
+    setPreviewFile(null);
+    setPreviewUrl(null);
   }, []);
 
   return (
@@ -219,11 +210,12 @@ export function FilesTab({ relType, relId, color }: FilesTabProps) {
           contentContainerStyle={{ padding: 12, paddingBottom: 24 }}
         />
       )}
-      <AttachmentPreviewModal
-        preview={preview}
+
+      <FilePreview
+        file={previewFile}
+        directUrl={previewUrl}
         color={color}
         onClose={closePreview}
-        onOpen={handleOpenPreview}
       />
     </View>
   );
@@ -262,115 +254,6 @@ type FileRow = {
   filesize?: number | string;
   dateadded?: string;
 };
-
-function AttachmentPreviewModal({
-  preview,
-  color,
-  onClose,
-  onOpen,
-}: {
-  preview: { file: FileRow; url: string } | null;
-  color: string;
-  onClose: () => void;
-  onOpen: (file: FileRow) => void;
-}) {
-  const file = preview?.file;
-  const mime = file?.filetype || "";
-  const isImage = isImageFile(file);
-
-  return (
-    <Modal
-      visible={!!preview}
-      animationType="slide"
-      transparent
-      onRequestClose={onClose}
-    >
-      <Pressable
-        style={{ flex: 1, backgroundColor: "rgba(15,23,42,0.45)" }}
-        onPress={onClose}
-      />
-      <View
-        style={{
-          position: "absolute",
-          left: 12,
-          right: 12,
-          bottom: 18,
-          maxHeight: "82%",
-          backgroundColor: "#FFFFFF",
-          borderRadius: 14,
-          overflow: "hidden",
-        }}
-      >
-        <View className="flex-row items-center px-4 py-3 border-b border-slate-100">
-          <View
-            className="w-10 h-10 rounded-lg items-center justify-center"
-            style={{ backgroundColor: `${color}1A` }}
-          >
-            <Ionicons name={iconForMime(mime)} size={20} color={color} />
-          </View>
-          <View className="flex-1 ml-3">
-            <Text className="text-foreground font-semibold" numberOfLines={1}>
-              {file?.file_name || `File #${file?.id ?? ""}`}
-            </Text>
-            <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
-              {[mime || "File", formatBytes(file?.filesize)].filter(Boolean).join(" · ")}
-            </Text>
-          </View>
-          <TouchableOpacity onPress={onClose} hitSlop={10}>
-            <Ionicons name="close" size={22} color="#64748B" />
-          </TouchableOpacity>
-        </View>
-
-        {preview && isImage ? (
-          <View style={{ height: 420, backgroundColor: "#0F172A" }}>
-            <Image
-              source={{ uri: preview.url }}
-              style={{ flex: 1 }}
-              resizeMode="contain"
-            />
-          </View>
-        ) : (
-          <View className="px-5 py-8 items-center">
-            <Ionicons name={iconForMime(mime)} size={52} color="#94A3B8" />
-            <Text className="text-foreground font-semibold mt-3 text-center">
-              Preview unavailable
-            </Text>
-            <Text className="text-muted text-sm mt-1 text-center">
-              Use the viewer on this device for this attachment.
-            </Text>
-          </View>
-        )}
-
-        {file ? (
-          <View className="flex-row gap-2 p-3 border-t border-slate-100">
-            <TouchableOpacity
-              className="flex-1 rounded-lg py-3 items-center"
-              style={{ backgroundColor: color }}
-              onPress={() => onOpen(file)}
-            >
-              <Text className="text-white font-semibold">
-                {isImage ? "Open full file" : "Open preview"}
-              </Text>
-            </TouchableOpacity>
-            <TouchableOpacity
-              className="px-4 rounded-lg py-3 items-center bg-slate-100"
-              onPress={onClose}
-            >
-              <Text className="text-slate-700 font-semibold">Close</Text>
-            </TouchableOpacity>
-          </View>
-        ) : null}
-      </View>
-    </Modal>
-  );
-}
-
-function isImageFile(file?: FileRow | null): boolean {
-  const mime = file?.filetype || "";
-  if (mime.startsWith("image/")) return true;
-  const name = String(file?.file_name || "").toLowerCase();
-  return /\.(png|jpe?g|gif|webp|bmp|heic|heif)$/.test(name);
-}
 
 function iconForMime(mime?: string): keyof typeof Ionicons.glyphMap {
   if (!mime) return "document-outline";

@@ -550,6 +550,26 @@ export default function DashboardScreen() {
       {/* B. Quick Actions Grid */}
       <View className="px-4">
         <SectionHeader title="Quick Actions" icon="flash-outline" />
+        <View className="flex-row gap-3 mb-3">
+          <QuickAction
+            icon="camera-outline"
+            label="Quick Expense"
+            color="#EA580C"
+            onPress={() => router.push("/(tabs)/quick-expense" as any)}
+          />
+          <QuickAction
+            icon="time-outline"
+            label="Timesheets"
+            color="#0369A1"
+            onPress={() => router.push("/(tabs)/timesheets" as any)}
+          />
+          <QuickAction
+            icon="checkbox-outline"
+            label="New Task"
+            color="#F59E0B"
+            onPress={() => router.push("/(tabs)/tasks/new" as any)}
+          />
+        </View>
         <View className="flex-row gap-3">
           <QuickAction
             icon="document-text-outline"
@@ -558,16 +578,16 @@ export default function DashboardScreen() {
             onPress={() => router.push("/(tabs)/reports/new" as any)}
           />
           <QuickAction
-            icon="checkbox-outline"
-            label="New Task"
-            color="#F59E0B"
-            onPress={() => router.push("/(tabs)/tasks/new" as any)}
+            icon="receipt-outline"
+            label="My Expenses"
+            color={colors.primary}
+            onPress={() => router.push("/(tabs)/expenses-mine" as any)}
           />
           <QuickAction
-            icon="receipt-outline"
-            label="New Expense"
-            color="#EA580C"
-            onPress={() => router.push("/(tabs)/expenses-mine" as any)}
+            icon="calendar-outline"
+            label="Leave"
+            color="#7C3AED"
+            onPress={() => router.push("/(tabs)/leave" as any)}
           />
         </View>
       </View>

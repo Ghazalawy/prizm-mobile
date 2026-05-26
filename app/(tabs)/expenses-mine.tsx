@@ -10,18 +10,7 @@ import { useState, useCallback } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import { useMyExpenses, type ExpenseRow } from "@/lib/queries/my";
-
-/**
- * My Expenses — list of expenses the current staff has submitted.
- *
- * Shows summary card (total submitted / total billed-to-customer) at top,
- * then a list of expenses grouped by month. Tap any row → drill into the
- * standard ERP expense detail screen (uses CrudDetailScreen via the
- * "expenses" module registry entry).
- *
- * Submission form deferred — currently view-only. The /api/my/expenses
- * POST endpoint is live for when we add a form.
- */
+import { colors } from "@/lib/theme";
 
 function fmtMoney(s: string | number, currency?: string | null): string {
   const n = typeof s === "number" ? s : parseFloat(s);
@@ -100,7 +89,15 @@ export default function MyExpensesScreen() {
           headerShown: true,
           headerLeft: () => (
             <TouchableOpacity onPress={() => router.back()} className="px-2">
-              <Ionicons name="chevron-back" size={28} color="#0284C7" />
+              <Ionicons name="chevron-back" size={28} color={colors.primary} />
+            </TouchableOpacity>
+          ),
+          headerRight: () => (
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/quick-expense" as any)}
+              className="px-2"
+            >
+              <Ionicons name="add-circle-outline" size={26} color={colors.primary} />
             </TouchableOpacity>
           ),
         }}
@@ -108,34 +105,61 @@ export default function MyExpensesScreen() {
 
       <ScrollView
         refreshControl={
-          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0284C7" />
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
         }
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       >
         {/* Summary card */}
         {data && data.summary ? (
-          <View className="bg-white rounded-2xl p-5 mb-4 shadow-sm">
-            <Text className="text-xs uppercase text-muted tracking-wide mb-3">
-              Summary
+          <View
+            className="rounded-2xl p-5 mb-4 shadow-sm"
+            style={{ backgroundColor: colors.primary }}
+          >
+            <Text className="text-white/80 text-xs uppercase tracking-wide mb-2">
+              My Expenses Summary
             </Text>
             <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-sm text-slate-600">Total submitted</Text>
-              <Text className="text-sm font-semibold text-foreground tabular-nums">
+              <Text className="text-sm text-white/80">Total submitted</Text>
+              <Text className="text-sm font-semibold text-white tabular-nums">
                 {fmtMoney(data.summary.total_amount)} · {data.summary.total_count} items
               </Text>
             </View>
             <View className="flex-row items-center justify-between">
-              <Text className="text-sm text-slate-600">Billed to customers</Text>
-              <Text className="text-sm font-semibold text-emerald-700 tabular-nums">
+              <Text className="text-sm text-white/80">Billed to customers</Text>
+              <Text className="text-sm font-semibold text-white tabular-nums">
                 {fmtMoney(data.summary.billed_amount)}
               </Text>
             </View>
           </View>
         ) : null}
 
+        {/* Quick action buttons */}
+        <View className="flex-row gap-3 mb-4">
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/quick-expense" as any)}
+            activeOpacity={0.7}
+            className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
+          >
+            <Ionicons name="camera-outline" size={24} color={colors.primary} />
+            <Text className="text-xs font-semibold text-foreground mt-1">
+              Quick Expense
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/erp/expenses" as any)}
+            activeOpacity={0.7}
+            className="flex-1 bg-white rounded-2xl p-4 items-center shadow-sm"
+          >
+            <Ionicons name="list-outline" size={24} color={colors.primary} />
+            <Text className="text-xs font-semibold text-foreground mt-1">
+              All Expenses
+            </Text>
+          </TouchableOpacity>
+        </View>
+
         {q.isLoading ? (
           <View className="bg-white rounded-2xl p-8 items-center">
-            <ActivityIndicator color="#0284C7" />
+            <ActivityIndicator color={colors.primary} />
           </View>
         ) : q.isError ? (
           <View className="bg-white rounded-2xl p-6">
@@ -149,6 +173,16 @@ export default function MyExpensesScreen() {
             <Text className="text-sm text-muted mt-2 text-center">
               No expenses yet
             </Text>
+            <TouchableOpacity
+              onPress={() => router.push("/(tabs)/quick-expense" as any)}
+              activeOpacity={0.7}
+              className="mt-3 px-5 py-2.5 rounded-xl"
+              style={{ backgroundColor: colors.primary }}
+            >
+              <Text className="text-white font-semibold text-sm">
+                Add Your First Expense
+              </Text>
+            </TouchableOpacity>
           </View>
         ) : (
           data.data.map((row) => <ExpenseCard key={row.id} row={row} />)

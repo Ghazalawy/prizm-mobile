@@ -72,11 +72,11 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="tasks"
+          name="reports"
           options={{
-            title: "Tasks",
+            title: "Reports",
             tabBarIcon: ({ color, size }) => (
-              <Ionicons name="checkbox-outline" size={size} color={color} />
+              <Ionicons name="document-text-outline" size={size} color={color} />
             ),
           }}
         />
@@ -100,6 +100,7 @@ export default function TabLayout() {
         />
 
         {/* Reachable via ERP hub / router.push, hidden from bottom bar */}
+        <Tabs.Screen name="tasks" options={{ href: null }} />
         <Tabs.Screen name="customers" options={{ href: null }} />
         <Tabs.Screen name="dashboard-customize" options={{ href: null }} />
         <Tabs.Screen name="approvals" options={{ href: null }} />

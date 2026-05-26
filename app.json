@@ -71,7 +71,8 @@
         {
           "faceIDPermission": "Use Face ID to sign in to Prizm CRM."
         }
-      ]
+      ],
+      "@react-native-community/datetimepicker"
     ],
     "experiments": {
       "typedRoutes": true

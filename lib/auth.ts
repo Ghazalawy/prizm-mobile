@@ -160,12 +160,34 @@ export async function loginViaAdmin(
       const location = loginRes.headers.get("location") || "";
       if (
         location.includes("dashboard") ||
-        location.includes("admin") &&
-        !location.includes("authentication")
+        (location.includes("admin") &&
+        !location.includes("authentication"))
       ) {
         if (sessionCookie) {
           await setSessionCookie(sessionCookie);
         }
+        // Session login succeeded — also try to get a JWT token via mobile_auth
+        // so REST API calls work (session cookies don't help there).
+        try {
+          const formData2 = new FormData();
+          formData2.append("email", email);
+          formData2.append("password", password);
+          const authRes = await fetch(MOBILE_AUTH_URL, { method: "POST", body: formData2 });
+          const authData = await authRes.json();
+          if (authData.token) {
+            await setAuthToken(authData.token);
+            if (authData.staff && typeof authData.staff.staffid === "number") {
+              await setStaffProfile({
+                staffid: authData.staff.staffid,
+                email: authData.staff.email,
+                firstname: authData.staff.firstname || "",
+                lastname: authData.staff.lastname || "",
+                profile_image: authData.staff.profile_image || null,
+                phonenumber: authData.staff.phonenumber || null,
+              });
+            }
+          }
+        } catch { /* JWT token is optional if session works */ }
         return { success: true };
       }
     }

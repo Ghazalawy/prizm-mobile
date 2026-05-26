@@ -20,6 +20,7 @@ import {
   resetInvalidTokenDebounce,
 } from "./auth-events";
 import { queryClient } from "./query-client";
+import { API_URL } from "./config";
 
 type LoginResult = {
   success: boolean;
@@ -57,7 +58,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // render a "Use fingerprint" retry button.
   const [biometricPending, setBiometricPending] = useState(false);
 
-  // On mount: if a token exists, optionally gate it behind biometric.
+  // On mount: if a token exists, validate it with a quick server check,
+  // then optionally gate behind biometric.
   useEffect(() => {
     (async () => {
       const token = await getAuthToken();
@@ -67,14 +69,39 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
+      // Quick server-side token validation before trusting the stored token.
+      // This prevents the "sign in → immediately kicked out" loop caused by
+      // stale tokens from before a server update or JWT key rotation.
+      try {
+        const res = await fetch(`${API_URL}/my/tasks-summary`, {
+          headers: { "Content-Type": "application/json", authtoken: token },
+        });
+        if (res.status === 401) {
+          await clearSession();
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+        const body = await res.json().catch(() => null);
+        if (
+          body &&
+          body.status === false &&
+          typeof body.message === "string" &&
+          /signature verification failed|token expired/i.test(body.message)
+        ) {
+          await clearSession();
+          setIsAuthenticated(false);
+          setIsLoading(false);
+          return;
+        }
+      } catch {
+        // Network error — allow offline use with cached token
+      }
+
       const biometricOn = await isBiometricEnabled();
       if (biometricOn && (await isBiometricAvailable())) {
         const ok = await promptBiometric();
         if (!ok) {
-          // User cancelled / failed — do NOT clear the session. Leave the
-          // token in SecureStore so they can either tap "Use fingerprint"
-          // again from the login screen or sign in with the password.
-          // Only an explicit logout / invalid-token event clears the store.
           setBiometricPending(true);
           setIsAuthenticated(false);
           setIsLoading(false);
@@ -84,8 +111,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setIsAuthenticated(true);
       setBiometricPending(false);
-      // Hydrate the persisted staff profile so currentUser is available on
-      // app boot without waiting for a fresh login.
       const profile = await getStaffProfile();
       if (profile) setCurrentUser(profile);
       setIsLoading(false);

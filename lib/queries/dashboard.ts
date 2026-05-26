@@ -188,7 +188,7 @@ export type CheckinStatusData = {
 
 async function fetchCheckinStatus(): Promise<CheckinStatusData> {
   const headers = await buildAuthHeaders();
-  const res = await fetch(`${API_URL}/my/checkin-today`, { headers });
+  const res = await fetch(`${API_URL}/my/checkin/today`, { headers });
   const token = headers["authtoken"];
   const { body, invalidToken } = await parseApiResponse(res, !!token);
   if (invalidToken) throw new Error("Session expired");

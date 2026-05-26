@@ -271,14 +271,14 @@ export default function SettingsScreen() {
           </View>
         </View>
 
-        <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Account</Text>
+        <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">HR Self-Service</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
           <TouchableOpacity
             onPress={() => router.push("/(tabs)/leave" as any)}
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="calendar-outline" size={22} color={colors.primary} />
+            <Ionicons name="calendar-outline" size={22} color="#0284C7" />
             <Text className="text-foreground font-medium ml-3">My Leave</Text>
             <View className="ml-auto">
               <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
@@ -289,7 +289,7 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
+            <Ionicons name="document-text-outline" size={22} color="#7C3AED" />
             <Text className="text-foreground font-medium ml-3">My Payslips</Text>
             <View className="ml-auto">
               <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
@@ -300,7 +300,7 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="cash-outline" size={22} color={colors.primary} />
+            <Ionicons name="cash-outline" size={22} color="#059669" />
             <Text className="text-foreground font-medium ml-3">My Expenses</Text>
             <View className="ml-auto">
               <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
@@ -311,12 +311,53 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="time-outline" size={22} color={colors.primary} />
+            <Ionicons name="time-outline" size={22} color="#D97706" />
             <Text className="text-foreground font-medium ml-3">My Activity</Text>
             <View className="ml-auto">
               <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/tasks" as any)}
+            className="flex-row items-center px-4 py-4"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="checkmark-circle-outline" size={22} color="#0891B2" />
+            <Text className="text-foreground font-medium ml-3">My Tasks</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Business Development</Text>
+        <View className="bg-white rounded-xl overflow-hidden mb-6">
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/tenders" as any)}
+            className="flex-row items-center px-4 py-4 border-b border-gray-100"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="briefcase-outline" size={22} color="#B45309" />
+            <Text className="text-foreground font-medium ml-3">Tenders</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+            </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/opportunities" as any)}
+            className="flex-row items-center px-4 py-4"
+            activeOpacity={0.7}
+          >
+            <Ionicons name="trending-up-outline" size={22} color={colors.primary} />
+            <Text className="text-foreground font-medium ml-3">Opportunities</Text>
+            <View className="ml-auto">
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Account</Text>
+        <View className="bg-white rounded-xl overflow-hidden mb-6">
           <TouchableOpacity
             onPress={handleLogout}
             className="flex-row items-center px-4 py-4"

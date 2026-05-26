@@ -6,18 +6,10 @@ import {
   ActivityIndicator,
   RefreshControl,
 } from "react-native";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import { useMyPayslips, type PayslipRow } from "@/lib/queries/my";
-
-/**
- * My Payslips — list of the staff's payslip-detail rows, newest first.
- *
- * Each row shows: month, pay_slip_number, net_pay (the headline number),
- * and the parent payslip's status. Tap a row to drill into the detail
- * screen which breaks down gross / deductions / net + leave days used.
- */
 
 function fmtMonth(s: string): string {
   const d = new Date(s.replace(" ", "T"));
@@ -36,7 +28,6 @@ function fmtMoney(s: string, currency?: string | null): string {
 }
 
 function statusBadge(status: string): { text: string; color: string; bg: string } {
-  // Perfex hr_payroll statuses are strings like "payslip_opening", "payslip_published", "payslip_paid"
   if (status?.includes("paid")) return { text: "Paid", color: "#16A34A", bg: "#D1FAE5" };
   if (status?.includes("publish")) return { text: "Published", color: "#0284C7", bg: "#DBEAFE" };
   if (status?.includes("close")) return { text: "Closed", color: "#475569", bg: "#E2E8F0" };
@@ -45,6 +36,10 @@ function statusBadge(status: string): { text: string; color: string; bg: string 
 
 function PayslipCard({ row }: { row: PayslipRow }) {
   const status = statusBadge(row.payslip_status);
+  const gross = parseFloat(row.gross_pay || "0");
+  const deductions = parseFloat(row.total_deductions || "0");
+  const net = parseFloat(row.net_pay || "0");
+
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(tabs)/payslip-detail?id=${row.id}` as any)}
@@ -72,14 +67,30 @@ function PayslipCard({ row }: { row: PayslipRow }) {
         </View>
       </View>
 
-      <View className="flex-row items-end justify-between mt-3 pt-3 border-t border-slate-100">
-        <View>
-          <Text className="text-xs text-muted">Net pay</Text>
-          <Text className="text-2xl font-bold text-foreground">
+      {/* Gross / Deductions / Net mini-breakdown */}
+      <View className="flex-row mt-3 pt-3 border-t border-slate-100 gap-x-4">
+        <View className="flex-1">
+          <Text className="text-[10px] text-slate-400 uppercase">Gross</Text>
+          <Text className="text-xs font-medium text-slate-700">
+            {fmtMoney(row.gross_pay, null)}
+          </Text>
+        </View>
+        <View className="flex-1">
+          <Text className="text-[10px] text-slate-400 uppercase">Deductions</Text>
+          <Text className="text-xs font-medium text-rose-600">
+            -{fmtMoney(row.total_deductions, null)}
+          </Text>
+        </View>
+        <View className="flex-1 items-end">
+          <Text className="text-[10px] text-slate-400 uppercase">Net</Text>
+          <Text className="text-base font-bold text-foreground">
             {fmtMoney(row.net_pay, row.to_currency_name || row.from_currency_name)}
           </Text>
         </View>
-        <Ionicons name="chevron-forward" size={20} color="#94A3B8" />
+      </View>
+
+      <View className="flex-row items-center justify-end mt-2">
+        <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
       </View>
     </TouchableOpacity>
   );
@@ -88,6 +99,26 @@ function PayslipCard({ row }: { row: PayslipRow }) {
 export default function PayslipsScreen() {
   const q = useMyPayslips();
   const [refreshing, setRefreshing] = useState(false);
+  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+
+  const years = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    return [currentYear, currentYear - 1, currentYear - 2];
+  }, []);
+
+  const filteredPayslips = useMemo(() => {
+    if (!q.data) return [];
+    return q.data.filter((row) => {
+      const month = row.month || row.payslip_month;
+      if (!month) return true;
+      const d = new Date(month.replace(" ", "T"));
+      return !isNaN(d.getTime()) ? d.getFullYear() === selectedYear : true;
+    });
+  }, [q.data, selectedYear]);
+
+  const totalNet = useMemo(() => {
+    return filteredPayslips.reduce((sum, r) => sum + parseFloat(r.net_pay || "0"), 0);
+  }, [filteredPayslips]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -115,6 +146,38 @@ export default function PayslipsScreen() {
         }
         contentContainerStyle={{ padding: 16, paddingBottom: 40 }}
       >
+        {/* Year filter */}
+        <View className="flex-row gap-2 mb-4">
+          {years.map((year) => (
+            <TouchableOpacity
+              key={year}
+              onPress={() => setSelectedYear(year)}
+              className="px-4 py-2 rounded-full"
+              style={{ backgroundColor: selectedYear === year ? "#0284C7" : "#F1F5F9" }}
+            >
+              <Text
+                className="text-sm font-semibold"
+                style={{ color: selectedYear === year ? "#FFF" : "#475569" }}
+              >
+                {year}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {/* Summary card */}
+        {filteredPayslips.length > 0 ? (
+          <View className="bg-gradient-to-r from-sky-50 to-blue-50 bg-sky-50 rounded-2xl p-4 mb-4 border border-sky-100">
+            <Text className="text-xs text-sky-700 uppercase tracking-wide">
+              {selectedYear} Total Net (×{filteredPayslips.length} slips)
+            </Text>
+            <Text className="text-2xl font-bold text-sky-900 mt-1">
+              {totalNet.toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            </Text>
+          </View>
+        ) : null}
+
+        {/* Payslip cards */}
         {q.isLoading ? (
           <View className="bg-white rounded-2xl p-8 items-center">
             <ActivityIndicator color="#0284C7" />
@@ -125,18 +188,18 @@ export default function PayslipsScreen() {
               {(q.error as Error)?.message?.slice(0, 200) || "Could not load payslips"}
             </Text>
           </View>
-        ) : !q.data || q.data.length === 0 ? (
+        ) : filteredPayslips.length === 0 ? (
           <View className="bg-white rounded-2xl p-8 items-center">
             <Ionicons name="document-text-outline" size={32} color="#94A3B8" />
             <Text className="text-sm text-muted mt-2 text-center">
-              No payslips yet
+              No payslips for {selectedYear}
             </Text>
             <Text className="text-xs text-muted mt-1 text-center">
               Your payslip will appear here once HR publishes it
             </Text>
           </View>
         ) : (
-          q.data.map((row) => <PayslipCard key={row.id} row={row} />)
+          filteredPayslips.map((row) => <PayslipCard key={row.id} row={row} />)
         )}
       </ScrollView>
     </View>

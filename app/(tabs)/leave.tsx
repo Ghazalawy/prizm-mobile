@@ -8,36 +8,28 @@ import {
   RefreshControl,
   Alert,
 } from "react-native";
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, Stack } from "expo-router";
 import Toast from "react-native-toast-message";
+import Svg, { Circle } from "react-native-svg";
 import {
   useLeaveBalance,
   useLeaveRequests,
   useCancelLeave,
   type LeaveRequest,
+  type LeaveBalance,
   LEAVE_REL_TYPES,
   TYPE_OF_LEAVE,
 } from "@/lib/queries/my";
-
-/**
- * My Leave — landing screen for the employee leave workflow.
- *
- * Shows:
- *   - Balance card up top (one row per leave type from tbltimesheets_type_of_leave)
- *   - List of MY leave requests, newest first, status-colored
- *   - FAB to open the submit form
- *
- * Each request has an action menu for cancellation (only allowed if
- * status === 0 pending; backend enforces this anyway).
- */
 
 const STATUS_LABEL: Record<number, { text: string; color: string; bg: string }> = {
   0: { text: "Pending", color: "#B45309", bg: "#FEF3C7" },
   1: { text: "Approved", color: "#16A34A", bg: "#D1FAE5" },
   2: { text: "Rejected", color: "#DC2626", bg: "#FEE2E2" },
 };
+
+const BALANCE_COLORS = ["#0284C7", "#7C3AED", "#059669", "#D97706", "#DC2626", "#0891B2"];
 
 function relTypeLabel(rel: number, sub?: number): string {
   if (rel === 1 && sub !== undefined) {
@@ -60,17 +52,64 @@ function dayCount(start: string, end: string): number {
   return Math.max(1, Math.round((b.getTime() - a.getTime()) / 86400000) + 1);
 }
 
+function CircularProgress({ used, total, color, size = 56 }: { used: number; total: number; color: string; size?: number }) {
+  const strokeWidth = 5;
+  const radius = (size - strokeWidth) / 2;
+  const circumference = 2 * Math.PI * radius;
+  const progress = total > 0 ? Math.min(used / total, 1) : 0;
+  const strokeDashoffset = circumference * (1 - progress);
+
+  return (
+    <Svg width={size} height={size}>
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke="#F1F5F9"
+        strokeWidth={strokeWidth}
+        fill="none"
+      />
+      <Circle
+        cx={size / 2}
+        cy={size / 2}
+        r={radius}
+        stroke={color}
+        strokeWidth={strokeWidth}
+        fill="none"
+        strokeDasharray={`${circumference}`}
+        strokeDashoffset={strokeDashoffset}
+        strokeLinecap="round"
+        rotation="-90"
+        origin={`${size / 2}, ${size / 2}`}
+      />
+    </Svg>
+  );
+}
+
+type ViewMode = "list" | "pending";
+
 export default function LeaveScreen() {
   const balance = useLeaveBalance();
   const requests = useLeaveRequests();
   const cancel = useCancelLeave();
   const [refreshing, setRefreshing] = useState(false);
+  const [viewMode, setViewMode] = useState<ViewMode>("list");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
     await Promise.all([balance.refetch(), requests.refetch()]);
     setRefreshing(false);
   }, [balance, requests]);
+
+  const { allRequests, pendingRequests } = useMemo(() => {
+    const all = requests.data || [];
+    return {
+      allRequests: all,
+      pendingRequests: all.filter((r) => r.status === 0),
+    };
+  }, [requests.data]);
+
+  const displayedRequests = viewMode === "pending" ? pendingRequests : allRequests;
 
   const handleCancel = (r: LeaveRequest) => {
     Alert.alert(
@@ -113,59 +152,83 @@ export default function LeaveScreen() {
         }
         contentContainerStyle={{ paddingBottom: 120 }}
       >
-        {/* Balance card */}
-        <View className="mx-4 mt-3 bg-white rounded-2xl shadow-sm p-4">
-          <Text className="text-xs uppercase text-muted tracking-wide mb-3">
+        {/* Balance cards with circular progress */}
+        <View className="mx-4 mt-3">
+          <Text className="text-xs uppercase text-muted tracking-wide mb-2 ml-1">
             Balance — {balance.data?.year ?? new Date().getFullYear()}
           </Text>
           {balance.isLoading ? (
-            <ActivityIndicator color="#0284C7" />
+            <View className="bg-white rounded-2xl p-6 items-center">
+              <ActivityIndicator color="#0284C7" />
+            </View>
           ) : balance.isError ? (
-            <Text className="text-sm text-rose-600">Could not load balance</Text>
+            <View className="bg-white rounded-2xl p-4">
+              <Text className="text-sm text-rose-600">Could not load balance</Text>
+            </View>
           ) : balance.data && balance.data.balance.length > 0 ? (
-            balance.data.balance.map((b) => {
-              const hasCap = b.max_days !== null && b.remaining !== null;
-              return (
-                <View key={b.type_id ?? b.type_slug ?? b.type_name} className="flex-row items-center justify-between py-2 border-b border-slate-100 last:border-0">
-                  <View className="flex-1">
-                    <Text className="text-sm font-medium text-foreground">{b.type_name}</Text>
-                    <Text className="text-xs text-muted">
-                      {hasCap ? `${b.used_days} of ${b.max_days} used` : `${b.used_days} day(s) used`}
-                    </Text>
-                  </View>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 10 }}>
+              {balance.data.balance.map((b: LeaveBalance, idx: number) => {
+                const hasCap = b.max_days !== null && b.remaining !== null;
+                const color = BALANCE_COLORS[idx % BALANCE_COLORS.length];
+                return (
                   <View
-                    className="px-3 py-1.5 rounded-full"
-                    style={{
-                      backgroundColor: hasCap
-                        ? (b.remaining! > 5 ? "#D1FAE5" : b.remaining! > 0 ? "#FEF3C7" : "#FEE2E2")
-                        : "#F1F5F9",
-                    }}
+                    key={b.type_id ?? b.type_slug ?? b.type_name}
+                    className="bg-white rounded-2xl p-4 items-center shadow-sm"
+                    style={{ width: 130 }}
                   >
-                    <Text
-                      className="text-sm font-bold"
-                      style={{
-                        color: hasCap
-                          ? (b.remaining! > 5 ? "#16A34A" : b.remaining! > 0 ? "#B45309" : "#DC2626")
-                          : "#475569",
-                      }}
-                    >
-                      {hasCap ? `${b.remaining} days` : `${b.used_days} used`}
+                    <View className="relative items-center justify-center">
+                      <CircularProgress
+                        used={b.used_days}
+                        total={b.max_days ?? b.used_days}
+                        color={color}
+                      />
+                      <View className="absolute items-center justify-center">
+                        <Text className="text-base font-bold" style={{ color }}>
+                          {hasCap ? b.remaining : b.used_days}
+                        </Text>
+                      </View>
+                    </View>
+                    <Text className="text-xs font-semibold text-slate-800 mt-2 text-center" numberOfLines={1}>
+                      {b.type_name}
+                    </Text>
+                    <Text className="text-[10px] text-slate-500 mt-0.5">
+                      {hasCap ? `${b.used_days}/${b.max_days} used` : `${b.used_days} used`}
                     </Text>
                   </View>
-                </View>
-              );
-            })
+                );
+              })}
+            </ScrollView>
           ) : (
-            <Text className="text-sm text-muted">No leave types configured</Text>
+            <View className="bg-white rounded-2xl p-4">
+              <Text className="text-sm text-muted">No leave types configured</Text>
+            </View>
           )}
+        </View>
+
+        {/* View toggle */}
+        <View className="mx-4 mt-4 flex-row bg-slate-100 rounded-lg p-0.5">
+          <TouchableOpacity
+            onPress={() => setViewMode("list")}
+            className="flex-1 py-2 rounded-md items-center"
+            style={{ backgroundColor: viewMode === "list" ? "#FFFFFF" : "transparent" }}
+          >
+            <Text className={`text-xs font-semibold ${viewMode === "list" ? "text-slate-900" : "text-slate-500"}`}>
+              All Requests ({allRequests.length})
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => setViewMode("pending")}
+            className="flex-1 py-2 rounded-md items-center"
+            style={{ backgroundColor: viewMode === "pending" ? "#FFFFFF" : "transparent" }}
+          >
+            <Text className={`text-xs font-semibold ${viewMode === "pending" ? "text-slate-900" : "text-slate-500"}`}>
+              Pending ({pendingRequests.length})
+            </Text>
+          </TouchableOpacity>
         </View>
 
         {/* Request history */}
         <View className="mx-4 mt-4">
-          <Text className="text-xs uppercase text-muted tracking-wide mb-2 ml-1">
-            My Requests {requests.data ? `(${requests.data.length})` : ""}
-          </Text>
-
           {requests.isLoading ? (
             <View className="bg-white rounded-2xl p-6 items-center">
               <ActivityIndicator color="#0284C7" />
@@ -176,25 +239,27 @@ export default function LeaveScreen() {
                 {(requests.error as Error)?.message?.slice(0, 120) || "Could not load requests"}
               </Text>
             </View>
-          ) : !requests.data || requests.data.length === 0 ? (
+          ) : displayedRequests.length === 0 ? (
             <View className="bg-white rounded-2xl p-6 items-center">
               <Ionicons name="calendar-outline" size={32} color="#94A3B8" />
               <Text className="text-sm text-muted mt-2 text-center">
-                No leave requests yet
+                {viewMode === "pending" ? "No pending requests" : "No leave requests yet"}
               </Text>
-              <Text className="text-xs text-muted mt-1 text-center">
-                Tap the + button below to submit one
-              </Text>
+              {viewMode !== "pending" ? (
+                <Text className="text-xs text-muted mt-1 text-center">
+                  Tap the + button below to submit one
+                </Text>
+              ) : null}
             </View>
           ) : (
             <View className="bg-white rounded-2xl overflow-hidden">
-              {requests.data.map((r, i) => {
+              {displayedRequests.map((r, i) => {
                 const status = STATUS_LABEL[r.status] ?? { text: "?", color: "#64748B", bg: "#F1F5F9" };
                 const days = dayCount(r.start_time, r.end_time);
                 return (
                   <View
                     key={r.id}
-                    className={`px-4 py-3 ${i < requests.data.length - 1 ? "border-b border-slate-100" : ""}`}
+                    className={`px-4 py-3 ${i < displayedRequests.length - 1 ? "border-b border-slate-100" : ""}`}
                   >
                     <View className="flex-row items-start justify-between">
                       <View className="flex-1 mr-2">

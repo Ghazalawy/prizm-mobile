@@ -105,17 +105,39 @@ export default function PayslipDetailScreen() {
               </View>
             </View>
 
-            {/* Breakdown */}
+            {/* Earnings section */}
             <View className="bg-white rounded-2xl p-5 mb-4">
-              <Text className="text-xs uppercase text-muted tracking-wide mb-3">
-                Pay breakdown
-              </Text>
-              <Row label="Gross pay" value={fmtMoney(p.gross_pay, currency)} />
+              <View className="flex-row items-center mb-3">
+                <View className="w-2 h-2 rounded-full bg-emerald-500 mr-2" />
+                <Text className="text-xs uppercase text-muted tracking-wide">
+                  Earnings
+                </Text>
+              </View>
+              <Row label="Gross pay" value={fmtMoney(p.gross_pay, currency)} bold />
+            </View>
+
+            {/* Deductions section */}
+            <View className="bg-white rounded-2xl p-5 mb-4">
+              <View className="flex-row items-center mb-3">
+                <View className="w-2 h-2 rounded-full bg-rose-500 mr-2" />
+                <Text className="text-xs uppercase text-muted tracking-wide">
+                  Deductions
+                </Text>
+              </View>
               <Row label="Total deductions" value={fmtMoney(p.total_deductions, currency)} />
               {p.income_tax_paye && parseFloat(p.income_tax_paye) > 0 ? (
                 <Row label="Income tax (PAYE)" value={fmtMoney(p.income_tax_paye, currency)} />
               ) : null}
-              <Row label="Net pay" value={fmtMoney(p.net_pay, currency)} bold />
+            </View>
+
+            {/* Net pay highlighted */}
+            <View className="bg-emerald-50 rounded-2xl p-5 mb-4 border border-emerald-100">
+              <Text className="text-xs uppercase text-emerald-700 tracking-wide">
+                Net pay
+              </Text>
+              <Text className="text-3xl font-bold text-emerald-900 mt-1">
+                {fmtMoney(p.net_pay, currency)}
+              </Text>
             </View>
 
             {/* Workdays + leave */}

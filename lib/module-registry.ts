@@ -1309,6 +1309,10 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "received_voucher" } },
     ],
+    actions: [
+      { key: "approve", title: "Approve", icon: "checkmark-circle-outline", endpointTemplate: "purchase_api/received_vouchers/{id}/approve", confirm: "Approve this received voucher?", successMessage: "Approved" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "purchase_api/received_vouchers/{id}/reject", confirm: "Reject this received voucher?", successMessage: "Rejected", destructive: true },
+    ],
     canCreate: false,
     canUpdate: false,
     canDelete: false,
@@ -1332,6 +1336,10 @@ export const MODULES: ModuleDefinition[] = [
     ],
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "delivery_note" } },
+    ],
+    actions: [
+      { key: "approve", title: "Approve", icon: "checkmark-circle-outline", endpointTemplate: "purchase_api/delivery_notes/{id}/approve", confirm: "Approve this delivery note?", successMessage: "Approved" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "purchase_api/delivery_notes/{id}/reject", confirm: "Reject this delivery note?", successMessage: "Rejected", destructive: true },
     ],
     canCreate: false,
     canUpdate: false,
@@ -1358,6 +1366,10 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "quotation" } },
     ],
+    actions: [
+      { key: "approve", title: "Approve", icon: "checkmark-circle-outline", endpointTemplate: "purchase_api/quotations/{id}/approve", confirm: "Approve this quotation?", successMessage: "Approved" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "purchase_api/quotations/{id}/reject", confirm: "Reject this quotation?", successMessage: "Rejected", destructive: true },
+    ],
     canCreate: false,
     canUpdate: false,
     canDelete: false,
@@ -1377,6 +1389,10 @@ export const MODULES: ModuleDefinition[] = [
       { key: "project_id", label: "Project ID", section: "Certificate", type: "number" },
       { key: "date", label: "Date", section: "Certificate", type: "date" },
       { key: "notes", label: "Notes", section: "Certificate", type: "multiline" },
+    ],
+    actions: [
+      { key: "approve", title: "Approve", icon: "checkmark-circle-outline", endpointTemplate: "purchase_api/completion_certificates/{id}/approve", confirm: "Approve this completion certificate?", successMessage: "Approved" },
+      { key: "reject", title: "Reject", icon: "close-circle-outline", endpointTemplate: "purchase_api/completion_certificates/{id}/reject", confirm: "Reject this completion certificate?", successMessage: "Rejected", destructive: true },
     ],
     canCreate: false,
     canUpdate: false,

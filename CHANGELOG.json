@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.6.5",
+      "date": "2026-05-26",
+      "title": "Approve/reject for RV, DN, Quotations & Certificates",
+      "highlights": [
+        "Received Vouchers (RV) now have native Approve and Reject buttons with permission-checked workflow endpoints.",
+        "Delivery Notes (DN) now have native Approve and Reject buttons.",
+        "Supplier Quotations now have native Approve and Reject buttons.",
+        "Completion Certificates now have native Approve and Reject buttons.",
+        "New backend API endpoints for all 4 types with full workflow approval payload support."
+      ]
+    },
+    {
       "version": "1.6.4",
       "date": "2026-05-26",
       "title": "Native purchase approvals expanded",

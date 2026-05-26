@@ -1,5 +1,5 @@
-import { CrudListScreen } from "@/components/crud/CrudListScreen";
+import { LeadListScreen } from "@/components/leads/LeadListScreen";
 
 export default function LeadsScreen() {
-  return <CrudListScreen moduleKey="leads" basePath="/(tabs)/leads" />;
+  return <LeadListScreen />;
 }

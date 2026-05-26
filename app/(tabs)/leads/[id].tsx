@@ -1,7 +1,7 @@
 import { useLocalSearchParams } from "expo-router";
-import { CrudDetailScreen } from "@/components/crud/CrudDetailScreen";
+import { LeadDetailScreen } from "@/components/leads/LeadDetailScreen";
 
-export default function LeadDetailScreen() {
+export default function LeadDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <CrudDetailScreen moduleKey="leads" id={id} basePath="/(tabs)/leads" />;
+  return <LeadDetailScreen id={id!} />;
 }

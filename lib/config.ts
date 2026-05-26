@@ -1,17 +1,36 @@
 // Prizm CRM API Configuration
 // Backend: Perfex CRM (CodeIgniter) at ms.prizm-energy.com/MS
+//
+// URL exports are `let` so they can be reassigned by applyEnvironment()
+// when the user switches between production and development (MS_dev).
+// Metro's module system creates live bindings, so all importers see the
+// updated value after the switch.
+
+import { getCurrentEnvironment } from "./environment";
 
 export const BASE_URL =
   process.env.EXPO_PUBLIC_API_URL || "https://ms.prizm-energy.com";
 
 // REST API base (JWT auth)
-export const API_URL = `${BASE_URL}/MS/api`;
+export let API_URL = `${BASE_URL}/MS/api`;
 
 // Admin panel base (session auth for AJAX endpoints)
-export const ADMIN_URL = `${BASE_URL}/MS/admin`;
+export let ADMIN_URL = `${BASE_URL}/MS/admin`;
 
 // Mobile auth endpoint
-export const MOBILE_AUTH_URL = `${BASE_URL}/MS/mobile_auth.php`;
+export let MOBILE_AUTH_URL = `${BASE_URL}/MS/mobile_auth.php`;
+
+/**
+ * Re-read the current environment and update every mutable URL export.
+ * Called once at app boot (after initEnvironment resolves) and again
+ * whenever the user switches environments from Settings.
+ */
+export function applyEnvironment(): void {
+  const env = getCurrentEnvironment();
+  API_URL = env.apiUrl;
+  ADMIN_URL = env.adminUrl;
+  MOBILE_AUTH_URL = env.authUrl;
+}
 
 /**
  * Build the full URL for a staff profile image.
@@ -31,5 +50,6 @@ export function staffAvatarUrl(
   size: "thumb" | "small" = "small",
 ): string | null {
   if (!staffid || !filename) return null;
-  return `${BASE_URL}/MS/uploads/staff_profile_images/${staffid}/${size}_${filename}`;
+  const env = getCurrentEnvironment();
+  return `${env.uploadsBase}/uploads/staff_profile_images/${staffid}/${size}_${filename}`;
 }

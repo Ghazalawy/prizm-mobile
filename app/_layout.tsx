@@ -1,5 +1,5 @@
 import "../global.css";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { QueryClientProvider } from "@tanstack/react-query";
@@ -13,6 +13,8 @@ import { PermissionProvider } from "@/lib/permission-context";
 import { queryClient, wireAppStateFocus } from "@/lib/query-client";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
+import { initEnvironment } from "@/lib/environment";
+import { applyEnvironment } from "@/lib/config";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -26,11 +28,20 @@ function AppWithPermissions({ children }: { children: React.ReactNode }) {
 }
 
 export default function RootLayout() {
+  const [envReady, setEnvReady] = useState(false);
+
   useEffect(() => {
-    SplashScreen.hideAsync();
+    initEnvironment()
+      .then(() => {
+        applyEnvironment();
+        setEnvReady(true);
+      })
+      .finally(() => SplashScreen.hideAsync());
     const unsubscribe = wireAppStateFocus();
     return unsubscribe;
   }, []);
+
+  if (!envReady) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>

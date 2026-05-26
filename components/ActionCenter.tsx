@@ -21,6 +21,7 @@ import { API_URL, BASE_URL, staffAvatarUrl } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { rtlTextStyle } from "@/lib/rtl";
+import { colors as prizmColors } from "@/lib/theme";
 import {
   useInbox,
   type InboxCategory,
@@ -57,7 +58,7 @@ const CATEGORIES: CategoryMeta[] = [
   { key: "approvals", label: "Approvals", icon: "checkmark-done-circle-outline", color: "#DC2626" },
   { key: "todos", label: "To Do", icon: "checkbox-outline", color: "#F59E0B" },
   { key: "mentions", label: "Mentions", icon: "list-outline", color: "#CA8A04" },
-  { key: "notifications", label: "Notifications", icon: "notifications-outline", color: "#0284C7" },
+  { key: "notifications", label: "Notifications", icon: "notifications-outline", color: "#E65100" },
   { key: "compliance", label: "Compliance", icon: "shield-checkmark-outline", color: "#16A34A" },
 ];
 
@@ -307,7 +308,7 @@ function InboxRow({
                   }`}
                 >
                   {busy === a.key ? (
-                    <ActivityIndicator size="small" color={a.destructive ? "#DC2626" : "#0284C7"} />
+                    <ActivityIndicator size="small" color={a.destructive ? "#DC2626" : prizmColors.primary} />
                   ) : (
                     <Text
                       className={`text-xs font-medium ${

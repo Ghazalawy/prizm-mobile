@@ -3,8 +3,17 @@ import { useEffect, useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
-import { BASE_URL, staffAvatarUrl } from "@/lib/config";
+import { staffAvatarUrl } from "@/lib/config";
+import { applyEnvironment } from "@/lib/config";
 import { BUILD_VERSION, BUILD_TIME } from "@/lib/build-info";
+import {
+  useEnvironment,
+  setEnvironment,
+  ENVIRONMENTS,
+  resetDevBannerDismiss,
+  type EnvironmentKey,
+} from "@/lib/environment";
+import { colors } from "@/lib/theme";
 
 /** Convert the ISO build timestamp from CI into something human-friendly:
  *  "May 25, 2026" rather than "2026-05-24T22:56:24Z". Defensive — if
@@ -34,9 +43,10 @@ import {
 import { CheckinCard } from "@/components/CheckinCard";
 import { useMyProfile } from "@/lib/queries/my";
 import { useEffectiveUser } from "@/lib/effective-user";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { clearSession } from "@/lib/auth";
 
 /**
  * Big profile hero pinned at the top of Settings. Mirrors the web admin's
@@ -68,7 +78,6 @@ function ProfileHero() {
   const joinedSince = useMemo(() => {
     const raw = profile.data?.datecreated;
     if (!raw) return null;
-    // Perfex sometimes stores 0000-00-00 00:00:00 — surface nothing.
     if (raw.startsWith("0000")) return null;
     const d = new Date(raw.replace(" ", "T"));
     if (isNaN(d.getTime())) return null;
@@ -89,11 +98,13 @@ function ProfileHero() {
             width: 72,
             height: 72,
             borderRadius: 36,
-            backgroundColor: "#E2E8F0",
+            backgroundColor: colors.primaryBg,
             alignItems: "center",
             justifyContent: "center",
             overflow: "hidden",
             marginRight: 14,
+            borderWidth: 2,
+            borderColor: colors.primary + "30",
           }}
         >
           {avatarUrl && !avatarBroken ? (
@@ -103,7 +114,7 @@ function ProfileHero() {
               onError={() => setAvatarBroken(true)}
             />
           ) : (
-            <Text style={{ color: "#0F172A", fontWeight: "700", fontSize: 28 }}>
+            <Text style={{ color: colors.primary, fontWeight: "700", fontSize: 28 }}>
               {initial}
             </Text>
           )}
@@ -126,14 +137,14 @@ function ProfileHero() {
       </View>
       {joinedSince ? (
         <View className="flex-row items-center mt-4 pt-4 border-t border-slate-100">
-          <Ionicons name="ribbon-outline" size={14} color="#64748B" />
+          <Ionicons name="ribbon-outline" size={14} color={colors.primary} />
           <Text className="text-xs text-muted ml-2">
             Member since {joinedSince}
           </Text>
         </View>
       ) : staffid ? (
         <View className="flex-row items-center mt-4 pt-4 border-t border-slate-100">
-          <Ionicons name="person-outline" size={14} color="#64748B" />
+          <Ionicons name="person-outline" size={14} color={colors.slate500} />
           <Text className="text-xs text-muted ml-2">Staff #{staffid}</Text>
         </View>
       ) : null}
@@ -147,6 +158,7 @@ export default function SettingsScreen() {
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const env = useEnvironment();
 
   useEffect(() => {
     (async () => {
@@ -164,8 +176,6 @@ export default function SettingsScreen() {
     async (next: boolean) => {
       if (!bioAvailable) return;
       if (next) {
-        // Confirm with a one-shot biometric prompt before enabling, so the user
-        // can't accidentally turn it on without their print enrolled.
         const ok = await promptBiometric("Confirm to enable fingerprint login");
         if (!ok) return;
       }
@@ -227,10 +237,7 @@ export default function SettingsScreen() {
 
   return (
     <ScrollView className="flex-1 bg-surface">
-      {/* Profile hero — name, avatar, "joined since". Mirrors web admin chrome. */}
       <ProfileHero />
-
-      {/* Daily-use check-in widget */}
       <CheckinCard />
 
       <View className="mx-4 mt-4">
@@ -238,7 +245,7 @@ export default function SettingsScreen() {
         <View className="bg-white rounded-xl overflow-hidden mb-6">
           <View className="flex-row items-center justify-between px-4 py-4">
             <View className="flex-row items-center flex-1">
-              <Ionicons name="finger-print" size={22} color="#0284C7" />
+              <Ionicons name="finger-print" size={22} color={colors.primary} />
               <View className="ml-3 flex-1">
                 <Text className="text-foreground font-medium">Fingerprint login</Text>
                 {!bioReady ? (
@@ -258,6 +265,8 @@ export default function SettingsScreen() {
               value={bioOn}
               onValueChange={toggleBiometric}
               disabled={!bioReady || !bioAvailable}
+              trackColor={{ true: colors.primary, false: undefined }}
+              thumbColor={bioOn ? colors.white : undefined}
             />
           </View>
         </View>
@@ -269,10 +278,10 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="calendar-outline" size={22} color="#0284C7" />
+            <Ionicons name="calendar-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">My Leave</Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -280,10 +289,10 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="document-text-outline" size={22} color="#0284C7" />
+            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">My Payslips</Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -291,10 +300,10 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="cash-outline" size={22} color="#0284C7" />
+            <Ionicons name="cash-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">My Expenses</Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -302,10 +311,10 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="time-outline" size={22} color="#0284C7" />
+            <Ionicons name="time-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">My Activity</Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -313,24 +322,16 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4"
             activeOpacity={0.7}
           >
-            <Ionicons name="log-out-outline" size={22} color="#EF4444" />
-            <Text className="text-red-500 font-medium ml-3">Sign Out</Text>
+            <Ionicons name="log-out-outline" size={22} color={colors.error} />
+            <Text style={{ color: colors.error }} className="font-medium ml-3">Sign Out</Text>
           </TouchableOpacity>
         </View>
 
-        {/* Admin tools — only renders if the backend says the user can
-            impersonate. /api/admin/me/can_impersonate is cheap (one DB
-            row lookup) and the response is cached for the session, so
-            non-admins pay one extra request per app launch at most. */}
         <AdminSection />
 
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">About</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
-          {/* Version + released date — no SHA visible. The internal
-              BUILD_SHA is still used by WhatsNewModal to know whether
-              to show the popup once per build, but it's an
-              implementation detail, not user-facing version info. */}
           <View className="px-4 py-4 border-b border-gray-100">
             <Text className="text-foreground font-medium">Version</Text>
             <Text className="text-muted text-sm mt-1">v{BUILD_VERSION}</Text>
@@ -345,10 +346,10 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="document-text-outline" size={22} color="#0284C7" />
+            <Ionicons name="document-text-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">Changelog</Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
           <TouchableOpacity
@@ -357,17 +358,27 @@ export default function SettingsScreen() {
             className="flex-row items-center px-4 py-4 border-b border-gray-100"
             activeOpacity={0.7}
           >
-            <Ionicons name="cloud-download-outline" size={22} color="#0284C7" />
+            <Ionicons name="cloud-download-outline" size={22} color={colors.primary} />
             <Text className="text-foreground font-medium ml-3">
               {checkingUpdate ? "Checking..." : "Check for updates"}
             </Text>
             <View className="ml-auto">
-              <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
             </View>
           </TouchableOpacity>
-          <View className="px-4 py-4">
-            <Text className="text-foreground font-medium">API Server</Text>
-            <Text className="text-muted text-sm mt-1">{BASE_URL}</Text>
+          <View className="px-4 py-4 flex-row items-center">
+            <View className="flex-1">
+              <Text className="text-foreground font-medium">Environment</Text>
+              <Text className="text-muted text-sm mt-1">{env.label}</Text>
+            </View>
+            <View
+              style={{
+                width: 10,
+                height: 10,
+                borderRadius: 5,
+                backgroundColor: env.color,
+              }}
+            />
           </View>
         </View>
       </View>
@@ -377,15 +388,13 @@ export default function SettingsScreen() {
 
 /**
  * "Admin tools" section — only renders if the backend confirms the
- * current user has admin role. The check hits GET /api/admin/me/can_impersonate
- * which is a single-row tblstaff lookup; cheap enough to fire every
- * Settings mount without caching gymnastics.
- *
- * On non-admin accounts: returns null. On error / unauthenticated:
- * returns null. So the entry only appears when we're confident the
- * user can actually use it.
+ * current user has admin role.
  */
 function AdminSection() {
+  const { logout } = useAuth();
+  const qc = useQueryClient();
+  const env = useEnvironment();
+
   const q = useQuery({
     queryKey: ["admin", "can_impersonate"],
     queryFn: async () => {
@@ -398,7 +407,37 @@ function AdminSection() {
     staleTime: 5 * 60 * 1000,
   });
 
+  const handleEnvSwitch = useCallback(
+    (key: EnvironmentKey) => {
+      if (key === env.key) return;
+      const target = ENVIRONMENTS[key];
+      Alert.alert(
+        `Switch to ${target.label}?`,
+        "This will sign you out, clear all cached data, and redirect to the login screen.",
+        [
+          { text: "Cancel", style: "cancel" },
+          {
+            text: "Switch",
+            style: "destructive",
+            onPress: async () => {
+              await setEnvironment(key);
+              applyEnvironment();
+              resetDevBannerDismiss();
+              await clearSession();
+              qc.clear();
+              logout();
+            },
+          },
+        ],
+      );
+    },
+    [env.key, qc, logout],
+  );
+
   if (!q.data?.can_impersonate) return null;
+
+  const otherKey: EnvironmentKey = env.key === "production" ? "development" : "production";
+  const otherEnv = ENVIRONMENTS[otherKey];
 
   return (
     <>
@@ -408,17 +447,42 @@ function AdminSection() {
       <View className="bg-white rounded-xl overflow-hidden mb-6">
         <TouchableOpacity
           onPress={() => router.push("/(tabs)/view-as" as any)}
-          className="flex-row items-center px-4 py-4"
+          className="flex-row items-center px-4 py-4 border-b border-gray-100"
           activeOpacity={0.7}
         >
-          <Ionicons name="eye-outline" size={22} color="#B45309" />
+          <Ionicons name="eye-outline" size={22} color={colors.warning} />
           <View className="ml-3 flex-1">
             <Text className="text-foreground font-medium">View As</Text>
             <Text className="text-muted text-xs mt-0.5">
               See the app from another staff member's perspective.
             </Text>
           </View>
-          <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+          <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={() => handleEnvSwitch(otherKey)}
+          className="flex-row items-center px-4 py-4"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="swap-horizontal-outline" size={22} color={env.color} />
+          <View className="ml-3 flex-1">
+            <View className="flex-row items-center">
+              <Text className="text-foreground font-medium">Environment</Text>
+              <View
+                style={{
+                  width: 8,
+                  height: 8,
+                  borderRadius: 4,
+                  backgroundColor: env.color,
+                  marginLeft: 8,
+                }}
+              />
+            </View>
+            <Text className="text-muted text-xs mt-0.5">
+              Currently: {env.label} · Tap to switch to {otherEnv.label}
+            </Text>
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
         </TouchableOpacity>
       </View>
     </>

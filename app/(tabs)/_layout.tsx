@@ -5,6 +5,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { Ionicons } from "@expo/vector-icons";
 import { ActionCenter } from "@/components/ActionCenter";
 import { ImpersonationBanner } from "@/components/ImpersonationBanner";
+import { DevBanner } from "@/components/DevBanner";
 
 /**
  * Bottom bar: Home / Tasks / ERP / Settings.
@@ -50,9 +51,10 @@ export default function TabLayout() {
           screen while an admin is in a View-As session. Null when not
           impersonating, so zero footprint for the common case. */}
       <ImpersonationBanner />
+      <DevBanner />
       <Tabs
         screenOptions={{
-          tabBarActiveTintColor: "#0284C7",
+          tabBarActiveTintColor: "#E65100",
           tabBarInactiveTintColor: "#64748B",
           tabBarStyle: {
             backgroundColor: "#FFFFFF",

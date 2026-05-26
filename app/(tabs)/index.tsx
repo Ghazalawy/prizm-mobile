@@ -28,6 +28,7 @@ import {
 } from "@/lib/dashboard-layout";
 import { clearDismissedUpdate } from "@/lib/updates";
 import { DraggableDashboardGrid } from "@/components/DraggableDashboardGrid";
+import { colors } from "@/lib/theme";
 
 type StatCardProps = {
   title: string;
@@ -167,7 +168,7 @@ export default function DashboardScreen() {
             title="My Tasks"
             value={tasksSummary.data?.total_open}
             icon="checkbox-outline"
-            color="#F59E0B"
+            color={colors.primary}
             isLoading={tasksSummary.isLoading}
             isError={tasksSummary.isError}
             onPress={() => router.push("/(tabs)/tasks" as any)}
@@ -267,7 +268,7 @@ export default function DashboardScreen() {
       className="flex-1 bg-surface"
       contentContainerClassName="p-4"
       refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#0284C7" />
+        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
       <View className="flex-row items-center justify-between mb-1">
@@ -278,8 +279,8 @@ export default function DashboardScreen() {
           hitSlop={8}
           className="flex-row items-center px-2 py-1 rounded-lg"
         >
-          <Ionicons name="options-outline" size={16} color="#0284C7" />
-          <Text className="text-xs font-medium text-primary ml-1">Show / Hide</Text>
+          <Ionicons name="options-outline" size={16} color={colors.primary} />
+          <Text className="text-xs font-medium ml-1" style={{ color: colors.primary }}>Show / Hide</Text>
         </TouchableOpacity>
       </View>
       <Text className="text-sm text-muted mb-4">

@@ -1,6 +1,6 @@
 import { API_URL, ADMIN_URL } from "./config";
 import { getAuthToken, getSessionCookie } from "./auth";
-import { notifyInvalidToken } from "./auth-events";
+import { notifyInvalidToken, getSessionGeneration } from "./auth-events";
 import { getCurrentImpersonation } from "./impersonation";
 
 // --- Invalid-token detection ----------------------------------------------
@@ -70,7 +70,8 @@ export function isInvalidTokenResponse(
  */
 export async function parseApiResponse(
   res: Response,
-  hadToken: boolean
+  hadToken: boolean,
+  requestGeneration?: number
 ): Promise<{ body: any; invalidToken: boolean }> {
   const text = await res.text();
   let body: any = text;
@@ -80,7 +81,7 @@ export async function parseApiResponse(
     // Not JSON — leave as text
   }
   const invalidToken = isInvalidTokenResponse(res.status, body, hadToken);
-  if (invalidToken) notifyInvalidToken();
+  if (invalidToken) notifyInvalidToken(requestGeneration);
   return { body, invalidToken };
 }
 
@@ -108,6 +109,7 @@ export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
+  const gen = getSessionGeneration();
   const authHeaders = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${endpoint}`, {
     ...options,
@@ -118,7 +120,7 @@ export async function apiRequest(
   });
 
   const token = authHeaders["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) {
     throw new Error("Session expired — please sign in again.");
   }

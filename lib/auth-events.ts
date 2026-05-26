@@ -19,6 +19,7 @@ type Handler = () => void;
 
 let handler: Handler | null = null;
 let lastFiredAt = 0;
+let sessionGeneration = 0;
 
 const DEBOUNCE_MS = 5000;
 
@@ -26,7 +27,20 @@ export function setInvalidTokenHandler(h: Handler | null) {
   handler = h;
 }
 
-export function notifyInvalidToken() {
+/**
+ * Returns the current session generation at the time of the call.
+ * Callers (e.g. apiRequest) snapshot this BEFORE making a request and
+ * pass it to notifyInvalidToken so stale responses from a previous
+ * session don't trigger sign-out after a fresh login.
+ */
+export function getSessionGeneration(): number {
+  return sessionGeneration;
+}
+
+export function notifyInvalidToken(requestGeneration?: number) {
+  // If the request was made in a previous session (generation mismatch),
+  // ignore it — a fresh login has already replaced the token.
+  if (requestGeneration !== undefined && requestGeneration !== sessionGeneration) return;
   const now = Date.now();
   if (now - lastFiredAt < DEBOUNCE_MS) return;
   lastFiredAt = now;
@@ -36,4 +50,5 @@ export function notifyInvalidToken() {
 /** Call after a successful login so a future expiry can fire again. */
 export function resetInvalidTokenDebounce() {
   lastFiredAt = 0;
+  sessionGeneration++;
 }

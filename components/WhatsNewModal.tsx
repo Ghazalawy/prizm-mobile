@@ -9,6 +9,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
 import { BUILD_SHA, BUILD_VERSION, RELEASE_NOTES } from "@/lib/build-info";
+import { useAuth } from "@/lib/auth-context";
 
 /**
  * "What's new" modal shown once after each app update.
@@ -29,18 +30,19 @@ import { BUILD_SHA, BUILD_VERSION, RELEASE_NOTES } from "@/lib/build-info";
 const SEEN_KEY = "prizm_whats_new_seen_sha";
 
 export function WhatsNewModal() {
+  const { isAuthenticated } = useAuth();
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!isAuthenticated) return;
     (async () => {
-      // Skip on dev builds or empty release notes — nothing to show.
       if (!BUILD_SHA || BUILD_SHA === "dev") return;
       if (!RELEASE_NOTES.title && RELEASE_NOTES.highlights.length === 0) return;
 
       const seen = await SecureStore.getItemAsync(SEEN_KEY);
       if (seen !== BUILD_SHA) setOpen(true);
     })();
-  }, []);
+  }, [isAuthenticated]);
 
   const dismiss = async () => {
     await SecureStore.setItemAsync(SEEN_KEY, BUILD_SHA);

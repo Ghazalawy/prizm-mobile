@@ -123,21 +123,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Token() which lands here: clear the cached session, kill react-query
   // caches, and let the Redirect in (tabs)/_layout.tsx route to /login.
   useEffect(() => {
-    setInvalidTokenHandler(() => {
-      clearSession()
-        .catch(() => undefined)
-        .finally(() => {
-          // Clear any cached "red triangle" error states so the relogin
-          // flow starts clean.
-          queryClient.clear();
-          setIsAuthenticated(false);
-          setCurrentUser(null);
-          Toast.show({
-            type: "info",
-            text1: "Session expired",
-            text2: "Please sign in again to continue.",
-          });
-        });
+    setInvalidTokenHandler(async () => {
+      // Guard against stale in-flight responses from a previous session:
+      // if the token was already cleared (by a prior handler or by the
+      // boot-time validation), don't clear the session again — a fresh
+      // login may have already stored a new valid token.
+      const currentToken = await getAuthToken();
+      if (!currentToken) return;
+
+      await clearSession().catch(() => undefined);
+      queryClient.cancelQueries();
+      queryClient.clear();
+      setIsAuthenticated(false);
+      setCurrentUser(null);
+      Toast.show({
+        type: "info",
+        text1: "Session expired",
+        text2: "Please sign in again to continue.",
+      });
     });
     return () => setInvalidTokenHandler(null);
   }, []);
@@ -160,6 +163,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
             const alreadyOn   = await isBiometricEnabled();
             shouldOffer = !askedBefore && !alreadyOn;
           }
+          // Cancel any in-flight queries from a previous (stale) session
+          // so their "Signature verification failed" responses don't arrive
+          // after this fresh login and trigger another kick-out.
+          await queryClient.cancelQueries();
+          queryClient.clear();
           // Fresh token → allow the invalid-token kick-out to fire again
           // next time something goes wrong.
           resetInvalidTokenDebounce();

@@ -590,6 +590,26 @@ export default function DashboardScreen() {
             onPress={() => router.push("/(tabs)/leave" as any)}
           />
         </View>
+        <View className="flex-row gap-3 mt-3">
+          <QuickAction
+            icon="calendar-outline"
+            label="Calendar"
+            color="#0284C7"
+            onPress={() => router.push("/(tabs)/calendar" as any)}
+          />
+          <QuickAction
+            icon="book-outline"
+            label="Knowledge Base"
+            color="#CA8A04"
+            onPress={() => router.push("/(tabs)/knowledge" as any)}
+          />
+          <QuickAction
+            icon="search-outline"
+            label="Search"
+            color="#6366F1"
+            onPress={() => router.push("/(tabs)/search" as any)}
+          />
+        </View>
       </View>
 
       {/* C. Stat Tiles (draggable) */}

@@ -514,8 +514,22 @@ export function ActionCenter() {
           ) : null}
         </Pressable>
 
-        {/* Right: action icons + profile avatar */}
+        {/* Right: search + action icons + profile avatar */}
         <View className="flex-row items-center">
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/search" as any)}
+            activeOpacity={0.6}
+            hitSlop={6}
+            accessibilityLabel="Search"
+            style={{
+              width: 36,
+              height: 42,
+              alignItems: "center",
+              justifyContent: "center",
+            }}
+          >
+            <Ionicons name="search-outline" size={22} color="#475569" />
+          </TouchableOpacity>
           {CATEGORIES.map((cat) => (
             <HeaderIcon
               key={cat.key}

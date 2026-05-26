@@ -119,6 +119,9 @@ export default function TabLayout() {
         <Tabs.Screen name="timesheets"      options={{ href: null }} />
         <Tabs.Screen name="view-as"         options={{ href: null }} />
         <Tabs.Screen name="changelog"       options={{ href: null }} />
+        <Tabs.Screen name="calendar"        options={{ href: null }} />
+        <Tabs.Screen name="knowledge"       options={{ href: null }} />
+        <Tabs.Screen name="search"          options={{ href: null }} />
       </Tabs>
     </SafeAreaView>
   );

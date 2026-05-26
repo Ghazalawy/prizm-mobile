@@ -691,16 +691,20 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
     queryKey: ["task", taskId, "checklist"],
     queryFn: () => listEntities(`tasks/checklist/${taskId}`, { limit: 100 }),
   });
-  const items = normalizeList(q.data).items;
+  const items = normalizeList(q.data).items as any[];
   const [draft, setDraft] = useState("");
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [editText, setEditText] = useState("");
+
+  const invalidate = () =>
+    qc.invalidateQueries({ queryKey: ["task", taskId, "checklist"] });
 
   const toggle = useMutation({
     mutationFn: async (item: any) =>
-      updateEntity("tasks/checklist", item.id, {
+      updateEntity("tasks/checklist/item", item.id, {
         finished: isTruthy(item.finished) ? 0 : 1,
       }),
-    onSuccess: () =>
-      qc.invalidateQueries({ queryKey: ["task", taskId, "checklist"] }),
+    onSuccess: invalidate,
   });
 
   const add = useMutation({
@@ -708,8 +712,45 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
       createEntity("tasks/checklist", { taskid: taskId, description }),
     onSuccess: () => {
       setDraft("");
-      qc.invalidateQueries({ queryKey: ["task", taskId, "checklist"] });
+      invalidate();
     },
+  });
+
+  const remove = useMutation({
+    mutationFn: async (id: number) => deleteEntity("tasks/checklist/item", id),
+    onSuccess: invalidate,
+  });
+
+  const rename = useMutation({
+    mutationFn: async ({ id, description }: { id: number; description: string }) =>
+      updateEntity("tasks/checklist/item", id, { description }),
+    onSuccess: () => {
+      setEditingId(null);
+      setEditText("");
+      invalidate();
+    },
+  });
+
+  const moveUp = useMutation({
+    mutationFn: async (idx: number) => {
+      if (idx <= 0) return;
+      const item = items[idx];
+      const prev = items[idx - 1];
+      await updateEntity("tasks/checklist/item", item.id, { list_order: prev.list_order ?? idx - 1 });
+      await updateEntity("tasks/checklist/item", prev.id, { list_order: item.list_order ?? idx });
+    },
+    onSuccess: invalidate,
+  });
+
+  const moveDown = useMutation({
+    mutationFn: async (idx: number) => {
+      if (idx >= items.length - 1) return;
+      const item = items[idx];
+      const next = items[idx + 1];
+      await updateEntity("tasks/checklist/item", item.id, { list_order: next.list_order ?? idx + 1 });
+      await updateEntity("tasks/checklist/item", next.id, { list_order: item.list_order ?? idx });
+    },
+    onSuccess: invalidate,
   });
 
   if (q.isLoading && items.length === 0) {
@@ -725,36 +766,99 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
       {items.length === 0 ? (
         <Text className="text-muted text-sm py-3 text-center">No checklist items yet.</Text>
       ) : (
-        items.map((it: any) => {
+        items.map((it: any, idx: number) => {
           const done = isTruthy(it.finished);
+          const isEditing = editingId === it.id;
           return (
-            <TouchableOpacity
-              key={it.id}
-              onPress={() => toggle.mutate(it)}
-              disabled={toggle.isPending}
-              activeOpacity={0.7}
-              className="flex-row items-center py-2"
-            >
-              <Ionicons
-                name={done ? "checkbox" : "square-outline"}
-                size={20}
-                color={done ? "#15803D" : "#94A3B8"}
-              />
-              <Text
-                className={`text-sm ml-2 flex-1 ${done ? "text-muted line-through" : "text-foreground"}`}
-                style={rtlTextStyle(it.description)}
+            <View key={it.id} className="flex-row items-center py-1">
+              {/* Checkbox */}
+              <TouchableOpacity
+                onPress={() => toggle.mutate(it)}
+                disabled={toggle.isPending}
+                activeOpacity={0.7}
+                className="pr-2"
               >
-                {it.description}
-              </Text>
-            </TouchableOpacity>
+                <Ionicons
+                  name={done ? "checkbox" : "square-outline"}
+                  size={20}
+                  color={done ? "#15803D" : "#94A3B8"}
+                />
+              </TouchableOpacity>
+
+              {/* Text / inline edit */}
+              {isEditing ? (
+                <TextInput
+                  value={editText}
+                  onChangeText={setEditText}
+                  autoFocus
+                  className="flex-1 bg-surface rounded px-2 py-1 text-sm text-foreground"
+                  onSubmitEditing={() => {
+                    const v = editText.trim();
+                    if (v && v !== it.description) rename.mutate({ id: it.id, description: v });
+                    else { setEditingId(null); setEditText(""); }
+                  }}
+                  onBlur={() => { setEditingId(null); setEditText(""); }}
+                />
+              ) : (
+                <TouchableOpacity
+                  className="flex-1"
+                  onLongPress={() => { setEditingId(it.id); setEditText(it.description); }}
+                  onPress={() => toggle.mutate(it)}
+                  activeOpacity={0.7}
+                >
+                  <Text
+                    className={`text-sm ${done ? "text-muted line-through" : "text-foreground"}`}
+                    style={rtlTextStyle(it.description)}
+                  >
+                    {it.description}
+                  </Text>
+                </TouchableOpacity>
+              )}
+
+              {/* Reorder arrows */}
+              <View className="flex-row ml-1">
+                <TouchableOpacity
+                  onPress={() => moveUp.mutate(idx)}
+                  disabled={idx === 0 || moveUp.isPending}
+                  className="px-1"
+                  style={{ opacity: idx === 0 ? 0.25 : 1 }}
+                >
+                  <Ionicons name="chevron-up" size={14} color="#94A3B8" />
+                </TouchableOpacity>
+                <TouchableOpacity
+                  onPress={() => moveDown.mutate(idx)}
+                  disabled={idx >= items.length - 1 || moveDown.isPending}
+                  className="px-1"
+                  style={{ opacity: idx >= items.length - 1 ? 0.25 : 1 }}
+                >
+                  <Ionicons name="chevron-down" size={14} color="#94A3B8" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Delete */}
+              <TouchableOpacity
+                onPress={() => {
+                  Alert.alert("Delete item?", it.description, [
+                    { text: "Cancel", style: "cancel" },
+                    { text: "Delete", style: "destructive", onPress: () => remove.mutate(it.id) },
+                  ]);
+                }}
+                disabled={remove.isPending}
+                className="pl-2"
+              >
+                <Ionicons name="close-circle-outline" size={16} color="#EF4444" />
+              </TouchableOpacity>
+            </View>
           );
         })
       )}
-      <View className="flex-row items-center mt-2">
+
+      {/* Add new item */}
+      <View className="flex-row items-center mt-3">
         <TextInput
           value={draft}
           onChangeText={setDraft}
-          placeholder="Add a checklist item…"
+          placeholder="Add item…"
           placeholderTextColor="#94A3B8"
           className="flex-1 bg-surface rounded-lg px-3 py-2 text-sm text-foreground"
           onSubmitEditing={() => draft.trim() && add.mutate(draft.trim())}

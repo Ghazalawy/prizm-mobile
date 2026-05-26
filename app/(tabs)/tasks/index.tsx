@@ -10,9 +10,10 @@ import {
 } from "react-native";
 import { useState, useCallback, useMemo, memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useMyTasks, useTasksByStatus, type TaskListItem } from "@/lib/queries/tasks";
 import { useMyTasksSummary } from "@/lib/queries/dashboard";
+import { useEffectiveUser } from "@/lib/effective-user";
 import { colors } from "@/lib/theme";
 
 const ACCENT = colors.primary;
@@ -76,11 +77,11 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
           <View className="flex-row items-start">
             <View className="flex-1 mr-2">
               <Text className="text-sm font-semibold text-foreground" numberOfLines={2}>
-                {task.name}
+                {task.name || `Task #${task.id}`}
               </Text>
               {task.rel_type ? (
                 <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
-                  {task.rel_type} #{task.rel_id}
+                  {task.rel_name || task.rel_type}
                 </Text>
               ) : null}
             </View>
@@ -222,11 +223,15 @@ function StatusStrip({ summary }: { summary: any }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────
 
 export default function TasksScreen() {
+  const { filter } = useLocalSearchParams<{ filter?: string }>();
+  const effectiveUser = useEffectiveUser();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
+  const [assignedOnly, setAssignedOnly] = useState(filter === "mine");
 
-  const listQuery = useMyTasks({ search: search || undefined, status: statusFilter, limit: 200 });
+  const assignedStaffId = assignedOnly && effectiveUser?.staffid ? effectiveUser.staffid : undefined;
+  const listQuery = useMyTasks({ search: search || undefined, status: statusFilter, assigned: assignedStaffId, limit: 200 });
   const boardQuery = useTasksByStatus();
   const summary = useMyTasksSummary();
   const [refreshing, setRefreshing] = useState(false);
@@ -238,7 +243,13 @@ export default function TasksScreen() {
   }, [listQuery, boardQuery, summary]);
 
   const listItems = useMemo(() => {
-    return (listQuery.data?.items ?? []) as TaskListItem[];
+    const raw = (listQuery.data?.items ?? []) as TaskListItem[];
+    const seen = new Set<number>();
+    return raw.filter((t) => {
+      if (seen.has(t.id)) return false;
+      seen.add(t.id);
+      return true;
+    });
   }, [listQuery.data]);
 
   const renderListItem = useCallback(
@@ -315,12 +326,32 @@ export default function TasksScreen() {
           />
         </View>
 
-        {/* Status filter chips */}
+        {/* Filter chips */}
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={{ paddingTop: 8 }}
         >
+          <TouchableOpacity
+            onPress={() => setAssignedOnly(!assignedOnly)}
+            className="px-3 py-1.5 rounded-full mr-2 flex-row items-center"
+            style={{
+              backgroundColor: assignedOnly ? "#7C3AED" : "#F1F5F9",
+            }}
+          >
+            <Ionicons
+              name="person"
+              size={11}
+              color={assignedOnly ? "#FFFFFF" : "#7C3AED"}
+              style={{ marginRight: 4 }}
+            />
+            <Text
+              className="text-xs font-semibold"
+              style={{ color: assignedOnly ? "#FFFFFF" : "#7C3AED" }}
+            >
+              My Tasks
+            </Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={() => setStatusFilter(undefined)}
             className="px-3 py-1.5 rounded-full mr-2"
@@ -332,7 +363,7 @@ export default function TasksScreen() {
               className="text-xs font-semibold"
               style={{ color: !statusFilter ? "#FFFFFF" : "#64748B" }}
             >
-              All
+              All Status
             </Text>
           </TouchableOpacity>
           {KANBAN_COLUMNS.filter((c) => c.status !== "5").map((col) => (

@@ -2,6 +2,7 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  ScrollView,
   Text,
   TextInput,
   TouchableOpacity,
@@ -92,7 +93,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
     }
 
     const unique = uniqueRowsById(module, allItems);
-    const filtered = clientSideFilter(module, unique, search);
+    const filtered = clientSideFilter(module, unique, search, filterParams);
     const sorted = clientSideSort(module, filtered, sort);
 
     return {
@@ -100,7 +101,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
       totalCount: hasTotal ? serverTotal : sorted.length,
       hasServerTotal: hasTotal,
     };
-  }, [module, q.data, search, sort]);
+  }, [module, q.data, search, sort, filterParams]);
 
   const filterCount = activeFilterCount(filters);
 
@@ -214,11 +215,66 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
           </TouchableOpacity>
         </View>
 
-        {/* Active filter chips */}
+        {/* Quick status filter chips */}
+        {module.statusField && module.statusOptions && module.statusOptions.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ paddingTop: 8 }}
+          >
+            <TouchableOpacity
+              onPress={() => {
+                setFilters((prev) => {
+                  const next = { ...prev };
+                  delete next[module.statusField!];
+                  return next;
+                });
+              }}
+              className="px-3 py-1.5 rounded-full mr-2"
+              style={{
+                backgroundColor: !filters[module.statusField] ? module.color : "#F1F5F9",
+              }}
+            >
+              <Text
+                className="text-xs font-semibold"
+                style={{ color: !filters[module.statusField] ? "#FFFFFF" : "#64748B" }}
+              >
+                All
+              </Text>
+            </TouchableOpacity>
+            {module.statusOptions.map((opt) => {
+              const active = String(filters[module.statusField!]) === String(opt.value);
+              const chipColor = opt.color || module.color;
+              return (
+                <TouchableOpacity
+                  key={String(opt.value)}
+                  onPress={() => {
+                    setFilters((prev) => ({
+                      ...prev,
+                      [module.statusField!]: active ? undefined : String(opt.value),
+                    }));
+                  }}
+                  className="px-3 py-1.5 rounded-full mr-2"
+                  style={{ backgroundColor: active ? chipColor : "#F1F5F9" }}
+                >
+                  <Text
+                    className="text-xs font-semibold"
+                    style={{ color: active ? "#FFFFFF" : chipColor }}
+                  >
+                    {opt.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
+          </ScrollView>
+        ) : null}
+
+        {/* Active filter chips (non-status) */}
         {filterCount > 0 ? (
           <View className="flex-row flex-wrap mt-2">
             {Object.entries(filters).map(([key, value]) => {
               if (!value || (Array.isArray(value) && value.length === 0)) return null;
+              if (key === module.statusField) return null;
               const label = chipLabel(module, key, value);
               return (
                 <TouchableOpacity
@@ -383,14 +439,34 @@ const ListSeparator = memo(function ListSeparator() {
 
 // --- Helpers ---
 
-function clientSideFilter(module: ModuleDefinition | undefined, rows: any[], search: string): any[] {
+function clientSideFilter(
+  module: ModuleDefinition | undefined,
+  rows: any[],
+  search: string,
+  filters?: Record<string, string>,
+): any[] {
   if (!module) return [];
+  let result = rows;
+
+  // Apply field filters (status, priority, etc.)
+  if (filters) {
+    for (const [key, value] of Object.entries(filters)) {
+      if (!value) continue;
+      const values = value.split(",");
+      result = result.filter((row) => {
+        const rowVal = String(row?.[key] ?? "");
+        return values.includes(rowVal);
+      });
+    }
+  }
+
+  // Apply text search
   const needle = search.trim().toLowerCase();
-  if (!needle) return rows;
+  if (!needle) return result;
   const keys = Array.from(
     new Set([...(module.searchFields || []), ...module.titleFields, ...(module.subtitleFields || [])]),
   );
-  return rows.filter((row) =>
+  return result.filter((row) =>
     keys.some((key) => String(row?.[key] ?? "").toLowerCase().includes(needle)),
   );
 }

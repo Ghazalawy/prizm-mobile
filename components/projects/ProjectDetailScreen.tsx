@@ -17,6 +17,10 @@ import {
   useProjectTasks,
   useProjectMilestones,
   useProjectStats,
+  useProjectInvoices,
+  useProjectTickets,
+  useProjectNotes,
+  useProjectActivity,
   type ProjectMilestone,
 } from "@/lib/queries/projects";
 import { FilesTab } from "@/components/crud/FilesTab";
@@ -42,7 +46,7 @@ const TASK_STATUS: Record<string, { label: string; color: string }> = {
   "5": { label: "Complete", color: "#16A34A" },
 };
 
-type TabKey = "overview" | "tasks" | "milestones" | "files" | "expenses";
+type TabKey = "overview" | "tasks" | "milestones" | "files" | "expenses" | "invoices" | "tickets" | "notes" | "activity";
 
 type Props = { id: string };
 
@@ -56,6 +60,10 @@ export function ProjectDetailScreen({ id }: Props) {
   const tasks = useProjectTasks(id);
   const milestones = useProjectMilestones(id);
   const stats = useProjectStats(id);
+  const invoices = useProjectInvoices(id);
+  const tickets = useProjectTickets(id);
+  const notes = useProjectNotes(id);
+  const activity = useProjectActivity(id);
   const row = project.data as any;
 
   const onRefresh = useCallback(async () => {
@@ -198,7 +206,7 @@ export function ProjectDetailScreen({ id }: Props) {
         {/* ── Tabs ──────────────────────────────────────────────── */}
         <View className="mt-3 bg-white rounded-2xl shadow-sm overflow-hidden">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
-            {(["overview", "tasks", "milestones", "files", "expenses"] as TabKey[]).map((k) => (
+            {(["overview", "tasks", "milestones", "invoices", "tickets", "files", "notes", "activity", "expenses"] as TabKey[]).map((k) => (
               <TabPill key={k} active={tab === k} label={tabLabel(k)} onPress={() => setTab(k)} />
             ))}
           </ScrollView>
@@ -208,11 +216,15 @@ export function ProjectDetailScreen({ id }: Props) {
             ) : null}
             {tab === "tasks" ? <TasksPanel tasks={taskItems} projectId={id} /> : null}
             {tab === "milestones" ? <MilestonesPanel milestones={milestoneItems} /> : null}
+            {tab === "invoices" ? <InvoicesPanel data={invoices} /> : null}
+            {tab === "tickets" ? <TicketsPanel data={tickets} /> : null}
             {tab === "files" ? (
               <View style={{ height: 400 }}>
                 <FilesTab relType="project" relId={id} color={ACCENT} />
               </View>
             ) : null}
+            {tab === "notes" ? <NotesPanel data={notes} /> : null}
+            {tab === "activity" ? <ActivityPanel data={activity} /> : null}
             {tab === "expenses" ? <ExpensesPanel projectId={id} /> : null}
           </View>
         </View>
@@ -477,6 +489,139 @@ function MilestonesPanel({ milestones }: { milestones: ProjectMilestone[] }) {
   );
 }
 
+function InvoicesPanel({ data }: { data: ReturnType<typeof useProjectInvoices> }) {
+  const items = (data.data?.items ?? []) as any[];
+  if (data.isLoading && !data.data) {
+    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
+  }
+  if (items.length === 0) {
+    return <Text className="text-sm text-muted text-center py-6 px-4">No invoices for this project.</Text>;
+  }
+  const statusLabel = (s: string) => {
+    const map: Record<string, { label: string; color: string }> = {
+      "1": { label: "Unpaid", color: "#DC2626" },
+      "2": { label: "Paid", color: "#16A34A" },
+      "3": { label: "Partially Paid", color: "#B45309" },
+      "4": { label: "Overdue", color: "#DC2626" },
+      "5": { label: "Cancelled", color: "#64748B" },
+      "6": { label: "Draft", color: "#94A3B8" },
+    };
+    return map[s] || { label: s, color: "#64748B" };
+  };
+  return (
+    <View className="px-4 py-3">
+      {items.slice(0, 30).map((inv: any) => {
+        const st = statusLabel(String(inv.status || "1"));
+        return (
+          <TouchableOpacity
+            key={inv.id}
+            onPress={() => router.push(`/(tabs)/invoices/${inv.id}` as any)}
+            activeOpacity={0.7}
+            className="flex-row items-center py-2.5 border-b border-slate-100"
+          >
+            <View className="flex-1">
+              <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                INV-{inv.number || inv.id}
+              </Text>
+              <Text className="text-xs text-muted mt-0.5">
+                {inv.date || ""} {inv.total ? `· ${Number(inv.total).toLocaleString()}` : ""}
+              </Text>
+            </View>
+            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: `${st.color}15` }}>
+              <Text style={{ color: st.color, fontSize: 10, fontWeight: "600" }}>{st.label}</Text>
+            </View>
+          </TouchableOpacity>
+        );
+      })}
+    </View>
+  );
+}
+
+function TicketsPanel({ data }: { data: ReturnType<typeof useProjectTickets> }) {
+  const items = (data.data?.items ?? []) as any[];
+  if (data.isLoading && !data.data) {
+    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
+  }
+  if (items.length === 0) {
+    return <Text className="text-sm text-muted text-center py-6 px-4">No tickets for this project.</Text>;
+  }
+  const priorityColor = (p: string) => {
+    const map: Record<string, string> = { "1": "#64748B", "2": "#0369A1", "3": "#B45309", "4": "#DC2626" };
+    return map[p] || "#64748B";
+  };
+  return (
+    <View className="px-4 py-3">
+      {items.slice(0, 30).map((t: any) => (
+        <TouchableOpacity
+          key={t.ticketid || t.id}
+          onPress={() => router.push(`/(tabs)/tickets/${t.ticketid || t.id}` as any)}
+          activeOpacity={0.7}
+          className="flex-row items-center py-2.5 border-b border-slate-100"
+        >
+          <View className="w-2 h-2 rounded-full mr-3" style={{ backgroundColor: priorityColor(String(t.priority || "1")) }} />
+          <View className="flex-1">
+            <Text className="text-sm text-foreground" numberOfLines={1}>
+              #{t.ticketid || t.id} {t.subject || ""}
+            </Text>
+            <Text className="text-xs text-muted mt-0.5">{t.date || ""}</Text>
+          </View>
+          <Ionicons name="chevron-forward" size={14} color="#CBD5E1" />
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+}
+
+function NotesPanel({ data }: { data: ReturnType<typeof useProjectNotes> }) {
+  const items = (data.data?.items ?? []) as any[];
+  if (data.isLoading && !data.data) {
+    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
+  }
+  if (items.length === 0) {
+    return <Text className="text-sm text-muted text-center py-6 px-4">No notes yet.</Text>;
+  }
+  return (
+    <View className="px-4 py-3">
+      {items.map((n: any, idx: number) => (
+        <View key={n.id || idx} className="py-2.5 border-b border-slate-100">
+          <Text className="text-sm text-foreground">{cleanText(n.content || n.description || "")}</Text>
+          <Text className="text-xs text-muted mt-1">
+            {n.staff_name || ""} {n.dateadded ? `· ${n.dateadded.slice(0, 10)}` : ""}
+          </Text>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function ActivityPanel({ data }: { data: ReturnType<typeof useProjectActivity> }) {
+  const items = (data.data?.items ?? []) as any[];
+  if (data.isLoading && !data.data) {
+    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
+  }
+  if (items.length === 0) {
+    return <Text className="text-sm text-muted text-center py-6 px-4">No activity logged.</Text>;
+  }
+  return (
+    <View className="px-4 py-3">
+      {items.slice(0, 50).map((a: any, idx: number) => (
+        <View key={a.id || idx} className="flex-row py-2.5 border-b border-slate-100">
+          <View className="items-center mr-3" style={{ width: 20 }}>
+            <View className="w-2 h-2 rounded-full bg-slate-300 mt-1.5" />
+            {idx < items.length - 1 ? <View className="w-0.5 flex-1 bg-slate-200 mt-0.5" /> : null}
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm text-foreground">{cleanText(a.description || a.additional_data || "")}</Text>
+            <Text className="text-xs text-muted mt-0.5">
+              {a.staff_full_name || a.full_name || ""} {a.dateadded ? `· ${a.dateadded.slice(0, 16)}` : ""}
+            </Text>
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
 function ExpensesPanel({ projectId }: { projectId: string }) {
   return (
     <View className="px-4 py-6 items-center">
@@ -502,7 +647,11 @@ function tabLabel(k: TabKey): string {
     case "overview": return "Overview";
     case "tasks": return "Tasks";
     case "milestones": return "Milestones";
+    case "invoices": return "Invoices";
+    case "tickets": return "Tickets";
     case "files": return "Files";
+    case "notes": return "Notes";
+    case "activity": return "Activity";
     case "expenses": return "Expenses";
   }
 }

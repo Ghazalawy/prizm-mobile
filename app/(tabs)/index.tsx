@@ -16,7 +16,11 @@ import {
   useLeadsCount,
   useInvoicesCount,
   useCustomersCount,
+  usePendingApprovals,
+  useCheckinStatus,
+  useExpensesSummary,
   type MyTasksSummary,
+  type PendingApprovalsData,
 } from "@/lib/queries/dashboard";
 import {
   DEFAULT_LAYOUT,
@@ -26,9 +30,15 @@ import {
   type DashboardCardKey,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { getWidget, type WidgetDef } from "@/lib/widget-registry";
+import { StatWidget } from "@/components/widgets/StatWidget";
+import { ChartWidget, type ChartSegment } from "@/components/widgets/ChartWidget";
+import { ListWidget, type ListWidgetItem } from "@/components/widgets/ListWidget";
+import { ActionWidget } from "@/components/widgets/ActionWidget";
+import { useDashboardProfile, useSaveDashboardProfile } from "@/lib/queries/dashboard-profile";
 import { clearDismissedUpdate } from "@/lib/updates";
 import { DraggableDashboardGrid } from "@/components/DraggableDashboardGrid";
-import { CheckinCard } from "@/components/CheckinCard";
+// CheckinCard removed from dashboard — available via Settings only
 import { useInbox } from "@/lib/queries/inbox";
 import { useTasksDueToday, type TaskListItem } from "@/lib/queries/tasks";
 import { useMyActivity, type ActivityRow } from "@/lib/queries/activity";
@@ -314,7 +324,9 @@ function SectionHeader({
 
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
-  const [layout, setLocalLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+  const [layout, setLocalLayoutState] = useState<DashboardLayout>(DEFAULT_LAYOUT);
+  const profileQuery = useDashboardProfile();
+  const saveProfile = useSaveDashboardProfile();
   const projects = useProjectsCount();
   const tasksSummary = useMyTasksSummary();
   const leads = useLeadsCount();
@@ -324,20 +336,33 @@ export default function DashboardScreen() {
   const dueTasks = useTasksDueToday();
   const user = useCurrentUser();
   const activity = useMyActivity(user?.staffid, 10);
+  const pendingApprovals = usePendingApprovals(true);
+  const checkinStatus = useCheckinStatus();
+  const expensesSummary = useExpensesSummary();
 
+  // API profile is the source of truth. Local storage is only a fallback
+  // for offline mode or while the API request is in flight.
   useEffect(() => {
-    let mounted = true;
-    getLayout().then((next) => {
-      if (mounted) setLocalLayout(next);
-    });
-    return () => {
-      mounted = false;
-    };
-  }, []);
+    if (profileQuery.data) {
+      setLocalLayoutState(profileQuery.data);
+    }
+  }, [profileQuery.data]);
+
+  // Seed from local cache while API loads (offline fallback)
+  useEffect(() => {
+    if (!profileQuery.data) {
+      let mounted = true;
+      getLayout().then((local) => {
+        if (mounted && !profileQuery.data) setLocalLayoutState(local);
+      });
+      return () => { mounted = false; };
+    }
+  }, [profileQuery.data]);
 
   const reloadLayout = useCallback(() => {
-    getLayout().then(setLocalLayout);
-  }, []);
+    getLayout().then(setLocalLayoutState);
+    profileQuery.refetch();
+  }, [profileQuery]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -351,83 +376,158 @@ export default function DashboardScreen() {
       inbox.refetch(),
       dueTasks.refetch(),
       activity.refetch(),
+      pendingApprovals.refetch(),
+      checkinStatus.refetch(),
+      expensesSummary.refetch(),
     ]);
     reloadLayout();
     setRefreshing(false);
-  }, [projects, tasksSummary, leads, invoices, customers, inbox, dueTasks, activity, reloadLayout]);
+  }, [projects, tasksSummary, leads, invoices, customers, inbox, dueTasks, activity, pendingApprovals, checkinStatus, expensesSummary, reloadLayout]);
 
-  const renderCard = (key: DashboardCardKey, isDragging: boolean) => {
-    switch (key) {
-      case "tasks_summary":
+  const widgetDataMap: Record<string, { value?: number; isLoading: boolean; isError: boolean; footnote?: string }> = useMemo(() => ({
+    tasks_summary: { value: tasksSummary.data?.total_open, isLoading: tasksSummary.isLoading, isError: tasksSummary.isError, footnote: buildTasksFootnote(tasksSummary.data) },
+    projects:      { value: projects.data as number | undefined, isLoading: projects.isLoading, isError: projects.isError },
+    customers:     { value: customers.data as number | undefined, isLoading: customers.isLoading, isError: customers.isError },
+    leads:         { value: leads.data as number | undefined, isLoading: leads.isLoading, isError: leads.isError },
+    invoices:      { value: invoices.data as number | undefined, isLoading: invoices.isLoading, isError: invoices.isError },
+    approvals_pending: { value: inbox.data?.summary?.approvals ?? 0, isLoading: inbox.isLoading, isError: inbox.isError },
+    // Batch 1 — Tasks granular
+    tasks_open:          { value: tasksSummary.data?.total_open, isLoading: tasksSummary.isLoading, isError: tasksSummary.isError },
+    tasks_overdue:       { value: tasksSummary.data?.overdue, isLoading: tasksSummary.isLoading, isError: tasksSummary.isError },
+    tasks_stale:         { value: tasksSummary.data?.stale, isLoading: tasksSummary.isLoading, isError: tasksSummary.isError },
+    tasks_completed_30d: { value: tasksSummary.data?.completed_last_30d, isLoading: tasksSummary.isLoading, isError: tasksSummary.isError },
+    // Batch 1 — Approvals granular
+    approvals_my_pending: { value: pendingApprovals.data?.total, isLoading: pendingApprovals.isLoading, isError: pendingApprovals.isError },
+    // Batch 1 — Timesheets
+    timesheet_hours_week: { value: undefined, isLoading: false, isError: false, footnote: "HOURS THIS WEEK" },
+    timesheet_pending:    { value: undefined, isLoading: false, isError: false, footnote: "PENDING TIMESHEETS" },
+    // Batch 2 — Leave & Payslip (use data from existing leave hooks or show placeholder)
+    leave_balance:        { value: undefined, isLoading: false, isError: false },
+    leave_pending:        { value: undefined, isLoading: false, isError: false },
+    payslip_latest:       { value: undefined, isLoading: false, isError: false },
+    // Batch 2 — Expenses
+    expenses_total_month: { value: expensesSummary.data ? Math.round(expensesSummary.data.total_amount) : undefined, isLoading: expensesSummary.isLoading, isError: expensesSummary.isError },
+    expenses_pending:     { value: expensesSummary.data?.pending_count, isLoading: expensesSummary.isLoading, isError: expensesSummary.isError },
+  }), [tasksSummary, projects, customers, leads, invoices, inbox, pendingApprovals, expensesSummary]);
+
+  // Chart data derivation for chart-type widgets
+  const EXPENSE_CHART_COLORS = ["#EA580C", "#F59E0B", "#0369A1", "#7C3AED", "#15803D", "#DC2626"];
+  const chartDataMap: Record<string, ChartSegment[]> = useMemo(() => {
+    const ts = tasksSummary.data;
+    const ap = pendingApprovals.data;
+    const exp = expensesSummary.data;
+    return {
+      tasks_status_chart: ts ? [
+        { label: "Not Started", value: ts.not_started, color: "#475569" },
+        { label: "In Progress", value: ts.in_progress, color: "#B45309" },
+        { label: "Feedback", value: ts.awaiting_feedback, color: "#7C3AED" },
+        { label: "Testing", value: ts.testing, color: "#0369A1" },
+      ] : [],
+      approvals_by_type: ap ? [
+        { label: "Purchase Requests", value: ap.by_type.purchase_request, color: "#7C3AED" },
+        { label: "Leave", value: ap.by_type.leave, color: "#F59E0B" },
+        { label: "Timesheets", value: ap.by_type.timesheet, color: "#0369A1" },
+      ] : [],
+      expenses_by_category: exp ? exp.by_category.map((c, i) => ({
+        label: c.name,
+        value: c.count,
+        color: EXPENSE_CHART_COLORS[i % EXPENSE_CHART_COLORS.length],
+      })) : [],
+    };
+  }, [tasksSummary.data, pendingApprovals.data, expensesSummary.data]);
+
+  // List data derivation for list-type widgets
+  const listDataMap: Record<string, ListWidgetItem[]> = useMemo(() => {
+    const dueItems: ListWidgetItem[] = (dueTasks.data || []).slice(0, 5).map((t) => ({
+      id: t.id,
+      title: t.name,
+      subtitle: t.duedate ? dueCountdown(t.duedate).label : undefined,
+      badge: t.priority ? { label: PRIORITY[String(t.priority)]?.label || "", color: PRIORITY[String(t.priority)]?.color || "#475569", bg: PRIORITY[String(t.priority)]?.bg || "#F1F5F9" } : undefined,
+    }));
+    const approvalItems: ListWidgetItem[] = (pendingApprovals.data?.items || []).slice(0, 5).map((a) => ({
+      id: a.id,
+      title: a.subject || `${a.type} #${a.id}`,
+      subtitle: a.date,
+      badge: { label: a.type.replace("_", " "), color: "#7C3AED", bg: "#EDE9FE" },
+    }));
+    return {
+      tasks_due_today: dueItems,
+      approvals_recent: approvalItems,
+      leave_upcoming: [], // Populated when leave query is integrated
+    };
+  }, [dueTasks.data, pendingApprovals.data]);
+
+  const renderCard = useCallback((key: DashboardCardKey, isDragging: boolean) => {
+    const widget = getWidget(key);
+    if (!widget) return null;
+
+    // Route by component type
+    switch (widget.componentType) {
+      case "chart": {
+        const segments = chartDataMap[key] || [];
+        const isLoading = key.startsWith("tasks_") ? tasksSummary.isLoading
+          : key.startsWith("expenses_") ? expensesSummary.isLoading
+          : pendingApprovals.isLoading;
+        const isError = key.startsWith("tasks_") ? tasksSummary.isError
+          : key.startsWith("expenses_") ? expensesSummary.isError
+          : pendingApprovals.isError;
         return (
-          <StatCard
-            title="My Tasks"
-            value={tasksSummary.data?.total_open}
-            icon="checkbox-outline"
-            color={colors.primary}
-            isLoading={tasksSummary.isLoading}
-            isError={tasksSummary.isError}
-            onPress={() => router.push("/(tabs)/tasks" as any)}
-            footnote={buildTasksFootnote(tasksSummary.data)}
+          <ChartWidget
+            widget={widget}
+            segments={segments}
+            isLoading={isLoading}
+            isError={isError}
             isDragging={isDragging}
           />
         );
-      case "projects":
+      }
+      case "list": {
+        const items = listDataMap[key] || [];
+        const isLoading = key === "tasks_due_today" ? dueTasks.isLoading : pendingApprovals.isLoading;
+        const isError = key === "tasks_due_today" ? dueTasks.isError : pendingApprovals.isError;
         return (
-          <StatCard
-            title="Active Projects"
-            value={projects.data as number | undefined}
-            icon="folder-outline"
-            color="#0284C7"
-            isLoading={projects.isLoading}
-            isError={projects.isError}
-            onPress={() => router.push("/(tabs)/projects" as any)}
+          <ListWidget
+            widget={widget}
+            items={items}
+            isLoading={isLoading}
+            isError={isError}
             isDragging={isDragging}
           />
         );
-      case "customers":
-        return (
-          <StatCard
-            title="Customers"
-            value={customers.data as number | undefined}
-            icon="business-outline"
-            color="#8B5CF6"
-            isLoading={customers.isLoading}
-            isError={customers.isError}
-            onPress={() => router.push("/(tabs)/customers" as any)}
-            isDragging={isDragging}
-          />
-        );
-      case "leads":
-        return (
-          <StatCard
-            title="Total Leads"
-            value={leads.data as number | undefined}
-            icon="people-outline"
-            color="#16A34A"
-            isLoading={leads.isLoading}
-            isError={leads.isError}
-            onPress={() => router.push("/(tabs)/erp/leads" as any)}
-            isDragging={isDragging}
-          />
-        );
-      case "invoices":
-        return (
-          <StatCard
-            title="Invoices"
-            value={invoices.data as number | undefined}
-            icon="document-text-outline"
-            color="#EF4444"
-            isLoading={invoices.isLoading}
-            isError={invoices.isError}
-            onPress={() => router.push("/(tabs)/erp/invoices" as any)}
-            isDragging={isDragging}
-          />
-        );
-      default:
+      }
+      case "action": {
+        if (key === "attendance_status") {
+          const cs = checkinStatus.data;
+          return (
+            <ActionWidget
+              widget={widget}
+              statusLabel={cs?.is_checked_in ? "Clocked In" : "Not Clocked In"}
+              statusColor={cs?.is_checked_in ? "#15803D" : "#94A3B8"}
+              detail={cs?.checked_in_at ? `Since ${cs.checked_in_at.slice(11, 16)}` : undefined}
+              isLoading={checkinStatus.isLoading}
+              isError={checkinStatus.isError}
+              isDragging={isDragging}
+            />
+          );
+        }
         return null;
+      }
+      default: {
+        // stat type — default
+        const data = widgetDataMap[key] ?? { value: undefined, isLoading: false, isError: false };
+        return (
+          <StatWidget
+            widget={widget}
+            value={data.value}
+            isLoading={data.isLoading}
+            isError={data.isError}
+            footnote={data.footnote}
+            isDragging={isDragging}
+          />
+        );
+      }
     }
-  };
+  }, [widgetDataMap, chartDataMap, listDataMap, tasksSummary, pendingApprovals, dueTasks, checkinStatus, expensesSummary]);
 
   const cardKeys = visibleCards(layout);
 
@@ -447,11 +547,11 @@ export default function DashboardScreen() {
       for (const k of nextVisible) {
         if (!result.includes(k)) result.push(k);
       }
-      const next = { ...layout, order: result };
-      setLocalLayout(next);
-      setLayout(next).catch(() => undefined);
+      const next: DashboardLayout = { ...layout, order: result };
+      setLocalLayoutState(next);
+      saveProfile.mutate(next);
     },
-    [layout],
+    [layout, saveProfile],
   );
 
   const summaryCards = useMemo(() => {
@@ -522,9 +622,6 @@ export default function DashboardScreen() {
           </TouchableOpacity>
         </View>
       </View>
-
-      {/* Check-in Card */}
-      <CheckinCard compact />
 
       {/* A. Summary Cards Row */}
       <View className="px-4">

@@ -2,23 +2,93 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.8.0",
+      "date": "2026-05-26",
+      "title": "Stabilization — regression fixes, image comments, My Tasks filter",
+      "highlights": [
+        "ERP hub now shows all modules even when permission API is slow or returns partial data.",
+        "Task checklist toggle (mark done) fixed — was hitting wrong backend endpoint.",
+        "Notification taps now navigate in-app for all modules with native screens instead of opening browser.",
+        "Project detail: added Invoices, Tickets, Notes, and Activity tabs to match web app.",
+        "Task list de-duplicated — no more seeing the same task twice when you're both assignee and follower.",
+        "Image attachments in comments and ticket replies — tap camera/gallery icons to add screenshots.",
+        "My Tasks tile now opens the tasks page filtered to only tasks assigned to you, with a toggleable filter chip.",
+        "GitHub Actions: cancel-in-progress enabled so rapid pushes don't queue wasteful builds."
+      ]
+    },
+    {
+      "version": "1.7.6",
+      "date": "2026-05-26",
+      "title": "In-app file preview + purchase approvals + auto-update",
+      "highlights": [
+        "In-App File Preview: PDF viewer, Office Online editor for Word/Excel/PPT, pinch-to-zoom images, download and share.",
+        "Native purchase approval workflows for PR, PO, Payment, Expense requests.",
+        "Notification popover with unread badges and deep-link navigation.",
+        "In-app auto-update from GitHub Releases."
+      ]
+    },
+    {
+      "version": "1.7.5",
+      "date": "2026-05-26",
+      "title": "BD, HR, Calendar, KB, and Global Search",
+      "highlights": [
+        "Tender detail with BOQ, requirements, and risk tabs.",
+        "Opportunity pipeline view with stage progression.",
+        "Enhanced leave and payslip screens for HR self-service.",
+        "Native calendar with event overlays and quick create.",
+        "Knowledge base article viewer.",
+        "Cross-module global search with instant results."
+      ]
+    },
+    {
+      "version": "1.7.4",
+      "date": "2026-05-26",
+      "title": "Leads, Tickets, Customers, and Contracts",
+      "highlights": [
+        "Lead pipeline with kanban board and stage-drag.",
+        "Ticket conversation thread with reply composer.",
+        "Customer 360-degree CRM hub with 11 detail tabs.",
+        "Contract signing and renewal workflow."
+      ]
+    },
+    {
+      "version": "1.7.3",
+      "date": "2026-05-26",
+      "title": "Reports, Expenses, and Timesheets",
+      "highlights": [
+        "Reports Module: daily progress reports with wizard creator and photo attachments.",
+        "Quick expense entry with receipt photo capture.",
+        "Timesheet dashboard with weekly calendar view and timer widget."
+      ]
+    },
+    {
+      "version": "1.7.2",
+      "date": "2026-05-26",
+      "title": "Financial documents — Invoices, Estimates, Proposals",
+      "highlights": [
+        "Invoice screen with line items, totals, payment history, and PDF preview.",
+        "Estimate screen with send/convert-to-invoice actions.",
+        "Proposal screen with content sections and e-signature status."
+      ]
+    },
+    {
+      "version": "1.7.1",
+      "date": "2026-05-26",
+      "title": "Dashboard, Tasks, and Projects enhancements",
+      "highlights": [
+        "Enhanced dashboard with quick-action buttons and stat cards.",
+        "Task kanban board view with drag between status columns.",
+        "Project detail screen with Overview, Tasks, Milestones, Files, and Expenses tabs."
+      ]
+    },
+    {
       "version": "1.7.0",
       "date": "2026-05-26",
-      "title": "Major feature release — 12 batches of new capabilities",
+      "title": "Core infrastructure — Permissions, Filtering, Theme",
       "highlights": [
-        "Reports Module: daily progress reports with wizard creator, photo attachments, and project filter.",
         "Permission System: full Perfex CRM permissions with view/create/edit/delete gating per module.",
-        "In-App File Preview: PDF viewer, Office Online editor for Word/Excel/PPT, pinch-to-zoom images, download and share.",
         "Dynamic Filtering: filter panel with field-type controls, sort picker, status badges, infinite scroll pagination.",
-        "Environment and Theme: swappable dev/prod environment, Prizm brand design language with orange theme.",
-        "Dashboard, Tasks, and Projects: enhanced dashboard with quick actions, task kanban board, project detail with tabs.",
-        "Financial Documents: Invoice/Estimate/Proposal screens with line items, totals, payments, and PDF preview.",
-        "Expenses and Timesheets: quick expense entry with receipt photo, timesheet dashboard, weekly view, timer widget.",
-        "Leads and Tickets: lead pipeline/kanban view, ticket conversation thread with reply composer.",
-        "Customers and Contracts: customer 360-degree CRM hub with 11 tabs, contract signing/renewal workflow.",
-        "BD and HR: tender detail with BOQ/requirements/risks, opportunity pipeline, enhanced leave/payslip screens.",
-        "Calendar, KB, and Search: native calendar with overlays, knowledge base viewer, cross-module global search.",
-        "Plus: native purchase approval workflows, View As impersonation, notification popover, and in-app auto-update."
+        "Environment and Theme: swappable dev/prod environment, Prizm brand design language with orange theme."
       ]
     },
     {

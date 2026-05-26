@@ -279,8 +279,8 @@ export function ReportCreateScreen({ preselectedProjectId }: Props) {
       {/* Step content */}
       <KeyboardAvoidingView
         className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : "height"}
-        keyboardVerticalOffset={80}
+        behavior={Platform.OS === "ios" ? "padding" : "padding"}
+        keyboardVerticalOffset={Platform.OS === "ios" ? 80 : 0}
       >
         <ScrollView
           className="flex-1"
@@ -1086,21 +1086,18 @@ function ProjectPickerModal({
 
   return (
     <Pressable
-      className="absolute inset-0 bg-black/40"
+      className="absolute inset-0"
       onPress={onClose}
       style={{ zIndex: 50 }}
     >
+      {/* Inline dropdown anchored below the project field */}
       <Pressable
-        className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl"
-        style={{ maxHeight: "75%" }}
+        className="absolute left-4 right-4 bg-white rounded-xl shadow-lg border border-slate-200"
+        style={{ top: 160, maxHeight: 320 }}
         onPress={(e) => e.stopPropagation()}
       >
-        <View className="items-center pt-3 pb-1">
-          <View className="w-10 h-1 rounded-full bg-slate-300" />
-        </View>
-        <View className="px-4 pb-2">
-          <Text className="text-lg font-bold text-slate-900 mb-2">Select Project</Text>
-          <View className="flex-row items-center bg-slate-100 rounded-xl px-3 py-2">
+        <View className="px-3 pt-3 pb-2">
+          <View className="flex-row items-center bg-slate-100 rounded-lg px-3 py-2">
             <Ionicons name="search-outline" size={16} color={colors.slate400} />
             <TextInput
               className="flex-1 ml-2 text-sm text-slate-900"
@@ -1114,31 +1111,32 @@ function ProjectPickerModal({
         </View>
 
         {loading ? (
-          <View className="py-10 items-center">
+          <View className="py-6 items-center">
             <ActivityIndicator color={ACCENT} />
           </View>
         ) : (
           <FlatList
             data={filtered}
             keyExtractor={(p) => String(p.id)}
+            style={{ maxHeight: 250 }}
             renderItem={({ item: p }) => {
               const active = selected === p.id;
               return (
                 <TouchableOpacity
                   onPress={() => onSelect(p.id)}
-                  className="flex-row items-center px-4 py-3 border-b border-slate-50"
+                  className="flex-row items-center px-3 py-2.5 border-b border-slate-50"
                 >
                   <View
-                    className="w-8 h-8 rounded-lg items-center justify-center"
+                    className="w-7 h-7 rounded-lg items-center justify-center"
                     style={{ backgroundColor: active ? ACCENT : colors.slate100 }}
                   >
                     <Ionicons
                       name="folder-outline"
-                      size={16}
+                      size={14}
                       color={active ? "#FFF" : colors.slate500}
                     />
                   </View>
-                  <View className="ml-3 flex-1">
+                  <View className="ml-2.5 flex-1">
                     <Text
                       className="text-sm font-medium"
                       style={{ color: active ? ACCENT : colors.slate700 }}
@@ -1152,11 +1150,11 @@ function ProjectPickerModal({
                       </Text>
                     ) : null}
                   </View>
-                  {active && <Ionicons name="checkmark" size={18} color={ACCENT} />}
+                  {active && <Ionicons name="checkmark" size={16} color={ACCENT} />}
                 </TouchableOpacity>
               );
             }}
-            contentContainerStyle={{ paddingBottom: 40 }}
+            contentContainerStyle={{ paddingBottom: 8 }}
           />
         )}
       </Pressable>

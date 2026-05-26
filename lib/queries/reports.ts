@@ -39,6 +39,7 @@ export type ReportListItem = {
   suggestions: string | null;
   scope_description: string | null;
   project_name: string | null;
+  project_number: string | null;
   client_name: string | null;
   creator_name: string | null;
 };

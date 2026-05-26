@@ -6,7 +6,7 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router, Stack, useLocalSearchParams } from "expo-router";
+import { router, Stack, useLocalSearchParams, useNavigation } from "expo-router";
 import { useMyPayslip, type PayslipDetail } from "@/lib/queries/my";
 
 /**
@@ -55,9 +55,18 @@ export default function PayslipDetailScreen() {
   const params = useLocalSearchParams();
   const id = typeof params.id === "string" ? parseInt(params.id, 10) : 0;
   const q = useMyPayslip(id);
+  const navigation = useNavigation();
 
   const p = q.data as PayslipDetail | undefined;
   const currency = p?.to_currency_name || p?.from_currency_name || undefined;
+
+  const handleBack = () => {
+    if (navigation.canGoBack()) {
+      navigation.goBack();
+    } else {
+      router.replace("/(tabs)/payslips" as any);
+    }
+  };
 
   return (
     <View className="flex-1 bg-surface">
@@ -66,7 +75,7 @@ export default function PayslipDetailScreen() {
           title: "Payslip",
           headerShown: true,
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} className="px-2">
+            <TouchableOpacity onPress={handleBack} className="px-2">
               <Ionicons name="chevron-back" size={28} color="#0284C7" />
             </TouchableOpacity>
           ),

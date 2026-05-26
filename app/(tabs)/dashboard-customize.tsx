@@ -4,14 +4,16 @@ import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
 import {
   ALL_CARD_KEYS,
-  CARD_LABELS,
   DEFAULT_LAYOUT,
   getLayout,
   resetLayout,
   setLayout,
+  cardLabel,
   type DashboardCardKey,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
+import { getWidget } from "@/lib/widget-registry";
+import { useSaveDashboardProfile } from "@/lib/queries/dashboard-profile";
 
 /**
  * Settings sub-screen: which dashboard cards to show + in what order.
@@ -30,10 +32,11 @@ export default function DashboardCustomizeScreen() {
     getLayout().then(setLayoutState);
   }, []);
 
+  const saveProfile = useSaveDashboardProfile();
   const persist = useCallback(async (next: DashboardLayout) => {
     setLayoutState(next);
-    await setLayout(next);
-  }, []);
+    saveProfile.mutate(next);
+  }, [saveProfile]);
 
   const moveUp = useCallback(
     (key: DashboardCardKey) => {
@@ -150,8 +153,13 @@ export default function DashboardCustomizeScreen() {
                     <Ionicons name="chevron-down" size={20} color="#475569" />
                   </TouchableOpacity>
                 </View>
+                {getWidget(key) ? (
+                  <View className="w-8 h-8 rounded-lg items-center justify-center mr-2" style={{ backgroundColor: `${getWidget(key)!.color}1A` }}>
+                    <Ionicons name={getWidget(key)!.icon as any} size={16} color={getWidget(key)!.color} />
+                  </View>
+                ) : null}
                 <Text className="flex-1 text-foreground font-medium">
-                  {CARD_LABELS[key]}
+                  {cardLabel(key)}
                 </Text>
                 <Switch
                   value={visible}

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
@@ -78,7 +78,7 @@ export default function ViewAsScreen() {
   // 350ms debounce so we don't fire a request per keystroke. The
   // backend caps at 200 rows so even unfiltered the list is cheap.
   const [debouncedSearch, setDebouncedSearch] = useState("");
-  useMemo(() => {
+  useEffect(() => {
     const t = setTimeout(() => setDebouncedSearch(search.trim()), 350);
     return () => clearTimeout(t);
   }, [search]);

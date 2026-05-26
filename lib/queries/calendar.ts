@@ -71,7 +71,7 @@ export function useCalendarOverlays(month?: number, year?: number) {
         apiRequest("tasks?limit=200"),
         apiRequest("projects?limit=200"),
         apiRequest("contracts?limit=200"),
-        apiRequest("prztendering/tenders?limit=200"),
+        apiRequest("tenders_api/data?limit=200"),
       ]);
 
       const overlays: CalendarOverlayItem[] = [];
@@ -118,7 +118,7 @@ export function useCalendarOverlays(month?: number, year?: number) {
               date: c.dateend,
               type: "contract",
               color: "#7C3AED",
-              route: `/(tabs)/erp/contracts/${c.id}`,
+              route: `/(tabs)/contracts/${c.id}`,
             });
           }
         }
@@ -134,7 +134,7 @@ export function useCalendarOverlays(month?: number, year?: number) {
               date: t.closing_date,
               type: "tender",
               color: "#DC2626",
-              route: `/(tabs)/erp/tenders/${t.id}`,
+              route: `/(tabs)/tenders/${t.id}`,
             });
           }
         }

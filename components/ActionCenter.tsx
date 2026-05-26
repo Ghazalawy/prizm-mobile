@@ -36,6 +36,41 @@ import {
 import { formatRelativeShort, formatAbsolute } from "@/lib/time";
 
 /**
+ * Map a bare Perfex admin path (e.g. "tasks/view/123") to the equivalent
+ * native mobile route. Returns null for modules that have no native screen.
+ */
+const PERFEX_ROUTE_PATTERNS: Array<{ re: RegExp; to: (m: RegExpMatchArray) => string }> = [
+  { re: /^(?:admin\/)?tasks\/view\/(\d+)/,                        to: (m) => `/(tabs)/tasks/${m[1]}` },
+  { re: /^(?:admin\/)?projects\/view\/(\d+)/,                      to: (m) => `/(tabs)/projects/${m[1]}` },
+  { re: /^(?:admin\/)?invoices\/list_invoices\/(\d+)/,             to: (m) => `/(tabs)/invoices/${m[1]}` },
+  { re: /^(?:admin\/)?estimates\/list_estimates\/(\d+)/,           to: (m) => `/(tabs)/estimates/${m[1]}` },
+  { re: /^(?:admin\/)?proposals\/list_proposals\/(\d+)/,           to: (m) => `/(tabs)/proposals/${m[1]}` },
+  { re: /^(?:admin\/)?clients\/client\/(\d+)/,                     to: (m) => `/(tabs)/customers/${m[1]}` },
+  { re: /^(?:admin\/)?customers\/client\/(\d+)/,                   to: (m) => `/(tabs)/customers/${m[1]}` },
+  { re: /^(?:admin\/)?leads\/index\/(\d+)/,                        to: (m) => `/(tabs)/leads/${m[1]}` },
+  { re: /^(?:admin\/)?contracts\/contract\/(\d+)/,                 to: (m) => `/(tabs)/contracts/${m[1]}` },
+  { re: /^(?:admin\/)?tickets\/ticket\/(\d+)/,                     to: (m) => `/(tabs)/tickets/${m[1]}` },
+  { re: /^(?:admin\/)?expenses\/list_expenses\/(\d+)/,             to: (m) => `/(tabs)/erp/expenses/${m[1]}` },
+  { re: /^(?:admin\/)?przpurchase\/Purchase_Requests?\/view[^/]*\/(\d+)/, to: (m) => `/(tabs)/approvals/purchase_request/${m[1]}` },
+  { re: /^(?:admin\/)?przpurchase\/Purchase_Order\/view[^/]*\/(\d+)/,     to: (m) => `/(tabs)/approvals/purchase_order/${m[1]}` },
+  { re: /^(?:admin\/)?przpurchase\/Payment_Request\/view[^/]*\/(\d+)/,    to: (m) => `/(tabs)/approvals/payment_request/${m[1]}` },
+  { re: /^(?:admin\/)?przpurchase\/Expense_Request\/view[^/]*\/(\d+)/,    to: (m) => `/(tabs)/approvals/expense_request/${m[1]}` },
+  { re: /^(?:admin\/)?tenders_api\/view\/(\d+)/,                   to: (m) => `/(tabs)/tenders/${m[1]}` },
+  { re: /^(?:admin\/)?opportunities_api\/view\/(\d+)/,             to: (m) => `/(tabs)/opportunities/${m[1]}` },
+  { re: /^(?:admin\/)?reports\/view\/(\d+)/,                       to: (m) => `/(tabs)/reports/${m[1]}` },
+  { re: /^(?:admin\/)?knowledge_base\/article\/(\d+)/,             to: (m) => `/(tabs)/knowledge/${m[1]}` },
+];
+
+function resolveToNativeRoute(path: string): string | null {
+  const cleaned = path.replace(/^\/+/, "");
+  for (const { re, to } of PERFEX_ROUTE_PATTERNS) {
+    const m = cleaned.match(re);
+    if (m) return to(m);
+  }
+  return null;
+}
+
+/**
  * Top bar (Action Center) — pinned at the top of every authenticated screen.
  * Mirrors the Perfex web admin chrome: brand on the left, action icons on
  * the right. Each icon shows a red badge with its inbox count; tapping
@@ -175,27 +210,10 @@ function InboxRow({
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
-  /**
-   * Tap dispatcher. Inbox items carry one of three deeplink shapes:
-   *
-   *   1. Mobile route — starts with "/(tabs)/" → router.push (in-app nav)
-   *   2. Full URL    — starts with "http(s)://" → Linking.openURL (system browser)
-   *   3. Bare path   — Perfex internal path (e.g. "przpurchase/Payment_Request/view_payment_request/1124")
-   *                    Prefix with BASE_URL + "/MS/" + "admin/" and open in browser.
-   *                    This is the graceful fallback for modules that don't
-   *                    yet have a native mobile screen (materials/payment
-   *                    requests today).
-   *
-   * Always closes the popover first — otherwise it sits on top of the
-   * destination screen and the user has to tap-out to dismiss. Also
-   * marks the row as read so the bold/blue/dot styling drops away the
-   * next time the popover opens.
-   */
   const handleTap = () => {
     markRead(inboxKey(item.type, item.id));
     const link = item.deeplink;
     if (!link) {
-      // No deeplink — closing on a "mark as seen" tap still feels right.
       onClose();
       return;
     }
@@ -208,7 +226,11 @@ function InboxRow({
       Linking.openURL(link).catch(() => undefined);
       return;
     }
-    // Bare Perfex path → open in web view
+    const nativeRoute = resolveToNativeRoute(link);
+    if (nativeRoute) {
+      router.push(nativeRoute as any);
+      return;
+    }
     const url = `${BASE_URL}/MS/admin/${link.replace(/^\/+/, "")}`;
     Linking.openURL(url).catch(() => undefined);
   };

@@ -76,25 +76,27 @@ export function QuickExpenseScreen() {
     }
   }, []);
 
-  const canSave =
-    selectedCategory !== null && amount.length > 0 && parseFloat(amount) > 0;
+  const canSave = amount.length > 0 && parseFloat(amount) > 0;
 
   const handleSave = useCallback(
     async (addAnother: boolean) => {
       if (!canSave || saving) return;
       setSaving(true);
 
-      const catObj = categories.data?.find((c) => c.id === selectedCategory);
+      const catObj = selectedCategory
+        ? categories.data?.find((c) => c.id === selectedCategory)
+        : null;
       const expenseName = name.trim() || catObj?.name || "Expense";
 
       try {
-        const result = await submitExpense.mutateAsync({
+        const payload: Record<string, any> = {
           expense_name: expenseName,
           amount: parseFloat(amount),
           date: today,
-          category: selectedCategory!,
           note: note.trim() || undefined,
-        });
+        };
+        if (selectedCategory) payload.category = selectedCategory;
+        const result = await submitExpense.mutateAsync(payload as any);
 
         const newId = result?.data?.id;
 

@@ -133,3 +133,117 @@ export const useMyTasksSummary = () => {
     refetchInterval: 5 * 60 * 1000,
   });
 };
+
+// ─── Pending Approvals (Dashboard "Approvals" widgets) ─────────────────
+
+export type PendingApprovalsData = {
+  total: number;
+  by_type: {
+    purchase_request: number;
+    leave: number;
+    timesheet: number;
+  };
+  items: Array<{
+    id: number;
+    subject: string;
+    date: string;
+    type: string;
+  }>;
+};
+
+const EMPTY_APPROVALS: PendingApprovalsData = {
+  total: 0,
+  by_type: { purchase_request: 0, leave: 0, timesheet: 0 },
+  items: [],
+};
+
+async function fetchPendingApprovals(detail: boolean): Promise<PendingApprovalsData> {
+  const headers = await buildAuthHeaders();
+  const url = `${API_URL}/my/pending-approvals${detail ? "?detail=1" : ""}`;
+  const res = await fetch(url, { headers });
+  const token = headers["authtoken"];
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { ...EMPTY_APPROVALS, ...(body?.data || {}) };
+}
+
+export const usePendingApprovals = (detail = false) => {
+  const scope = useDashboardQueryScope();
+  return useQuery({
+    queryKey: ["dashboard", "pending-approvals", detail, scope],
+    queryFn: () => fetchPendingApprovals(detail),
+    staleTime: 60 * 1000,
+    refetchInterval: 5 * 60 * 1000,
+  });
+};
+
+// ─── Checkin Status (Attendance widget) ────────────────────────────────
+
+export type CheckinStatusData = {
+  is_checked_in: boolean;
+  checked_in_at?: string;
+  total_today_hours?: number;
+};
+
+async function fetchCheckinStatus(): Promise<CheckinStatusData> {
+  const headers = await buildAuthHeaders();
+  const res = await fetch(`${API_URL}/my/checkin-today`, { headers });
+  const token = headers["authtoken"];
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = body?.data || {};
+  return {
+    is_checked_in: !!data.is_checked_in,
+    checked_in_at: data.checked_in_at,
+    total_today_hours: data.total_today_hours,
+  };
+}
+
+export const useCheckinStatus = () => {
+  const scope = useDashboardQueryScope();
+  return useQuery({
+    queryKey: ["dashboard", "checkin-status", scope],
+    queryFn: fetchCheckinStatus,
+    staleTime: 30 * 1000,
+    refetchInterval: 60 * 1000,
+  });
+};
+
+// ─── Expenses Summary (Dashboard expense widgets) ─────────────────────
+
+export type ExpensesSummaryData = {
+  total_amount: number;
+  pending_count: number;
+  by_category: Array<{
+    name: string;
+    count: number;
+    amount: number;
+  }>;
+};
+
+const EMPTY_EXPENSES_SUMMARY: ExpensesSummaryData = {
+  total_amount: 0,
+  pending_count: 0,
+  by_category: [],
+};
+
+async function fetchExpensesSummary(): Promise<ExpensesSummaryData> {
+  const headers = await buildAuthHeaders();
+  const res = await fetch(`${API_URL}/my/expenses-summary`, { headers });
+  const token = headers["authtoken"];
+  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  if (invalidToken) throw new Error("Session expired");
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return { ...EMPTY_EXPENSES_SUMMARY, ...(body?.data || {}) };
+}
+
+export const useExpensesSummary = () => {
+  const scope = useDashboardQueryScope();
+  return useQuery({
+    queryKey: ["dashboard", "expenses-summary", scope],
+    queryFn: fetchExpensesSummary,
+    staleTime: FIVE_MIN,
+  });
+};

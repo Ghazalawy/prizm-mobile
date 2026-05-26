@@ -27,6 +27,8 @@ import { API_URL, staffAvatarUrl } from "@/lib/config";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
+import { pickImage, takePhoto, uploadAttachment, type PickedFile } from "@/lib/files";
+import * as Clipboard from "expo-clipboard";
 
 /**
  * Tightly-packed mobile task detail. Replaces the generic CrudDetailScreen
@@ -700,10 +702,24 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
     qc.invalidateQueries({ queryKey: ["task", taskId, "checklist"] });
 
   const toggle = useMutation({
-    mutationFn: async (item: any) =>
-      updateEntity("tasks/checklist/item", item.id, {
-        finished: isTruthy(item.finished) ? 0 : 1,
-      }),
+    mutationFn: async (item: any) => {
+      const headers = await buildAuthHeaders();
+      const res = await fetch(
+        `${API_URL}/tasks/checklist/${encodeURIComponent(item.id)}`,
+        {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({ finished: isTruthy(item.finished) ? 0 : 1 }),
+        }
+      );
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      if (invalidToken) throw new Error("Session expired");
+      if (!res.ok) {
+        const msg = typeof body === "string" ? body : body?.message || `HTTP ${res.status}`;
+        throw new Error(msg);
+      }
+      return body;
+    },
     onSuccess: invalidate,
   });
 
@@ -888,6 +904,8 @@ function CommentsPanel({ taskId }: { taskId: string }) {
   });
   const items = normalizeList(q.data).items;
   const [draft, setDraft] = useState("");
+  const [attachments, setAttachments] = useState<PickedFile[]>([]);
+  const [uploading, setUploading] = useState(false);
 
   const add = useMutation({
     mutationFn: async (content: string) =>
@@ -897,6 +915,64 @@ function CommentsPanel({ taskId }: { taskId: string }) {
       qc.invalidateQueries({ queryKey: ["task", taskId, "comments"] });
     },
   });
+
+  const handleSend = useCallback(async () => {
+    const content = draft.trim();
+    if (!content && attachments.length === 0) return;
+    setUploading(true);
+    try {
+      for (const file of attachments) {
+        await uploadAttachment({ relType: "task", relId: taskId, file });
+      }
+      if (content) {
+        const imgNames = attachments.map((f) => f.name).join(", ");
+        const fullContent = imgNames
+          ? `${content}\n\n📎 ${imgNames}`
+          : content;
+        await add.mutateAsync(fullContent);
+      } else if (attachments.length > 0) {
+        await add.mutateAsync(`📎 ${attachments.map((f) => f.name).join(", ")}`);
+      }
+      setAttachments([]);
+      qc.invalidateQueries({ queryKey: ["files", "task", taskId] });
+    } catch (e: any) {
+      Alert.alert("Failed", e?.message || "Could not send");
+    } finally {
+      setUploading(false);
+    }
+  }, [draft, attachments, taskId, add, qc]);
+
+  const handlePickImage = useCallback(async () => {
+    const file = await pickImage();
+    if (file) setAttachments((prev) => [...prev, file]);
+  }, []);
+
+  const handleTakePhoto = useCallback(async () => {
+    const file = await takePhoto();
+    if (file) setAttachments((prev) => [...prev, file]);
+  }, []);
+
+  const handlePasteImage = useCallback(async () => {
+    try {
+      const hasImage = await Clipboard.hasImageAsync();
+      if (!hasImage) {
+        Alert.alert("No image", "No image found in clipboard. Copy an image first.");
+        return;
+      }
+      const result = await Clipboard.getImageAsync({ format: "png" });
+      if (result?.data) {
+        const uri = result.data.startsWith("data:") ? result.data : `data:image/png;base64,${result.data}`;
+        const name = `pasted-${Date.now()}.png`;
+        setAttachments((prev) => [...prev, { uri, name, mimeType: "image/png" }]);
+      }
+    } catch {
+      Alert.alert("Paste failed", "Could not read image from clipboard.");
+    }
+  }, []);
+
+  const removeAttachment = useCallback((idx: number) => {
+    setAttachments((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
 
   if (q.isLoading && items.length === 0) {
     return (
@@ -925,7 +1001,44 @@ function CommentsPanel({ taskId }: { taskId: string }) {
           </View>
         ))
       )}
-      <View className="flex-row items-center mt-2">
+
+      {/* Attachment previews */}
+      {attachments.length > 0 ? (
+        <View className="flex-row flex-wrap gap-2 mt-2 mb-1">
+          {attachments.map((f, idx) => (
+            <View key={idx} className="flex-row items-center bg-blue-50 rounded-lg px-2 py-1">
+              <Ionicons name="image-outline" size={14} color="#2563EB" />
+              <Text className="text-xs text-blue-700 ml-1 max-w-[120px]" numberOfLines={1}>{f.name}</Text>
+              <TouchableOpacity onPress={() => removeAttachment(idx)} hitSlop={8} className="ml-1">
+                <Ionicons name="close-circle" size={16} color="#94A3B8" />
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+      ) : null}
+
+      <View className="flex-row items-end mt-2">
+        <TouchableOpacity
+          onPress={handleTakePhoto}
+          className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="camera-outline" size={18} color="#64748B" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handlePickImage}
+          className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="images-outline" size={18} color="#64748B" />
+        </TouchableOpacity>
+        <TouchableOpacity
+          onPress={handlePasteImage}
+          className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="clipboard-outline" size={18} color="#64748B" />
+        </TouchableOpacity>
         <TextInput
           value={draft}
           onChangeText={setDraft}
@@ -935,12 +1048,12 @@ function CommentsPanel({ taskId }: { taskId: string }) {
           className="flex-1 bg-surface rounded-lg px-3 py-2 text-sm text-foreground"
         />
         <TouchableOpacity
-          onPress={() => draft.trim() && add.mutate(draft.trim())}
-          disabled={!draft.trim() || add.isPending}
+          onPress={handleSend}
+          disabled={(!draft.trim() && attachments.length === 0) || add.isPending || uploading}
           className="ml-2 bg-primary px-3 py-2 rounded-lg"
-          style={{ opacity: !draft.trim() ? 0.4 : 1 }}
+          style={{ opacity: (!draft.trim() && attachments.length === 0) ? 0.4 : 1 }}
         >
-          {add.isPending ? (
+          {add.isPending || uploading ? (
             <ActivityIndicator color="#FFFFFF" size="small" />
           ) : (
             <Ionicons name="send" size={16} color="#FFFFFF" />

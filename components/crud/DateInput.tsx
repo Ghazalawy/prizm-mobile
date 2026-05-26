@@ -77,17 +77,21 @@ export function DateInput({ value, onChange, mode, placeholder }: DateInputProps
         <DateTimePicker
           value={initial}
           mode="date"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
+          display={Platform.OS === "ios" ? "spinner" : "calendar"}
           onChange={handleDateChange}
+          accentColor="#E65100"
+          themeVariant="light"
         />
       ) : null}
       {showTime ? (
         <DateTimePicker
           value={initial}
           mode="time"
-          display={Platform.OS === "ios" ? "spinner" : "default"}
+          display={Platform.OS === "ios" ? "spinner" : "clock"}
           onChange={handleTimeChange}
           is24Hour
+          accentColor="#E65100"
+          themeVariant="light"
         />
       ) : null}
     </>

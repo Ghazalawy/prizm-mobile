@@ -26,6 +26,8 @@ import { rtlTextStyle } from "@/lib/rtl";
 import { colors } from "@/lib/theme";
 import { FilesTab } from "@/components/crud/FilesTab";
 import Toast from "react-native-toast-message";
+import { pickImage, takePhoto, uploadAttachment, type PickedFile } from "@/lib/files";
+import * as Clipboard from "expo-clipboard";
 
 type Props = { id: string };
 
@@ -51,6 +53,8 @@ export function TicketDetailScreen({ id }: Props) {
   const [replyText, setReplyText] = useState("");
   const [isInternal, setIsInternal] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
+  const [replyAttachments, setReplyAttachments] = useState<PickedFile[]>([]);
+  const [replyUploading, setReplyUploading] = useState(false);
 
   const ticketQuery = useTicketDetail(id);
   const repliesQuery = useTicketReplies(id);
@@ -95,20 +99,77 @@ export function TicketDetailScreen({ id }: Props) {
     setRefreshing(false);
   }, [ticketQuery, repliesQuery]);
 
-  const handleSendReply = useCallback(() => {
-    const content = replyText.trim();
-    if (!content) return;
-    replyMutation.mutate(
-      { ticketId: id, content, isInternal },
-      {
-        onSuccess: () => {
-          setReplyText("");
-          Toast.show({ type: "success", text1: isInternal ? "Internal note added" : "Reply sent" });
-        },
-        onError: (e: any) => Toast.show({ type: "error", text1: "Failed", text2: e?.message }),
+  const handlePickImage = useCallback(async () => {
+    const file = await pickImage();
+    if (file) setReplyAttachments((prev) => [...prev, file]);
+  }, []);
+
+  const handleTakePhoto = useCallback(async () => {
+    const file = await takePhoto();
+    if (file) setReplyAttachments((prev) => [...prev, file]);
+  }, []);
+
+  const handlePasteImage = useCallback(async () => {
+    try {
+      const hasImage = await Clipboard.hasImageAsync();
+      if (!hasImage) {
+        Alert.alert("No image", "No image found in clipboard. Copy an image first.");
+        return;
       }
-    );
-  }, [replyText, id, isInternal, replyMutation]);
+      const result = await Clipboard.getImageAsync({ format: "png" });
+      if (result?.data) {
+        const uri = result.data.startsWith("data:") ? result.data : `data:image/png;base64,${result.data}`;
+        const name = `pasted-${Date.now()}.png`;
+        setReplyAttachments((prev) => [...prev, { uri, name, mimeType: "image/png" }]);
+      }
+    } catch {
+      Alert.alert("Paste failed", "Could not read image from clipboard.");
+    }
+  }, []);
+
+  const removeReplyAttachment = useCallback((idx: number) => {
+    setReplyAttachments((prev) => prev.filter((_, i) => i !== idx));
+  }, []);
+
+  const handleSendReply = useCallback(async () => {
+    const content = replyText.trim();
+    if (!content && replyAttachments.length === 0) return;
+    setReplyUploading(true);
+    try {
+      for (const file of replyAttachments) {
+        await uploadAttachment({ relType: "ticket", relId: id, file });
+      }
+      const imgNames = replyAttachments.map((f) => f.name).join(", ");
+      const fullContent = content
+        ? (imgNames ? `${content}\n\n📎 ${imgNames}` : content)
+        : (imgNames ? `📎 ${imgNames}` : "");
+      if (fullContent) {
+        await new Promise<void>((resolve, reject) => {
+          replyMutation.mutate(
+            { ticketId: id, content: fullContent, isInternal },
+            {
+              onSuccess: () => {
+                setReplyText("");
+                setReplyAttachments([]);
+                Toast.show({ type: "success", text1: isInternal ? "Internal note added" : "Reply sent" });
+                resolve();
+              },
+              onError: (e: any) => {
+                Toast.show({ type: "error", text1: "Failed", text2: e?.message });
+                reject(e);
+              },
+            }
+          );
+        });
+      } else {
+        setReplyAttachments([]);
+      }
+    } catch (e: any) {
+      Alert.alert("Upload failed", e?.message || "Could not attach files");
+    } finally {
+      setReplyUploading(false);
+    }
+  }, [replyText, replyAttachments, id, isInternal, replyMutation]);
 
   const handleChangeStatus = useCallback(() => {
     const buttons = STATUS_OPTIONS.map((o) => ({
@@ -259,7 +320,43 @@ export function TicketDetailScreen({ id }: Props) {
               </Text>
             </TouchableOpacity>
 
+            {/* Attachment previews */}
+            {replyAttachments.length > 0 ? (
+              <View className="flex-row flex-wrap gap-2 mb-1.5">
+                {replyAttachments.map((f, idx) => (
+                  <View key={idx} className="flex-row items-center bg-blue-50 rounded-lg px-2 py-1">
+                    <Ionicons name="image-outline" size={14} color="#2563EB" />
+                    <Text className="text-xs text-blue-700 ml-1 max-w-[120px]" numberOfLines={1}>{f.name}</Text>
+                    <TouchableOpacity onPress={() => removeReplyAttachment(idx)} hitSlop={8} className="ml-1">
+                      <Ionicons name="close-circle" size={16} color="#94A3B8" />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </View>
+            ) : null}
+
             <View className="flex-row items-end">
+              <TouchableOpacity
+                onPress={handleTakePhoto}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+                activeOpacity={0.7}
+              >
+                <Ionicons name="camera-outline" size={18} color="#64748B" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlePickImage}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+                activeOpacity={0.7}
+              >
+                <Ionicons name="images-outline" size={18} color="#64748B" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={handlePasteImage}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-slate-100 mr-1.5"
+                activeOpacity={0.7}
+              >
+                <Ionicons name="clipboard-outline" size={18} color="#64748B" />
+              </TouchableOpacity>
               <TextInput
                 value={replyText}
                 onChangeText={setReplyText}
@@ -271,18 +368,18 @@ export function TicketDetailScreen({ id }: Props) {
               />
               <TouchableOpacity
                 onPress={handleSendReply}
-                disabled={!replyText.trim() || replyMutation.isPending}
+                disabled={(!replyText.trim() && replyAttachments.length === 0) || replyMutation.isPending || replyUploading}
                 className="ml-2 rounded-full items-center justify-center"
                 style={{
                   width: 36,
                   height: 36,
-                  backgroundColor: replyText.trim() ? (isInternal ? "#7C3AED" : colors.primary) : "#E2E8F0",
+                  backgroundColor: (replyText.trim() || replyAttachments.length > 0) ? (isInternal ? "#7C3AED" : colors.primary) : "#E2E8F0",
                 }}
               >
-                {replyMutation.isPending ? (
+                {replyMutation.isPending || replyUploading ? (
                   <ActivityIndicator size="small" color="#FFF" />
                 ) : (
-                  <Ionicons name="send" size={16} color={replyText.trim() ? "#FFF" : "#94A3B8"} />
+                  <Ionicons name="send" size={16} color={(replyText.trim() || replyAttachments.length > 0) ? "#FFF" : "#94A3B8"} />
                 )}
               </TouchableOpacity>
             </View>

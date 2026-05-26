@@ -37,8 +37,8 @@ export function ReportListScreen() {
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState<number | undefined>();
   const [showProjectPicker, setShowProjectPicker] = useState(false);
-  const { canCreate: canCreatePerm } = usePermissions();
-  const canCreateReport = canCreatePerm("prizm_reports");
+  const { canCreate: canCreatePerm, isAdmin, hasAnyPermission } = usePermissions();
+  const canCreateReport = isAdmin || canCreatePerm("prizm_reports") || hasAnyPermission("prizm_reports");
 
   const filters: ReportFilters = useMemo(
     () => ({
@@ -93,8 +93,13 @@ export function ReportListScreen() {
                 {item.report_code}
               </Text>
               <Text className="text-base font-semibold text-slate-900" numberOfLines={2}>
-                {item.project_name || `Project #${item.project_id}`}
+                {item.project_name || `Project #${item.project_number || item.project_id}`}
               </Text>
+              {item.project_number ? (
+                <Text className="text-xs text-slate-500 mt-0.5">
+                  Project No: {item.project_number}
+                </Text>
+              ) : null}
             </View>
             <View
               className="px-2.5 py-1 rounded-full"

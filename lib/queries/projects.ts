@@ -123,6 +123,62 @@ export function useProjectStats(projectId: string | number) {
   };
 }
 
+// ─── Project invoices ─────────────────────────────────────────────────────
+
+export function useProjectInvoices(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "invoices"],
+    queryFn: async () => {
+      const data = await apiRequest(`invoices?project_id=${projectId}&limit=200`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ─── Project tickets ──────────────────────────────────────────────────────
+
+export function useProjectTickets(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "tickets"],
+    queryFn: async () => {
+      const data = await apiRequest(`tickets?project_id=${projectId}&limit=200`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ─── Project notes ────────────────────────────────────────────────────────
+
+export function useProjectNotes(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "notes"],
+    queryFn: async () => {
+      const data = await apiRequest(`project_notes?project_id=${projectId}&limit=200`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ─── Project activity log ─────────────────────────────────────────────────
+
+export function useProjectActivity(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "activity"],
+    queryFn: async () => {
+      const data = await apiRequest(`project_activity?project_id=${projectId}&limit=100`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
 // ─── All projects list ───────────────────────────────────────────────────
 
 export function useProjectsList(filters?: { status?: string; search?: string; limit?: number }) {

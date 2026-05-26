@@ -14,6 +14,8 @@ export type TaskListItem = {
   duedate: string | null;
   rel_type: string | null;
   rel_id: number | null;
+  /** Human-readable name of the related entity (project name, customer name, etc.) */
+  rel_name?: string | null;
   description: string | null;
   billable: number;
   hourly_rate: string | null;
@@ -64,7 +66,7 @@ function useTaskQueryScope(): string {
 
 // ─── List queries ────────────────────────────────────────────────────────
 
-export function useMyTasks(filters?: { status?: string; search?: string; limit?: number }) {
+export function useMyTasks(filters?: { status?: string; search?: string; assigned?: number; limit?: number }) {
   const scope = useTaskQueryScope();
   return useQuery({
     queryKey: ["tasks", "mine", scope, filters],
@@ -72,6 +74,7 @@ export function useMyTasks(filters?: { status?: string; search?: string; limit?:
       const params: Record<string, string | number> = { limit: filters?.limit ?? 200 };
       if (filters?.status) params.status = filters.status;
       if (filters?.search) params.search = filters.search;
+      if (filters?.assigned) params.assigned = filters.assigned;
       const qs = Object.entries(params)
         .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
         .join("&");

@@ -1,24 +1,35 @@
 import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
-import { useMemo, useState } from "react";
+import { useMemo, useState, useCallback } from "react";
 import { listVisibleModules, moduleGroups, getModulePermissionFeatures } from "@/lib/module-registry";
 import { usePermissions } from "@/lib/permission-context";
+import { usePinnedTabs, togglePin } from "@/lib/pinned-tabs";
+import { PINNABLE_MODULES } from "@/lib/pinnable-modules";
+
+const pinnableKeys = new Set(PINNABLE_MODULES.map((m) => m.key));
 
 export function ModuleHubScreen() {
   const [search, setSearch] = useState("");
-  const { isAdmin, isLoaded, hasAnyPermission } = usePermissions();
+  const [, forceUpdate] = useState(0);
+  const { isAdmin, isLoaded, isFailed, hasAnyPermission } = usePermissions();
+  const pinnedTabs = usePinnedTabs();
+
+  const handleTogglePin = useCallback(async (key: string) => {
+    await togglePin(key);
+    forceUpdate((n) => n + 1);
+  }, []);
   const groups = moduleGroups();
   const allModules = listVisibleModules();
 
   const modules = useMemo(() => {
-    if (!isLoaded || isAdmin) return allModules;
+    if (!isLoaded || isFailed || isAdmin) return allModules;
     return allModules.filter((mod) => {
       const features = getModulePermissionFeatures(mod);
       if (features.length === 0) return true;
       return features.some((f) => hasAnyPermission(f));
     });
-  }, [allModules, isLoaded, isAdmin, hasAnyPermission]);
+  }, [allModules, isLoaded, isFailed, isAdmin, hasAnyPermission]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();
@@ -64,27 +75,49 @@ export function ModuleHubScreen() {
                 {group}
               </Text>
               <View className="flex-row flex-wrap">
-                {groupModules.map((module) => (
-                  <TouchableOpacity
-                    key={module.key}
-                    onPress={() => router.push(`/(tabs)/erp/${module.key}` as any)}
-                    activeOpacity={0.72}
-                    className="bg-white rounded-xl p-3 shadow-sm mb-2 mr-2 w-[47%]"
-                  >
-                    <View
-                      className="w-10 h-10 rounded-xl items-center justify-center mb-3"
-                      style={{ backgroundColor: `${module.color}1A` }}
+                {groupModules.map((module) => {
+                  const canPin = pinnableKeys.has(module.key);
+                  const isPinned = pinnedTabs.includes(module.key);
+                  return (
+                    <TouchableOpacity
+                      key={module.key}
+                      onPress={() => router.push(`/(tabs)/erp/${module.key}` as any)}
+                      activeOpacity={0.72}
+                      className="bg-white rounded-xl p-3 shadow-sm mb-2 mr-2 w-[47%]"
                     >
-                      <Ionicons name={module.icon as any} size={22} color={module.color} />
-                    </View>
-                    <Text className="text-foreground font-semibold" numberOfLines={2}>
-                      {module.plural}
-                    </Text>
-                    <Text className="text-xs text-muted mt-1" numberOfLines={1}>
-                      {module.group}
-                    </Text>
-                  </TouchableOpacity>
-                ))}
+                      <View className="flex-row items-start justify-between mb-3">
+                        <View
+                          className="w-10 h-10 rounded-xl items-center justify-center"
+                          style={{ backgroundColor: `${module.color}1A` }}
+                        >
+                          <Ionicons name={module.icon as any} size={22} color={module.color} />
+                        </View>
+                        {canPin && (
+                          <TouchableOpacity
+                            onPress={(e) => {
+                              e.stopPropagation?.();
+                              handleTogglePin(module.key);
+                            }}
+                            hitSlop={8}
+                            activeOpacity={0.6}
+                          >
+                            <Ionicons
+                              name={isPinned ? "star" : "star-outline"}
+                              size={18}
+                              color={isPinned ? "#F59E0B" : "#CBD5E1"}
+                            />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                      <Text className="text-foreground font-semibold" numberOfLines={2}>
+                        {module.plural}
+                      </Text>
+                      <Text className="text-xs text-muted mt-1" numberOfLines={1}>
+                        {module.group}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
               </View>
             </View>
           );

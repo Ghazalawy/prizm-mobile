@@ -16,7 +16,6 @@ concurrency:
 
 env:
   API_URL: https://ms.prizm-energy.com
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-apk:
@@ -39,10 +38,15 @@ jobs:
           node-version: 20
           cache: npm
 
-      - uses: actions/setup-java@v3
-        with:
-          distribution: temurin
-          java-version: 17
+      - name: Setup Java 17 (Temurin)
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq wget apt-transport-https gnupg
+          wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
+          echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq temurin-17-jdk
+          java -version
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
@@ -64,19 +68,6 @@ jobs:
 
       - name: Inject build metadata into lib/build-info.ts
         run: |
-          # Preserve the BUILD_FLAGS block from the committed file (per-module
-          # native-readiness toggles) — we only overwrite BUILD_TIME / BUILD_SHA
-          # / BUILD_VERSION / RELEASE_NOTES. This way enabling a module is a
-          # one-line PR, not a workflow edit.
-          #
-          # RELEASE_NOTES comes from the TOP entry in CHANGELOG.json and gets
-          # shown to staff as a "What's new" popup on first launch after an
-          # update (gated by BUILD_SHA comparison vs. SecureStore in
-          # lib/whats-new.ts).
-          # Real semver from package.json — gets bumped per release.
-          # No more "1.0.0+<sha>" double-standard; SHA stays available
-          # via BUILD_SHA for internal "what's new seen" gating but is
-          # NOT part of the user-facing version string.
           APP_VERSION=$(jq -r '.version // "0.0.0"' package.json)
           RELEASE_TITLE=$(jq -r '.releases[0].title // ""' CHANGELOG.json)
           RELEASE_HIGHLIGHTS=$(jq -c '.releases[0].highlights // []' CHANGELOG.json)
@@ -91,7 +82,6 @@ jobs:
             echo "  highlights: $RELEASE_HIGHLIGHTS,"
             echo "};"
             echo ""
-            # Re-emit the committed BUILD_FLAGS block verbatim
             awk '/^export const BUILD_FLAGS/,/^} as const;/' lib/build-info.ts
           } > lib/build-info.ts.new
           mv lib/build-info.ts.new lib/build-info.ts
@@ -135,7 +125,6 @@ jobs:
             Auto-built from `main` @ `${{ github.sha }}`
             Built at: ${{ steps.meta.outputs.build_time }}
             API: ${{ env.API_URL }}
-
             Install on Android: enable "Install unknown apps" for your browser, then tap the APK.
           files: out/prizm-mobile.apk
           make_latest: "true"
@@ -163,11 +152,6 @@ jobs:
           node-version: '20'
 
       - name: Render audit doc to HTML
-        # docs/MODULE_AUDIT.md is our canonical anatomy doc — checked into
-        # the repo, kept up to date at the end of every batch. Publish it
-        # to Pages so admins can read it from any browser without git.
-        # Logic lives in .github/scripts/render-audit.js (cleaner than an
-        # inline heredoc whose ${body} would have been mangled by bash).
         run: |
           npm install --no-save marked@12
           node .github/scripts/render-audit.js

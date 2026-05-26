@@ -1,5 +1,5 @@
-import { CrudListScreen } from "@/components/crud/CrudListScreen";
+import { InvoiceListScreen } from "@/components/finance/InvoiceListScreen";
 
 export default function InvoicesScreen() {
-  return <CrudListScreen moduleKey="invoices" basePath="/(tabs)/invoices" />;
+  return <InvoiceListScreen />;
 }

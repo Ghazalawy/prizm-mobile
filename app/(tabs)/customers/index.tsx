@@ -1,5 +1,5 @@
-import { CrudListScreen } from "@/components/crud/CrudListScreen";
+import { CustomerListScreen } from "@/components/customers/CustomerListScreen";
 
 export default function CustomersScreen() {
-  return <CrudListScreen moduleKey="customers" basePath="/(tabs)/customers" />;
+  return <CustomerListScreen />;
 }

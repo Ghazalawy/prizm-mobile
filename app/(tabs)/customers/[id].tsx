@@ -1,7 +1,5 @@
-import { useLocalSearchParams } from "expo-router";
-import { CrudDetailScreen } from "@/components/crud/CrudDetailScreen";
+import { CustomerDetailScreen } from "@/components/customers/CustomerDetailScreen";
 
-export default function CustomerDetailScreen() {
-  const { id } = useLocalSearchParams<{ id: string }>();
-  return <CrudDetailScreen moduleKey="customers" id={id} basePath="/(tabs)/customers" />;
+export default function CustomerDetail() {
+  return <CustomerDetailScreen />;
 }

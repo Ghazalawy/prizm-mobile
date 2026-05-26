@@ -192,6 +192,7 @@ export type ListParams = {
   search?: string;
   limit?: number;
   offset?: number;
+  [key: string]: string | number | undefined;
 };
 
 // Tasks

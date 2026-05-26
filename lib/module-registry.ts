@@ -83,6 +83,12 @@ export type ModuleTab = {
   kind?: "files";
 };
 
+export type StatusOption = {
+  label: string;
+  value: string | number;
+  color?: string;
+};
+
 export type ModuleDefinition = {
   key: string;
   title: string;
@@ -138,6 +144,15 @@ export type ModuleDefinition = {
     | "estimate"
     | "credit_note"
     | "proposal";
+
+  /** Default sort applied when the list first loads. */
+  defaultSort?: { field: string; direction: "asc" | "desc" };
+  /** Subset of field keys exposed in the filter panel. */
+  filterableFields?: string[];
+  /** The field key that holds the entity status (for quick-filter chips). */
+  statusField?: string;
+  /** Status options with optional color for StatusBadge rendering. */
+  statusOptions?: StatusOption[];
 };
 
 const statusOptions = [
@@ -163,6 +178,87 @@ const projectStatusOptions = [
   { label: "On Hold", value: "3" },
   { label: "Finished", value: "4" },
   { label: "Cancelled", value: "5" },
+];
+
+const invoiceStatusOptions: StatusOption[] = [
+  { label: "Draft", value: "6", color: "#64748B" },
+  { label: "Sent", value: "2", color: "#2563EB" },
+  { label: "Paid", value: "4", color: "#16A34A" },
+  { label: "Overdue", value: "1", color: "#DC2626" },
+  { label: "Partially Paid", value: "3", color: "#F59E0B" },
+  { label: "Cancelled", value: "5", color: "#94A3B8" },
+];
+
+const estimateStatusOptions: StatusOption[] = [
+  { label: "Draft", value: "1", color: "#64748B" },
+  { label: "Sent", value: "2", color: "#2563EB" },
+  { label: "Accepted", value: "4", color: "#16A34A" },
+  { label: "Declined", value: "3", color: "#DC2626" },
+  { label: "Expired", value: "5", color: "#94A3B8" },
+];
+
+const projectStatusFilterOptions: StatusOption[] = [
+  { label: "Not Started", value: "1", color: "#64748B" },
+  { label: "In Progress", value: "2", color: "#2563EB" },
+  { label: "On Hold", value: "3", color: "#F59E0B" },
+  { label: "Finished", value: "4", color: "#16A34A" },
+  { label: "Cancelled", value: "5", color: "#DC2626" },
+];
+
+const taskStatusFilterOptions: StatusOption[] = [
+  { label: "Not Started", value: "1", color: "#64748B" },
+  { label: "In Progress", value: "4", color: "#2563EB" },
+  { label: "Testing", value: "3", color: "#7C3AED" },
+  { label: "Awaiting Feedback", value: "2", color: "#F59E0B" },
+  { label: "Complete", value: "5", color: "#16A34A" },
+];
+
+const ticketStatusFilterOptions: StatusOption[] = [
+  { label: "Open", value: "1", color: "#DC2626" },
+  { label: "In Progress", value: "2", color: "#2563EB" },
+  { label: "Answered", value: "3", color: "#16A34A" },
+  { label: "On Hold", value: "4", color: "#F59E0B" },
+  { label: "Closed", value: "5", color: "#64748B" },
+];
+
+const ticketPriorityFilterOptions: StatusOption[] = [
+  { label: "Low", value: "1", color: "#64748B" },
+  { label: "Medium", value: "2", color: "#F59E0B" },
+  { label: "High", value: "3", color: "#EA580C" },
+  { label: "Urgent", value: "4", color: "#DC2626" },
+];
+
+const contractStatusOptions: StatusOption[] = [
+  { label: "Not Started", value: "1", color: "#64748B" },
+  { label: "Active", value: "2", color: "#16A34A" },
+  { label: "Expired", value: "3", color: "#DC2626" },
+  { label: "About to Expire", value: "4", color: "#F59E0B" },
+];
+
+const tenderStatusFilterOptions: StatusOption[] = [
+  { label: "Identified", value: "Identified", color: "#64748B" },
+  { label: "In Progress", value: "In Progress", color: "#2563EB" },
+  { label: "Submitted", value: "Submitted", color: "#7C3AED" },
+  { label: "Won", value: "Won", color: "#16A34A" },
+  { label: "Lost", value: "Lost", color: "#DC2626" },
+  { label: "Cancelled", value: "Cancelled", color: "#94A3B8" },
+];
+
+const opportunityStageFilterOptions: StatusOption[] = [
+  { label: "New", value: "1", color: "#64748B" },
+  { label: "Qualification", value: "2", color: "#2563EB" },
+  { label: "Proposal", value: "3", color: "#7C3AED" },
+  { label: "Negotiation", value: "4", color: "#F59E0B" },
+  { label: "Won", value: "5", color: "#16A34A" },
+  { label: "Lost", value: "6", color: "#DC2626" },
+];
+
+const purchaseStatusFilterOptions: StatusOption[] = [
+  { label: "Draft", value: "draft", color: "#64748B" },
+  { label: "Pending", value: "pending", color: "#F59E0B" },
+  { label: "Approved", value: "approved", color: "#16A34A" },
+  { label: "Rejected", value: "rejected", color: "#DC2626" },
+  { label: "Closed", value: "closed", color: "#94A3B8" },
 ];
 
 const projectBillingOptions = [
@@ -250,6 +346,13 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["company", "name"],
     subtitleFields: ["phonenumber", "city", "vat"],
     searchFields: ["company", "phonenumber", "city", "vat"],
+    defaultSort: { field: "company", direction: "asc" },
+    filterableFields: ["active", "country"],
+    statusField: "active",
+    statusOptions: [
+      { label: "Active", value: "1", color: "#16A34A" },
+      { label: "Inactive", value: "0", color: "#DC2626" },
+    ],
     fields: [
       { key: "company", label: "Company", section: "Customer", required: true },
       { key: "vat", label: "VAT", section: "Customer" },
@@ -322,6 +425,9 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["name", "company"],
     subtitleFields: ["email", "phonenumber", "status"],
     searchFields: ["name", "company", "email", "phonenumber"],
+    defaultSort: { field: "dateadded", direction: "desc" },
+    filterableFields: ["status", "source", "assigned"],
+    statusField: "status",
     fields: [
       { key: "name", label: "Lead Name", section: "Lead", required: true },
       { key: "source", label: "Source", section: "Lead", type: "number", relation: "lead_source", required: true },
@@ -365,6 +471,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["name"],
     subtitleFields: ["company", "clientid", "status", "deadline"],
     searchFields: ["name", "description"],
+    defaultSort: { field: "deadline", direction: "asc" },
+    filterableFields: ["status", "clientid", "billing_type"],
+    statusField: "status",
+    statusOptions: projectStatusFilterOptions,
     fields: [
       { key: "name", label: "Project Name", section: "Project", required: true },
       { key: "rel_type", label: "Related Type", section: "Project", type: "select", defaultValue: "customer", options: [{ label: "Customer", value: "customer" }, { label: "Lead", value: "lead" }, { label: "Internal", value: "internal" }] },
@@ -420,6 +530,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["name"],
     subtitleFields: ["rel_type", "status", "duedate"],
     searchFields: ["name", "description"],
+    defaultSort: { field: "duedate", direction: "asc" },
+    filterableFields: ["status", "priority", "billable", "rel_type"],
+    statusField: "status",
+    statusOptions: taskStatusFilterOptions,
     fields: [
       { key: "name", label: "Task Name", section: "Task", required: true },
       { key: "startdate", label: "Start Date", section: "Dates", type: "date", required: true },
@@ -535,6 +649,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["invoice_number", "number", "prefix"],
     subtitleFields: ["company", "total", "status"],
     searchFields: ["number", "company", "clientid"],
+    defaultSort: { field: "date", direction: "desc" },
+    filterableFields: ["status", "date", "duedate", "total", "clientid"],
+    statusField: "status",
+    statusOptions: invoiceStatusOptions,
     fields: moneyDocFields,
     tabs: [
       { key: "payments", title: "Payments", moduleKey: "payments", childField: "invoiceid", parentField: "id", createDefaults: { invoiceid: "{id}" } },
@@ -570,6 +688,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["estimate_number", "number", "prefix"],
     subtitleFields: ["company", "total", "status"],
     searchFields: ["number", "company", "clientid"],
+    defaultSort: { field: "date", direction: "desc" },
+    filterableFields: ["status", "date", "total", "clientid"],
+    statusField: "status",
+    statusOptions: estimateStatusOptions,
     fields: moneyDocFields,
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "estimate" } },
@@ -663,6 +785,8 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["expense_name", "category_name", "amount"],
     subtitleFields: ["clientid", "date", "paymentmode"],
     searchFields: ["expense_name", "amount", "clientid"],
+    defaultSort: { field: "date", direction: "desc" },
+    filterableFields: ["category", "date", "clientid", "project_id"],
     fields: [
       { key: "category", label: "Category ID", section: "Expense", type: "number", required: true },
       { key: "amount", label: "Amount", section: "Expense", type: "money", required: true },
@@ -713,6 +837,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["subject"],
     subtitleFields: ["company", "datestart", "dateend"],
     searchFields: ["subject", "description", "company"],
+    defaultSort: { field: "datestart", direction: "desc" },
+    filterableFields: ["contract_type", "datestart", "dateend", "client"],
+    statusField: "contract_type",
+    statusOptions: contractStatusOptions,
     fields: [
       { key: "subject", label: "Subject", section: "Contract", required: true },
       { key: "client", label: "Customer", section: "Contract", type: "number", relation: "customer", required: true },
@@ -754,6 +882,10 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["subject"],
     subtitleFields: ["userid", "status", "priority"],
     searchFields: ["subject", "message", "email"],
+    defaultSort: { field: "date", direction: "desc" },
+    filterableFields: ["status", "priority", "department", "userid"],
+    statusField: "status",
+    statusOptions: ticketStatusFilterOptions,
     fields: [
       { key: "subject", label: "Subject", section: "Ticket", required: true },
       { key: "userid", label: "Customer", section: "Relation", type: "number", relation: "customer" },
@@ -921,6 +1053,10 @@ export const MODULES: ModuleDefinition[] = [
     color: "#9333EA",
     titleFields: ["title", "name", "tender_number"],
     subtitleFields: ["source", "closing_date", "status"],
+    defaultSort: { field: "closing_date", direction: "asc" },
+    filterableFields: ["status", "closing_date", "source"],
+    statusField: "status",
+    statusOptions: tenderStatusFilterOptions,
     fields: [
       { key: "title", label: "Title", section: "Tender", required: true },
       { key: "tender_number", label: "Tender Number", section: "Tender" },
@@ -1033,6 +1169,10 @@ export const MODULES: ModuleDefinition[] = [
     color: "#22C55E",
     titleFields: ["name", "subject"],
     subtitleFields: ["customer_id", "stage", "status"],
+    defaultSort: { field: "id", direction: "desc" },
+    filterableFields: ["stage", "status", "customer_id", "value"],
+    statusField: "stage",
+    statusOptions: opportunityStageFilterOptions,
     fields: [
       { key: "name", label: "Name", section: "Opportunity", required: true },
       { key: "customer_id", label: "Customer", section: "Relation", type: "number", relation: "customer" },
@@ -1169,6 +1309,10 @@ export const MODULES: ModuleDefinition[] = [
     color: "#CA8A04",
     titleFields: ["display_number", "request_title", "title", "sequence_number", "number", "id"],
     subtitleFields: ["project_name", "department_name", "status", "requested_date"],
+    defaultSort: { field: "id", direction: "desc" },
+    filterableFields: ["status", "date"],
+    statusField: "status",
+    statusOptions: purchaseStatusFilterOptions,
     fields: [
       { key: "title", label: "Request Title", section: "Request", required: true },
       { key: "vendor_id", label: "Vendor ID", section: "Request", type: "number" },
@@ -1210,6 +1354,10 @@ export const MODULES: ModuleDefinition[] = [
     color: "#CA8A04",
     titleFields: ["display_number", "order_number", "title", "sequence_number", "number", "id"],
     subtitleFields: ["supplier_company", "project_name", "status", "requested_date"],
+    defaultSort: { field: "id", direction: "desc" },
+    filterableFields: ["status", "requested_date", "total"],
+    statusField: "status",
+    statusOptions: purchaseStatusFilterOptions,
     fields: [
       { key: "title", label: "Order Title", section: "Order", required: true },
       { key: "supplier_id", label: "Supplier ID", section: "Order", type: "number" },

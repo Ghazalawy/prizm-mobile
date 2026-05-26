@@ -103,6 +103,13 @@ export type ModuleDefinition = {
   canUpdate?: boolean;
   canDelete?: boolean;
   /**
+   * Perfex permission feature key(s) that control access to this module.
+   * Maps to `tblstaff_permissions.feature`. When set, the module is hidden
+   * from users who lack any permission on this feature.
+   * Can be a single string or an array (user needs permission on at least one).
+   */
+  permissionFeature?: string | string[];
+  /**
    * Workflow actions exposed in the detail-screen overflow menu (three-dot
    * icon in the header). Each action POSTs/PUTs to its endpoint and shows a
    * confirmation sheet first. Use for state transitions: approve, reject,
@@ -235,6 +242,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Customers",
     group: "CRM",
     endpoint: "customers",
+    permissionFeature: "customers",
     customFieldsType: "customers",
     idKey: "userid",
     icon: "business-outline",
@@ -275,6 +283,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "CRM",
     endpoint: "contacts",
     detailEndpoint: "contacts/detail",
+    permissionFeature: "customers",
     customFieldsType: "contacts",
     idKey: "id",
     icon: "person-outline",
@@ -305,6 +314,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Leads",
     group: "CRM",
     endpoint: "leads",
+    permissionFeature: "leads",
     customFieldsType: "leads",
     idKey: "id",
     icon: "people-outline",
@@ -347,6 +357,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Projects",
     group: "Work",
     endpoint: "projects",
+    permissionFeature: "projects",
     customFieldsType: "projects",
     idKey: "id",
     icon: "folder-outline",
@@ -401,6 +412,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Tasks",
     group: "Work",
     endpoint: "tasks",
+    permissionFeature: "tasks",
     customFieldsType: "tasks",
     idKey: "id",
     icon: "checkbox-outline",
@@ -515,6 +527,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Invoices",
     group: "Sales",
     endpoint: "invoices",
+    permissionFeature: "invoices",
     customFieldsType: "invoice",
     idKey: "id",
     icon: "document-text-outline",
@@ -549,6 +562,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Estimates",
     group: "Sales",
     endpoint: "estimates",
+    permissionFeature: "estimates",
     customFieldsType: "estimate",
     idKey: "id",
     icon: "reader-outline",
@@ -574,6 +588,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Proposals",
     group: "Sales",
     endpoint: "proposals",
+    permissionFeature: "proposals",
     customFieldsType: "proposal",
     idKey: "id",
     icon: "newspaper-outline",
@@ -617,6 +632,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Payments",
     group: "Sales",
     endpoint: "payments",
+    permissionFeature: "payments",
     idKey: "id",
     icon: "card-outline",
     color: "#059669",
@@ -639,6 +655,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Expenses",
     group: "Finance",
     endpoint: "expenses",
+    permissionFeature: "expenses",
     customFieldsType: "expenses",
     idKey: "id",
     icon: "receipt-outline",
@@ -673,6 +690,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Credit Notes",
     group: "Finance",
     endpoint: "credit_notes",
+    permissionFeature: "credit_notes",
     customFieldsType: "credit_note",
     idKey: "id",
     icon: "return-down-back-outline",
@@ -687,6 +705,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Contracts",
     group: "CRM",
     endpoint: "contracts",
+    permissionFeature: "contracts",
     customFieldsType: "contracts",
     idKey: "id",
     icon: "document-lock-outline",
@@ -727,6 +746,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Tickets",
     group: "Support",
     endpoint: "tickets",
+    permissionFeature: "tickets",
     customFieldsType: "tickets",
     idKey: "ticketid",
     icon: "help-buoy-outline",
@@ -777,6 +797,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Items",
     group: "Sales",
     endpoint: "items",
+    permissionFeature: "items",
     customFieldsType: "items",
     idKey: "itemid",
     icon: "cube-outline",
@@ -792,6 +813,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Staff",
     group: "Admin",
     endpoint: "staffs",
+    permissionFeature: "staff",
     customFieldsType: "staff",
     idKey: "staffid",
     icon: "people-circle-outline",
@@ -852,6 +874,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Technical Inquiries",
     group: "PRIZM",
     endpoint: "technical_inquiries",
+    permissionFeature: "technical_inquiries",
     idKey: "id",
     icon: "construct-outline",
     color: "#0D9488",
@@ -892,6 +915,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Tenders",
     group: "PRIZM",
     endpoint: "tenders_api",
+    permissionFeature: "tenders",
     idKey: "id",
     icon: "briefcase-outline",
     color: "#9333EA",
@@ -1003,6 +1027,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Opportunities",
     group: "PRIZM",
     endpoint: "opportunities_api",
+    permissionFeature: "opportunities",
     idKey: "id",
     icon: "trending-up-outline",
     color: "#22C55E",
@@ -1095,6 +1120,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Vendors",
     group: "Purchase",
     endpoint: "purchase_api/vendors",
+    permissionFeature: "przsuppliers",
     idKey: "id",
     icon: "storefront-outline",
     color: "#CA8A04",
@@ -1137,6 +1163,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Purchase Requests",
     group: "Purchase",
     endpoint: "purchase_api/requests",
+    permissionFeature: "przpurchase",
     idKey: "id",
     icon: "cart-outline",
     color: "#CA8A04",
@@ -1177,6 +1204,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Purchase Orders",
     group: "Purchase",
     endpoint: "purchase_api/orders",
+    permissionFeature: "przorder",
     idKey: "id",
     icon: "bag-check-outline",
     color: "#CA8A04",
@@ -1243,6 +1271,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Payment Requests",
     group: "Purchase",
     endpoint: "purchase_api/payment_requests",
+    permissionFeature: "payment_request",
     idKey: "id",
     icon: "card-outline",
     color: "#CA8A04",
@@ -1268,6 +1297,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Expense Requests",
     group: "Purchase",
     endpoint: "purchase_api/expense_requests",
+    permissionFeature: "prz_expense_request",
     idKey: "id",
     icon: "receipt-outline",
     color: "#CA8A04",
@@ -1294,6 +1324,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Received Vouchers",
     group: "Purchase",
     endpoint: "purchase_api/received_vouchers",
+    permissionFeature: "prz_received_vouchers",
     idKey: "id",
     icon: "archive-outline",
     color: "#CA8A04",
@@ -1323,6 +1354,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Delivery Notes",
     group: "Purchase",
     endpoint: "purchase_api/delivery_notes",
+    permissionFeature: "delivery_notes",
     idKey: "id",
     icon: "cube-outline",
     color: "#CA8A04",
@@ -1351,6 +1383,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Quotations",
     group: "Purchase",
     endpoint: "purchase_api/quotations",
+    permissionFeature: "przquotation",
     idKey: "id",
     icon: "document-text-outline",
     color: "#CA8A04",
@@ -1380,6 +1413,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Completion Certificates",
     group: "Purchase",
     endpoint: "purchase_api/completion_certificates",
+    permissionFeature: "completion_certificates",
     idKey: "id",
     icon: "ribbon-outline",
     color: "#CA8A04",
@@ -1404,6 +1438,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Materials",
     group: "Inventory",
     endpoint: "materials_catalog/materials",
+    permissionFeature: "materials",
     idKey: "id",
     icon: "hardware-chip-outline",
     color: "#0F766E",
@@ -1423,6 +1458,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Budget Items",
     group: "Finance",
     endpoint: "budget_api/items",
+    permissionFeature: "budget",
     idKey: "id",
     icon: "calculator-outline",
     color: "#EA580C",
@@ -1449,6 +1485,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Goals",
     group: "Work",
     endpoint: "goals_api",
+    permissionFeature: "goals",
     idKey: "id",
     icon: "trophy-outline",
     color: "#65A30D",
@@ -1472,6 +1509,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Business Partners",
     group: "CRM",
     endpoint: "business_partners_api",
+    permissionFeature: "business_partners",
     idKey: "id",
     icon: "git-network-outline",
     color: "#0E7490",
@@ -1491,6 +1529,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Cost Centers",
     group: "Finance",
     endpoint: "cost_centers_api",
+    permissionFeature: "cost_centers",
     idKey: "id",
     icon: "analytics-outline",
     color: "#EA580C",
@@ -1510,6 +1549,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Timesheets",
     group: "Work",
     endpoint: "timesheets_api",
+    permissionFeature: "attendance_management",
     idKey: "id",
     icon: "time-outline",
     color: "#2563EB",
@@ -1529,6 +1569,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Candidates",
     group: "HR",
     endpoint: "recruitment_api/candidates",
+    permissionFeature: "recruitment",
     idKey: "id",
     icon: "id-card-outline",
     color: "#7C3AED",
@@ -1557,6 +1598,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Job Positions",
     group: "HR",
     endpoint: "recruitment_api/positions",
+    permissionFeature: "recruitment",
     idKey: "id",
     icon: "briefcase-outline",
     color: "#7C3AED",
@@ -1575,6 +1617,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Payslips",
     group: "HR",
     endpoint: "hr_payroll_api/payslips",
+    permissionFeature: "hrp_payslip",
     idKey: "id",
     icon: "cash-outline",
     color: "#16A34A",
@@ -1598,6 +1641,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Gatepasses",
     group: "Operations",
     endpoint: "gatepass_api",
+    permissionFeature: "gatepass",
     idKey: "id",
     icon: "log-in-outline",
     color: "#0F766E",
@@ -1621,6 +1665,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Fixed Equipment",
     group: "Operations",
     endpoint: "fixed_equipment_api",
+    permissionFeature: "fixed_equipment",
     idKey: "id",
     icon: "build-outline",
     color: "#475569",
@@ -1651,6 +1696,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Knowledge Base",
     group: "Support",
     endpoint: "knowledge_api",
+    permissionFeature: "knowledge_base",
     idKey: "articleid",
     icon: "book-outline",
     color: "#0369A1",
@@ -1673,6 +1719,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Surveys",
     group: "Support",
     endpoint: "surveys_api",
+    permissionFeature: "surveys",
     idKey: "surveyid",
     icon: "stats-chart-outline",
     color: "#0369A1",
@@ -1694,6 +1741,7 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Automations",
     group: "Admin",
     endpoint: "automation_api",
+    permissionFeature: "automation",
     idKey: "id",
     icon: "flash-outline",
     color: "#64748B",
@@ -1840,6 +1888,17 @@ export function isCrudEnabled(module: ModuleDefinition, action: "create" | "upda
   if (action === "create") return module.canCreate !== false;
   if (action === "update") return module.canUpdate !== false;
   return module.canDelete !== false;
+}
+
+/**
+ * Returns the permission feature key(s) for a module as an array.
+ * Modules without a permissionFeature are accessible to everyone.
+ */
+export function getModulePermissionFeatures(module: ModuleDefinition): string[] {
+  if (!module.permissionFeature) return [];
+  return Array.isArray(module.permissionFeature)
+    ? module.permissionFeature
+    : [module.permissionFeature];
 }
 
 export function resolveTemplateValue(value: string | number, row: any, fallbackId: string): string | number {

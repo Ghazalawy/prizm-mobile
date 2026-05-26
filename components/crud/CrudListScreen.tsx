@@ -14,12 +14,14 @@ import { useQuery } from "@tanstack/react-query";
 import { listEntities, normalizeList } from "@/lib/api";
 import {
   getModule,
+  getModulePermissionFeatures,
   isCrudEnabled,
   moduleId,
   moduleSubtitle,
   moduleTitle,
   ModuleDefinition,
 } from "@/lib/module-registry";
+import { usePermissions } from "@/lib/permission-context";
 
 type CrudListScreenProps = {
   moduleKey: string;
@@ -33,6 +35,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   const module = getModule(moduleKey);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
+  const permissions = usePermissions();
 
   const q = useQuery({
     queryKey: ["crud", moduleKey, "list", { search }],
@@ -78,7 +81,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
               {rows.length} record{rows.length === 1 ? "" : "s"}
             </Text>
           </View>
-          {isCrudEnabled(module, "create") ? (
+          {isCrudEnabled(module, "create") && canCreateModule(module, permissions) ? (
             <TouchableOpacity
               onPress={() => router.push(`${path}/new` as any)}
               className="w-10 h-10 rounded-xl bg-primary items-center justify-center"
@@ -197,6 +200,15 @@ function uniqueRowsById(module: ModuleDefinition | undefined, rows: any[]): any[
     seen.add(id);
     return true;
   });
+}
+
+function canCreateModule(
+  module: ModuleDefinition,
+  permissions: ReturnType<typeof usePermissions>,
+): boolean {
+  const features = getModulePermissionFeatures(module);
+  if (features.length === 0) return true;
+  return features.some((f) => permissions.canCreate(f));
 }
 
 function MissingModule({ moduleKey }: { moduleKey: string }) {

@@ -17,6 +17,7 @@ import {
   type ReportListItem,
   type ReportFilters,
 } from "@/lib/queries/reports";
+import { usePermissions } from "@/lib/permission-context";
 
 const ACCENT = "#E65100";
 
@@ -36,6 +37,8 @@ export function ReportListScreen() {
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState<number | undefined>();
   const [showProjectPicker, setShowProjectPicker] = useState(false);
+  const { canCreate: canCreatePerm } = usePermissions();
+  const canCreateReport = canCreatePerm("prizm_reports");
 
   const filters: ReportFilters = useMemo(
     () => ({
@@ -152,15 +155,17 @@ export function ReportListScreen() {
               Daily Progress Reports
             </Text>
           </View>
-          <TouchableOpacity
-            onPress={handleCreate}
-            className="flex-row items-center px-4 py-2.5 rounded-xl"
-            style={{ backgroundColor: ACCENT }}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="add" size={20} color="#FFF" />
-            <Text className="text-white font-semibold ml-1.5">New</Text>
-          </TouchableOpacity>
+          {canCreateReport ? (
+            <TouchableOpacity
+              onPress={handleCreate}
+              className="flex-row items-center px-4 py-2.5 rounded-xl"
+              style={{ backgroundColor: ACCENT }}
+              activeOpacity={0.8}
+            >
+              <Ionicons name="add" size={20} color="#FFF" />
+              <Text className="text-white font-semibold ml-1.5">New</Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Search */}

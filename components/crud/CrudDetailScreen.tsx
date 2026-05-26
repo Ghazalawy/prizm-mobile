@@ -16,6 +16,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { deleteEntity, getEntity, listEntities, normalizeList } from "@/lib/api";
 import {
   getModule,
+  getModulePermissionFeatures,
   isCrudEnabled,
   moduleId,
   moduleSubtitle,
@@ -30,6 +31,7 @@ import {
   decodeCustomFieldValue,
   type CustomFieldRow,
 } from "@/lib/queries/custom-fields";
+import { usePermissions } from "@/lib/permission-context";
 import { FilesTab } from "./FilesTab";
 import { ActionRunner } from "./ActionRunner";
 
@@ -81,6 +83,7 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
   const [activeTab, setActiveTab] = useState("summary");
   const [actionsOpen, setActionsOpen] = useState(false);
   const queryClient = useQueryClient();
+  const permissions = usePermissions();
 
   const q = useQuery({
     queryKey: ["crud", moduleKey, "detail", id],
@@ -123,7 +126,7 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
         <Text className="ml-3 text-lg font-semibold text-foreground flex-1" numberOfLines={1}>
           {row ? moduleTitle(module, row) : module.title}
         </Text>
-        {row && isCrudEnabled(module, "update") ? (
+        {row && isCrudEnabled(module, "update") && canEditModule(module, permissions) ? (
           <TouchableOpacity
             onPress={() => router.push(`${path}/${encodeURIComponent(id)}/edit` as any)}
             className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100 mr-2"
@@ -131,7 +134,7 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
             <Ionicons name="create-outline" size={20} color="#0F172A" />
           </TouchableOpacity>
         ) : null}
-        {row && isCrudEnabled(module, "delete") ? (
+        {row && isCrudEnabled(module, "delete") && canDeleteModule(module, permissions) ? (
           <TouchableOpacity
             onPress={() => confirmDelete(module, deleteMutation.mutate)}
             className="w-9 h-9 rounded-lg items-center justify-center bg-red-50 mr-2"
@@ -1116,6 +1119,24 @@ function isLikelyBooleanKey(key: string): boolean {
 
 function isZeroish(value: string): boolean {
   return value.trim() === "0" || value.trim() === "0.00";
+}
+
+function canEditModule(
+  module: ModuleDefinition,
+  perms: ReturnType<typeof usePermissions>,
+): boolean {
+  const features = getModulePermissionFeatures(module);
+  if (features.length === 0) return true;
+  return features.some((f) => perms.canEdit(f));
+}
+
+function canDeleteModule(
+  module: ModuleDefinition,
+  perms: ReturnType<typeof usePermissions>,
+): boolean {
+  const features = getModulePermissionFeatures(module);
+  if (features.length === 0) return true;
+  return features.some((f) => perms.canDelete(f));
 }
 
 function MissingModule({ moduleKey }: { moduleKey: string }) {

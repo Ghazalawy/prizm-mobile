@@ -8,12 +8,22 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 import Toast from "react-native-toast-message";
 import * as SplashScreen from "expo-splash-screen";
 
-import { AuthProvider } from "@/lib/auth-context";
+import { AuthProvider, useAuth } from "@/lib/auth-context";
+import { PermissionProvider } from "@/lib/permission-context";
 import { queryClient, wireAppStateFocus } from "@/lib/query-client";
 import { UpdatePrompt } from "@/components/UpdatePrompt";
 import { WhatsNewModal } from "@/components/WhatsNewModal";
 
 SplashScreen.preventAutoHideAsync();
+
+function AppWithPermissions({ children }: { children: React.ReactNode }) {
+  const { isAuthenticated } = useAuth();
+  return (
+    <PermissionProvider isAuthenticated={isAuthenticated}>
+      {children}
+    </PermissionProvider>
+  );
+}
 
 export default function RootLayout() {
   useEffect(() => {
@@ -27,19 +37,21 @@ export default function RootLayout() {
       <SafeAreaProvider>
         <QueryClientProvider client={queryClient}>
           <AuthProvider>
-            <Stack
-              screenOptions={{
-                headerShown: false,
-                contentStyle: { backgroundColor: "#F8FAFC" },
-              }}
-            >
-              <Stack.Screen name="login" options={{ headerShown: false }} />
-              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            </Stack>
-            <UpdatePrompt />
-            <WhatsNewModal />
-            <StatusBar style="auto" />
-            <Toast />
+            <AppWithPermissions>
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  contentStyle: { backgroundColor: "#F8FAFC" },
+                }}
+              >
+                <Stack.Screen name="login" options={{ headerShown: false }} />
+                <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              </Stack>
+              <UpdatePrompt />
+              <WhatsNewModal />
+              <StatusBar style="auto" />
+              <Toast />
+            </AppWithPermissions>
           </AuthProvider>
         </QueryClientProvider>
       </SafeAreaProvider>

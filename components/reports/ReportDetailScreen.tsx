@@ -24,6 +24,7 @@ import {
 } from "@/lib/queries/reports";
 import { colors, statusBadge } from "@/lib/theme";
 import { rtlTextStyle } from "@/lib/rtl";
+import { usePermissions } from "@/lib/permission-context";
 
 const SCREEN_W = Dimensions.get("window").width;
 const ACCENT = colors.primary;
@@ -36,6 +37,9 @@ export function ReportDetailScreen({ id }: Props) {
   const deleteMutation = useDeleteReport();
   const [refreshing, setRefreshing] = useState(false);
   const [lightbox, setLightbox] = useState<string | null>(null);
+  const { canEdit, canDelete } = usePermissions();
+  const canEditReport = canEdit("prizm_reports");
+  const canDeleteReport = canDelete("prizm_reports");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -122,21 +126,25 @@ export function ReportDetailScreen({ id }: Props) {
         <Text className="ml-2 text-base font-semibold text-slate-900 flex-1" numberOfLines={1}>
           {report.report_code || "Report"}
         </Text>
-        <TouchableOpacity
-          onPress={() => router.push(`/(tabs)/reports/${id}/edit` as any)}
-          className="w-9 h-9 items-center justify-center"
-          hitSlop={6}
-        >
-          <Ionicons name="create-outline" size={20} color={colors.black} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleDelete}
-          className="w-9 h-9 items-center justify-center"
-          hitSlop={6}
-          disabled={deleteMutation.isPending}
-        >
-          <Ionicons name="trash-outline" size={20} color={colors.error} />
-        </TouchableOpacity>
+        {canEditReport ? (
+          <TouchableOpacity
+            onPress={() => router.push(`/(tabs)/reports/${id}/edit` as any)}
+            className="w-9 h-9 items-center justify-center"
+            hitSlop={6}
+          >
+            <Ionicons name="create-outline" size={20} color={colors.black} />
+          </TouchableOpacity>
+        ) : null}
+        {canDeleteReport ? (
+          <TouchableOpacity
+            onPress={handleDelete}
+            className="w-9 h-9 items-center justify-center"
+            hitSlop={6}
+            disabled={deleteMutation.isPending}
+          >
+            <Ionicons name="trash-outline" size={20} color={colors.error} />
+          </TouchableOpacity>
+        ) : null}
       </View>
 
       <ScrollView
@@ -253,29 +261,35 @@ export function ReportDetailScreen({ id }: Props) {
         ) : null}
 
         {/* ── Action buttons ───────────────────────────────────── */}
-        <View className="flex-row mt-4 gap-3">
-          <TouchableOpacity
-            onPress={() => router.push(`/(tabs)/reports/${id}/edit` as any)}
-            className="flex-1 flex-row items-center justify-center py-3.5 rounded-xl"
-            style={{ backgroundColor: ACCENT }}
-            activeOpacity={0.8}
-          >
-            <Ionicons name="create-outline" size={18} color="#FFF" />
-            <Text className="text-white font-semibold ml-2">Edit Report</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            onPress={handleDelete}
-            className="flex-row items-center justify-center px-5 py-3.5 rounded-xl bg-red-50"
-            activeOpacity={0.8}
-            disabled={deleteMutation.isPending}
-          >
-            {deleteMutation.isPending ? (
-              <ActivityIndicator size="small" color={colors.error} />
-            ) : (
-              <Ionicons name="trash-outline" size={18} color={colors.error} />
-            )}
-          </TouchableOpacity>
-        </View>
+        {(canEditReport || canDeleteReport) ? (
+          <View className="flex-row mt-4 gap-3">
+            {canEditReport ? (
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/reports/${id}/edit` as any)}
+                className="flex-1 flex-row items-center justify-center py-3.5 rounded-xl"
+                style={{ backgroundColor: ACCENT }}
+                activeOpacity={0.8}
+              >
+                <Ionicons name="create-outline" size={18} color="#FFF" />
+                <Text className="text-white font-semibold ml-2">Edit Report</Text>
+              </TouchableOpacity>
+            ) : null}
+            {canDeleteReport ? (
+              <TouchableOpacity
+                onPress={handleDelete}
+                className="flex-row items-center justify-center px-5 py-3.5 rounded-xl bg-red-50"
+                activeOpacity={0.8}
+                disabled={deleteMutation.isPending}
+              >
+                {deleteMutation.isPending ? (
+                  <ActivityIndicator size="small" color={colors.error} />
+                ) : (
+                  <Ionicons name="trash-outline" size={18} color={colors.error} />
+                )}
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        ) : null}
       </ScrollView>
 
       {/* ── Lightbox modal ───────────────────────────────────── */}

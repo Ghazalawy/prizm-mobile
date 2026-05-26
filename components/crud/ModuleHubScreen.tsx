@@ -2,12 +2,23 @@ import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-nativ
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState } from "react";
-import { listVisibleModules, moduleGroups } from "@/lib/module-registry";
+import { listVisibleModules, moduleGroups, getModulePermissionFeatures } from "@/lib/module-registry";
+import { usePermissions } from "@/lib/permission-context";
 
 export function ModuleHubScreen() {
   const [search, setSearch] = useState("");
+  const { isAdmin, isLoaded, hasAnyPermission } = usePermissions();
   const groups = moduleGroups();
-  const modules = listVisibleModules();
+  const allModules = listVisibleModules();
+
+  const modules = useMemo(() => {
+    if (!isLoaded || isAdmin) return allModules;
+    return allModules.filter((mod) => {
+      const features = getModulePermissionFeatures(mod);
+      if (features.length === 0) return true;
+      return features.some((f) => hasAnyPermission(f));
+    });
+  }, [allModules, isLoaded, isAdmin, hasAnyPermission]);
 
   const filtered = useMemo(() => {
     const needle = search.trim().toLowerCase();

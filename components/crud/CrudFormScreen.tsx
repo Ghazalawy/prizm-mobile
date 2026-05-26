@@ -16,10 +16,12 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createEntity, getEntity, updateEntity } from "@/lib/api";
 import {
   getModule,
+  getModulePermissionFeatures,
   ModuleDefinition,
   ModuleField,
   moduleTitle,
 } from "@/lib/module-registry";
+import { usePermissions } from "@/lib/permission-context";
 import { RelationPicker } from "./RelationPicker";
 import { DateInput } from "./DateInput";
 import {
@@ -42,6 +44,34 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   const isEdit = !!id;
   const [values, setValues] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
+  const permissions = usePermissions();
+
+  // Permission gate: block access if user lacks create/edit permission
+  const features = module ? getModulePermissionFeatures(module) : [];
+  const hasFormPermission =
+    features.length === 0 ||
+    features.some((f) =>
+      isEdit ? permissions.canEdit(f) : permissions.canCreate(f),
+    );
+
+  if (module && !hasFormPermission) {
+    return (
+      <View className="flex-1 bg-surface items-center justify-center px-8">
+        <Ionicons name="lock-closed-outline" size={48} color="#94A3B8" />
+        <Text className="text-foreground font-semibold mt-3">Access Denied</Text>
+        <Text className="text-muted text-sm mt-1 text-center">
+          You don&apos;t have permission to {isEdit ? "edit" : "create"} {module.plural.toLowerCase()}.
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mt-4 bg-primary px-5 py-2 rounded-lg"
+          activeOpacity={0.75}
+        >
+          <Text className="text-white font-medium">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   const detail = useQuery({
     queryKey: ["crud", moduleKey, "detail", id],

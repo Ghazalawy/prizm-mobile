@@ -5,17 +5,17 @@ import {
   RefreshControl,
   TouchableOpacity,
   ActivityIndicator,
+  FlatList,
 } from "react-native";
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import {
   useProjectsCount,
-  useTasksCount,
+  useMyTasksSummary,
   useLeadsCount,
   useInvoicesCount,
   useCustomersCount,
-  useMyTasksSummary,
   type MyTasksSummary,
 } from "@/lib/queries/dashboard";
 import {
@@ -28,7 +28,31 @@ import {
 } from "@/lib/dashboard-layout";
 import { clearDismissedUpdate } from "@/lib/updates";
 import { DraggableDashboardGrid } from "@/components/DraggableDashboardGrid";
-import { colors } from "@/lib/theme";
+import { CheckinCard } from "@/components/CheckinCard";
+import { useInbox } from "@/lib/queries/inbox";
+import { useTasksDueToday, type TaskListItem } from "@/lib/queries/tasks";
+import { useMyActivity, type ActivityRow } from "@/lib/queries/activity";
+import { useCurrentUser } from "@/lib/auth-context";
+import { colors, shadows, radius } from "@/lib/theme";
+
+// ─── Priority / Status maps ─────────────────────────────────────────────
+
+const PRIORITY: Record<string, { label: string; color: string; bg: string }> = {
+  "1": { label: "Low", color: "#475569", bg: "#F1F5F9" },
+  "2": { label: "Med", color: "#0369A1", bg: "#E0F2FE" },
+  "3": { label: "High", color: "#B45309", bg: "#FEF3C7" },
+  "4": { label: "Urg", color: "#B91C1C", bg: "#FEE2E2" },
+};
+
+const TASK_STATUS: Record<string, { label: string; color: string; bg: string }> = {
+  "1": { label: "Not Started", color: "#475569", bg: "#F1F5F9" },
+  "2": { label: "Feedback", color: "#7C3AED", bg: "#EDE9FE" },
+  "3": { label: "Testing", color: "#0369A1", bg: "#E0F2FE" },
+  "4": { label: "In Progress", color: "#B45309", bg: "#FEF3C7" },
+  "5": { label: "Complete", color: "#15803D", bg: "#DCFCE7" },
+};
+
+// ─── Stat Card ──────────────────────────────────────────────────────────
 
 type StatCardProps = {
   title: string;
@@ -38,8 +62,6 @@ type StatCardProps = {
   isLoading: boolean;
   isError: boolean;
   onPress: () => void;
-  /** Optional micro-text shown below the number — used by the My Tasks tile
-   *  for "X new · Y overdue · Z stale". */
   footnote?: string;
 };
 
@@ -56,12 +78,8 @@ function StatCard({
 }: StatCardProps & { isDragging?: boolean }) {
   return (
     <TouchableOpacity
-      // Suppress tap when the chip is mid-drag so finger-up after a drag
-      // doesn't accidentally navigate.
       onPress={isDragging ? undefined : onPress}
       activeOpacity={isDragging ? 1 : 0.6}
-      // Margin/min-width handled by the draggable grid's wrapper now —
-      // we keep flex:1 so the card fills its slot.
       className="bg-white rounded-2xl p-5 flex-1 shadow-sm"
       style={isDragging ? { opacity: 0.95 } : undefined}
     >
@@ -96,26 +114,204 @@ function StatCard({
   );
 }
 
-/**
- * Build the micro-footnote for the My Tasks tile. Compact — only the
- * non-zero buckets show. "X new · Y overdue · Z stale" — at most 3
- * segments, fits one line under the big number.
- */
 function buildTasksFootnote(s: MyTasksSummary | undefined): string {
   if (!s) return "MY TASKS";
   const parts: string[] = [];
   if (s.not_started > 0) parts.push(`${s.not_started} new`);
-  if (s.overdue > 0)     parts.push(`${s.overdue} overdue`);
-  if (s.stale > 0)       parts.push(`${s.stale} stale`);
+  if (s.overdue > 0) parts.push(`${s.overdue} overdue`);
+  if (s.stale > 0) parts.push(`${s.stale} stale`);
   if (parts.length === 0) return "MY TASKS · ALL CLEAR";
   return parts.join(" · ").toUpperCase();
 }
 
-/**
- * Dashboard. Layout (which cards, in what order) is user-customisable —
- * the SecureStore-backed list comes from lib/dashboard-layout.ts. Tap
- * "Customize" in the header to reorder / show / hide.
- */
+// ─── Summary Card (horizontal row) ──────────────────────────────────────
+
+function SummaryCard({
+  icon,
+  label,
+  count,
+  color,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  count: number;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className="bg-white rounded-2xl px-4 py-3 mr-3 shadow-sm"
+      style={{ minWidth: 130 }}
+    >
+      <View className="flex-row items-center mb-2">
+        <View
+          className="w-8 h-8 rounded-lg items-center justify-center"
+          style={{ backgroundColor: `${color}1A` }}
+        >
+          <Ionicons name={icon} size={16} color={color} />
+        </View>
+      </View>
+      <Text className="text-2xl font-bold text-foreground">{count}</Text>
+      <Text className="text-xs text-muted mt-0.5">{label}</Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Quick Action Button ─────────────────────────────────────────────────
+
+function QuickAction({
+  icon,
+  label,
+  color,
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  color: string;
+  onPress: () => void;
+}) {
+  return (
+    <TouchableOpacity
+      onPress={onPress}
+      activeOpacity={0.7}
+      className="flex-1 bg-white rounded-2xl p-3 items-center shadow-sm"
+    >
+      <View
+        className="w-11 h-11 rounded-xl items-center justify-center mb-2"
+        style={{ backgroundColor: `${color}1A` }}
+      >
+        <Ionicons name={icon} size={22} color={color} />
+      </View>
+      <Text className="text-xs font-medium text-foreground text-center" numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+}
+
+// ─── Activity Item ───────────────────────────────────────────────────────
+
+function relativeTime(dateStr: string): string {
+  const d = new Date(dateStr.replace(" ", "T"));
+  if (isNaN(d.getTime())) return dateStr;
+  const diffMs = Date.now() - d.getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return "just now";
+  if (mins < 60) return `${mins}m`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs}h`;
+  const days = Math.floor(hrs / 24);
+  if (days < 7) return `${days}d`;
+  return d.toLocaleDateString("en-GB", { day: "2-digit", month: "short" });
+}
+
+const ActivityItem = memo(function ActivityItem({ row }: { row: ActivityRow }) {
+  return (
+    <View className="flex-row items-start py-2.5 border-b border-slate-100">
+      <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
+        <Ionicons name="pulse-outline" size={14} color="#64748B" />
+      </View>
+      <View className="flex-1">
+        <Text className="text-sm text-foreground leading-snug" numberOfLines={2}>
+          {row.description}
+        </Text>
+        <Text className="text-xs text-muted mt-0.5">{relativeTime(row.date)}</Text>
+      </View>
+    </View>
+  );
+});
+
+// ─── Due/Overdue Task Row ────────────────────────────────────────────────
+
+function dueCountdown(duedate: string): { label: string; color: string } {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(duedate.slice(0, 10) + "T00:00:00");
+  const diffDays = Math.ceil((due.getTime() - today.getTime()) / 86400000);
+  if (diffDays < 0) return { label: `${Math.abs(diffDays)}d overdue`, color: "#DC2626" };
+  if (diffDays === 0) return { label: "Today", color: "#B45309" };
+  if (diffDays === 1) return { label: "Tomorrow", color: "#0369A1" };
+  return { label: `${diffDays}d`, color: "#64748B" };
+}
+
+const DueTaskRow = memo(function DueTaskRow({ task }: { task: TaskListItem }) {
+  const priority = PRIORITY[String(task.priority || "2")] || PRIORITY["2"];
+  const status = TASK_STATUS[String(task.status || "1")] || TASK_STATUS["1"];
+  const due = task.duedate ? dueCountdown(task.duedate) : null;
+
+  return (
+    <TouchableOpacity
+      onPress={() => router.push(`/(tabs)/tasks/${task.id}` as any)}
+      activeOpacity={0.7}
+      className="flex-row items-center py-2.5 border-b border-slate-100"
+    >
+      <View
+        className="w-1 rounded-full mr-3"
+        style={{ backgroundColor: priority.color, height: 32 }}
+      />
+      <View className="flex-1">
+        <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+          {task.name}
+        </Text>
+        <View className="flex-row items-center mt-1">
+          <View
+            className="px-1.5 py-0.5 rounded"
+            style={{ backgroundColor: status.bg }}
+          >
+            <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>
+              {status.label}
+            </Text>
+          </View>
+          {due ? (
+            <Text
+              className="text-xs font-medium ml-2"
+              style={{ color: due.color }}
+            >
+              {due.label}
+            </Text>
+          ) : null}
+        </View>
+      </View>
+      <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
+    </TouchableOpacity>
+  );
+});
+
+// ─── Section header ──────────────────────────────────────────────────────
+
+function SectionHeader({
+  title,
+  icon,
+  actionLabel,
+  onAction,
+}: {
+  title: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  actionLabel?: string;
+  onAction?: () => void;
+}) {
+  return (
+    <View className="flex-row items-center justify-between mb-3 mt-6">
+      <View className="flex-row items-center">
+        <Ionicons name={icon} size={16} color={colors.primary} />
+        <Text className="text-base font-bold text-foreground ml-2">{title}</Text>
+      </View>
+      {actionLabel && onAction ? (
+        <TouchableOpacity onPress={onAction} activeOpacity={0.6}>
+          <Text className="text-xs font-medium" style={{ color: colors.primary }}>
+            {actionLabel}
+          </Text>
+        </TouchableOpacity>
+      ) : null}
+    </View>
+  );
+}
+
+// ─── Dashboard Screen ────────────────────────────────────────────────────
+
 export default function DashboardScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [layout, setLocalLayout] = useState<DashboardLayout>(DEFAULT_LAYOUT);
@@ -124,9 +320,11 @@ export default function DashboardScreen() {
   const leads = useLeadsCount();
   const invoices = useInvoicesCount();
   const customers = useCustomersCount();
+  const inbox = useInbox();
+  const dueTasks = useTasksDueToday();
+  const user = useCurrentUser();
+  const activity = useMyActivity(user?.staffid, 10);
 
-  // Pick up the layout on mount + every time the screen regains focus so
-  // edits made in the Customize sub-screen take effect immediately.
   useEffect(() => {
     let mounted = true;
     getLayout().then((next) => {
@@ -143,10 +341,6 @@ export default function DashboardScreen() {
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    // Pull-to-refresh is an explicit "give me fresh state" gesture — also
-    // clear any previously-dismissed update SHA so the banner re-appears
-    // if a newer build is out. The UpdatePrompt re-checks on every focus,
-    // so the banner will surface on the next render.
     await clearDismissedUpdate().catch(() => undefined);
     await Promise.all([
       projects.refetch(),
@@ -154,12 +348,14 @@ export default function DashboardScreen() {
       leads.refetch(),
       invoices.refetch(),
       customers.refetch(),
+      inbox.refetch(),
+      dueTasks.refetch(),
+      activity.refetch(),
     ]);
     reloadLayout();
     setRefreshing(false);
-  }, [projects, tasksSummary, leads, invoices, customers, reloadLayout]);
+  }, [projects, tasksSummary, leads, invoices, customers, inbox, dueTasks, activity, reloadLayout]);
 
-  // Map a card key + drag-state to a fully-configured StatCard element.
   const renderCard = (key: DashboardCardKey, isDragging: boolean) => {
     switch (key) {
       case "tasks_summary":
@@ -185,7 +381,7 @@ export default function DashboardScreen() {
             color="#0284C7"
             isLoading={projects.isLoading}
             isError={projects.isError}
-            onPress={() => router.push("/(tabs)/erp/projects" as any)}
+            onPress={() => router.push("/(tabs)/projects" as any)}
             isDragging={isDragging}
           />
         );
@@ -233,11 +429,8 @@ export default function DashboardScreen() {
     }
   };
 
-  const cards = visibleCards(layout);
+  const cardKeys = visibleCards(layout);
 
-  // Drop handler — the draggable grid hands us only the visible cards in
-  // their new order. We need to splice them back into the full `order`
-  // (preserving the position of hidden cards) before persisting.
   const handleReorder = useCallback(
     (nextVisible: DashboardCardKey[]) => {
       const hiddenSet = new Set(layout.hidden);
@@ -251,8 +444,6 @@ export default function DashboardScreen() {
           vIdx++;
         }
       }
-      // Add any keys that were in nextVisible but not in layout.order
-      // (defensive; shouldn't normally happen).
       for (const k of nextVisible) {
         if (!result.includes(k)) result.push(k);
       }
@@ -260,54 +451,175 @@ export default function DashboardScreen() {
       setLocalLayout(next);
       setLayout(next).catch(() => undefined);
     },
-    [layout]
+    [layout],
   );
+
+  const summaryCards = useMemo(() => {
+    const ts = tasksSummary.data;
+    const inboxData = inbox.data;
+    return [
+      {
+        icon: "checkbox-outline" as const,
+        label: "My Open Tasks",
+        count: ts?.total_open ?? 0,
+        color: colors.primary,
+        route: "/(tabs)/tasks",
+      },
+      {
+        icon: "folder-outline" as const,
+        label: "My Projects",
+        count: (projects.data as number) ?? 0,
+        color: "#0284C7",
+        route: "/(tabs)/projects",
+      },
+      {
+        icon: "mail-outline" as const,
+        label: "Pending Approvals",
+        count: inboxData?.summary?.approvals ?? 0,
+        color: "#7C3AED",
+        route: "/(tabs)/erp/index",
+      },
+      {
+        icon: "document-text-outline" as const,
+        label: "Today's Reports",
+        count: 0,
+        color: "#16A34A",
+        route: "/(tabs)/reports",
+      },
+    ];
+  }, [tasksSummary.data, inbox.data, projects.data]);
+
+  const dueTasksList = useMemo(() => {
+    return (dueTasks.data || []).slice(0, 5);
+  }, [dueTasks.data]);
+
+  const activityItems = useMemo(() => {
+    return (activity.data || []).slice(0, 10);
+  }, [activity.data]);
 
   return (
     <ScrollView
       className="flex-1 bg-surface"
-      contentContainerClassName="p-4"
+      contentContainerClassName="pb-8"
       refreshControl={
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />
       }
     >
-      <View className="flex-row items-center justify-between mb-1">
-        <Text className="text-2xl font-bold text-foreground">Dashboard</Text>
-        <TouchableOpacity
-          onPress={() => router.push("/(tabs)/dashboard-customize" as any)}
-          activeOpacity={0.6}
-          hitSlop={8}
-          className="flex-row items-center px-2 py-1 rounded-lg"
-        >
-          <Ionicons name="options-outline" size={16} color={colors.primary} />
-          <Text className="text-xs font-medium ml-1" style={{ color: colors.primary }}>Show / Hide</Text>
-        </TouchableOpacity>
-      </View>
-      <Text className="text-sm text-muted mb-4">
-        Tap any tile to drill in · long-press to rearrange
-      </Text>
-
-      {cards.length > 0 ? (
-        <DraggableDashboardGrid<DashboardCardKey>
-          items={cards}
-          renderItem={renderCard}
-          onReorder={handleReorder}
-        />
-      ) : (
-        <View className="mt-8 px-4 items-center">
-          <Ionicons name="grid-outline" size={48} color="#CBD5E1" />
-          <Text className="text-sm text-muted mt-2 text-center">
-            You've hidden every dashboard card.{"\n"}Tap Show / Hide to bring some back.
-          </Text>
+      {/* Header */}
+      <View className="px-4 pt-4 pb-1">
+        <View className="flex-row items-center justify-between mb-1">
+          <Text className="text-2xl font-bold text-foreground">Dashboard</Text>
+          <TouchableOpacity
+            onPress={() => router.push("/(tabs)/dashboard-customize" as any)}
+            activeOpacity={0.6}
+            hitSlop={8}
+            className="flex-row items-center px-2 py-1 rounded-lg"
+          >
+            <Ionicons name="options-outline" size={16} color={colors.primary} />
+            <Text className="text-xs font-medium ml-1" style={{ color: colors.primary }}>
+              Show / Hide
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
+      </View>
 
-      {cards.length > 0 ? (
-        <View className="mt-6 px-2">
-          <Text className="text-xs text-muted leading-relaxed">
-            Pull down to refresh counts. Tap a tile to see the list, or long-press
-            to drag tiles into a new order.
-          </Text>
+      {/* Check-in Card */}
+      <CheckinCard compact />
+
+      {/* A. Summary Cards Row */}
+      <View className="px-4">
+        <SectionHeader title="At a Glance" icon="analytics-outline" />
+      </View>
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 16 }}
+      >
+        {summaryCards.map((card) => (
+          <SummaryCard
+            key={card.label}
+            icon={card.icon}
+            label={card.label}
+            count={card.count}
+            color={card.color}
+            onPress={() => router.push(card.route as any)}
+          />
+        ))}
+      </ScrollView>
+
+      {/* B. Quick Actions Grid */}
+      <View className="px-4">
+        <SectionHeader title="Quick Actions" icon="flash-outline" />
+        <View className="flex-row gap-3">
+          <QuickAction
+            icon="document-text-outline"
+            label="New Report"
+            color="#16A34A"
+            onPress={() => router.push("/(tabs)/reports/new" as any)}
+          />
+          <QuickAction
+            icon="checkbox-outline"
+            label="New Task"
+            color="#F59E0B"
+            onPress={() => router.push("/(tabs)/tasks/new" as any)}
+          />
+          <QuickAction
+            icon="receipt-outline"
+            label="New Expense"
+            color="#EA580C"
+            onPress={() => router.push("/(tabs)/expenses-mine" as any)}
+          />
+        </View>
+      </View>
+
+      {/* C. Stat Tiles (draggable) */}
+      {cardKeys.length > 0 ? (
+        <View className="px-4">
+          <SectionHeader
+            title="Stats"
+            icon="stats-chart-outline"
+            actionLabel="Customize"
+            onAction={() => router.push("/(tabs)/dashboard-customize" as any)}
+          />
+          <DraggableDashboardGrid<DashboardCardKey>
+            items={cardKeys}
+            renderItem={renderCard}
+            onReorder={handleReorder}
+          />
+        </View>
+      ) : null}
+
+      {/* D. Tasks Due Today / Overdue */}
+      {dueTasksList.length > 0 ? (
+        <View className="px-4">
+          <SectionHeader
+            title="Due Today & Overdue"
+            icon="alert-circle-outline"
+            actionLabel="View All"
+            onAction={() => router.push("/(tabs)/tasks" as any)}
+          />
+          <View className="bg-white rounded-2xl px-4 py-1 shadow-sm">
+            {dueTasksList.map((task) => (
+              <DueTaskRow key={task.id} task={task} />
+            ))}
+          </View>
+        </View>
+      ) : null}
+
+      {/* E. Recent Activity Feed */}
+      {activityItems.length > 0 ? (
+        <View className="px-4">
+          <SectionHeader
+            title="Recent Activity"
+            icon="time-outline"
+            actionLabel="View All"
+            onAction={() => router.push("/(tabs)/activity" as any)}
+          />
+          <View className="bg-white rounded-2xl px-4 py-1 shadow-sm">
+            {activityItems.map((row) => (
+              <ActivityItem key={row.id} row={row} />
+            ))}
+          </View>
         </View>
       ) : null}
     </ScrollView>

@@ -1,7 +1,12 @@
 import { useLocalSearchParams } from "expo-router";
-import { CrudDetailScreen } from "@/components/crud/CrudDetailScreen";
+import { ProjectDetailScreen } from "@/components/projects/ProjectDetailScreen";
 
-export default function ProjectDetailScreen() {
+/**
+ * Project detail route — uses the enhanced bespoke layout with progress bar,
+ * team, key metrics, and tabbed content (Overview | Tasks | Milestones | Files | Expenses).
+ */
+export default function ProjectDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  return <CrudDetailScreen moduleKey="projects" id={id} basePath="/(tabs)/projects" />;
+  if (!id) return null;
+  return <ProjectDetailScreen id={id} />;
 }

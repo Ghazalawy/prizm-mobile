@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 
 /**
  * Hooks for the Purchase Request native approval screen.
@@ -165,10 +166,11 @@ const ENDPOINT_BY_KIND: Record<PurchaseApprovalKind, string> = {
 };
 
 async function fetchPurchaseApproval(kind: PurchaseApprovalKind, id: number): Promise<PRApproval> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const endpoint = ENDPOINT_BY_KIND[kind];
   const res = await fetch(`${API_URL}/purchase_api/${endpoint}/${id}/approval`, { headers });
-  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error((body && (body as any).message) || `HTTP ${res.status}`);
   if (!body?.status) throw new Error((body && (body as any).message) || "Request failed");

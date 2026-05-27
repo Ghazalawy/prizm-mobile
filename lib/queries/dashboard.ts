@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 import { useImpersonation } from "../impersonation";
 
 /**
@@ -13,24 +14,26 @@ import { useImpersonation } from "../impersonation";
  */
 
 async function fetchCount(module: string): Promise<number> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${module}/count`, {
     headers,
   });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return Number(body?.count ?? 0);
 }
 
 async function fetchTasksTotal(): Promise<number> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/tasks?limit=1`, {
     headers,
   });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return Number(body?.total ?? 0);
@@ -113,12 +116,13 @@ const EMPTY_SUMMARY: MyTasksSummary = {
 };
 
 async function fetchMyTasksSummary(): Promise<MyTasksSummary> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/my/tasks-summary`, {
     headers,
   });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return { ...EMPTY_SUMMARY, ...(body?.data || {}) };
@@ -158,11 +162,12 @@ const EMPTY_APPROVALS: PendingApprovalsData = {
 };
 
 async function fetchPendingApprovals(detail: boolean): Promise<PendingApprovalsData> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const url = `${API_URL}/my/pending-approvals${detail ? "?detail=1" : ""}`;
   const res = await fetch(url, { headers });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return { ...EMPTY_APPROVALS, ...(body?.data || {}) };
@@ -187,10 +192,11 @@ export type CheckinStatusData = {
 };
 
 async function fetchCheckinStatus(): Promise<CheckinStatusData> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/my/checkin/today`, { headers });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = body?.data || {};
@@ -230,10 +236,11 @@ const EMPTY_EXPENSES_SUMMARY: ExpensesSummaryData = {
 };
 
 async function fetchExpensesSummary(): Promise<ExpensesSummaryData> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/my/expenses-summary`, { headers });
   const token = headers["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return { ...EMPTY_EXPENSES_SUMMARY, ...(body?.data || {}) };

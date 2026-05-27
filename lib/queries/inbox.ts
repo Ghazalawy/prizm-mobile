@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 import { useImpersonation } from "../impersonation";
 
 /**
@@ -90,6 +91,7 @@ const EMPTY: InboxData = {
 };
 
 async function fetchInbox(): Promise<InboxData> {
+  const gen = getSessionGeneration();
   // buildAuthHeaders bundles authtoken + X-Impersonate-Staff-Id so the
   // inbox automatically reflects whoever the admin is viewing-as.
   const headers = await buildAuthHeaders();
@@ -99,7 +101,7 @@ async function fetchInbox(): Promise<InboxData> {
   const token = headers["authtoken"];
   // Parse first so the invalid-token detector sees the body even on 404
   // (Perfex returns 404 + signature-failed JSON when the JWT is bad).
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   // Endpoint not yet deployed — degrade silently so the UI still renders.
   if (res.status === 404) return EMPTY;

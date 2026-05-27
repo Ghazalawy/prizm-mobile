@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 
 /**
  * Activity log feed. Backed by the universal /api/core_crm_api/entity
@@ -27,6 +28,7 @@ async function fetchActivity(opts: {
   limit?: number;
   offset?: number;
 }): Promise<ActivityRow[]> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const body: Record<string, unknown> = {
     entity: "activity_log",
@@ -45,7 +47,7 @@ async function fetchActivity(opts: {
     body: JSON.stringify(body),
   });
   const token = headers["authtoken"];
-  const { body: j, invalidToken } = await parseApiResponse(res, !!token);
+  const { body: j, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   if (!j?.status) throw new Error(j?.message || "Activity fetch failed");

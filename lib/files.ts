@@ -3,6 +3,7 @@ import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import { API_URL } from "./config";
 import { buildAuthHeaders, parseApiResponse } from "./api";
+import { getSessionGeneration } from "./auth-events";
 
 /**
  * Picked file from any source (camera / gallery / document picker). Normalised
@@ -85,6 +86,7 @@ type UploadParams = {
  * Returns the created tblfiles row on success.
  */
 export async function uploadAttachment(params: UploadParams): Promise<{ id: number; file_name: string }> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const content_base64 = await FileSystem.readAsStringAsync(params.file.uri, {
     encoding: FileSystem.EncodingType.Base64,
@@ -105,7 +107,7 @@ export async function uploadAttachment(params: UploadParams): Promise<{ id: numb
   });
 
   const token = headers["authtoken"];
-  const { body: j, invalidToken } = await parseApiResponse(res, !!token);
+  const { body: j, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     const message =

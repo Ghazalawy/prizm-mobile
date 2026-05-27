@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, buildAuthHeaders, parseApiResponse, normalizeList } from "../api";
+import { getSessionGeneration } from "../auth-events";
 import { API_URL } from "../config";
 import { useImpersonation } from "../impersonation";
 
@@ -191,13 +192,14 @@ export function useStartTimer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (taskId: string) => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(`${API_URL}/tasks/${taskId}/timer/start`, {
         method: "POST",
         headers,
         body: JSON.stringify({}),
       });
-      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) throw new Error(body?.message || `HTTP ${res.status}`);
       return body;
@@ -212,6 +214,7 @@ export function useStopTimer() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async ({ taskId, timerId, note }: { taskId: string; timerId: number; note?: string }) => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const body: Record<string, unknown> = { timer_id: timerId };
       if (note) body.note = note;
@@ -220,7 +223,7 @@ export function useStopTimer() {
         headers,
         body: JSON.stringify(body),
       });
-      const { body: respBody, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body: respBody, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) throw new Error(respBody?.message || `HTTP ${res.status}`);
       return respBody;
@@ -237,13 +240,14 @@ export function useMarkTaskComplete() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (taskId: string) => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(`${API_URL}/tasks/${taskId}/mark_complete`, {
         method: "PUT",
         headers,
         body: JSON.stringify({}),
       });
-      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) throw new Error(body?.message || `HTTP ${res.status}`);
       return body;
@@ -260,13 +264,14 @@ export function useReopenTask() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (taskId: string) => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(`${API_URL}/tasks/${taskId}/reopen`, {
         method: "PUT",
         headers,
         body: JSON.stringify({}),
       });
-      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) throw new Error(body?.message || `HTTP ${res.status}`);
       return body;

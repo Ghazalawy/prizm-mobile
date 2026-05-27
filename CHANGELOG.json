@@ -2,6 +2,15 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.8.1",
+      "date": "2026-05-27",
+      "title": "Fix session-expired kick-out right after sign-in",
+      "highlights": [
+        "Session generation guard now covers ALL API calls — stale in-flight responses from a previous session no longer trigger a false 'Session expired' sign-out after a fresh login.",
+        "Fixed 16 parseApiResponse call sites across 8 files (dashboard, inbox, permissions, my, activity, tasks, purchase-request, files) that were missing the session generation parameter."
+      ]
+    },
+    {
       "version": "1.8.0",
       "date": "2026-05-26",
       "title": "Stabilization — regression fixes, image comments, My Tasks filter",

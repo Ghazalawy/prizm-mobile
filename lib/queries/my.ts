@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 import { useImpersonation } from "../impersonation";
 
 /**
@@ -66,6 +67,7 @@ export type MyNotification = {
 };
 
 async function api<T>(path: string, init?: RequestInit): Promise<T> {
+  const gen = getSessionGeneration();
   const authHeaders = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${path.replace(/^\//, "")}`, {
     ...init,
@@ -75,7 +77,7 @@ async function api<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   const token = authHeaders["authtoken"];
-  const { body, invalidToken } = await parseApiResponse(res, !!token);
+  const { body, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     const txt = typeof body === "string" ? body : JSON.stringify(body ?? "");

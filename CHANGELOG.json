@@ -2,6 +2,15 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.8.2",
+      "date": "2026-05-27",
+      "title": "Fix false session-expired kick-out during post-login query burst",
+      "highlights": [
+        "Added 5-second post-login grace period: any 401/signature-failed response arriving within 5 seconds of login is treated as a false positive and silently ignored. The token was literally just obtained — the 401 is coming from a server endpoint that returns it for non-auth reasons (e.g. missing route, permission misconfig), not because the token is invalid.",
+        "Session generation guard now covers all 16 direct parseApiResponse calls across 8 query files (dashboard, inbox, permissions, my, activity, tasks, purchase-request, files)."
+      ]
+    },
+    {
       "version": "1.8.1",
       "date": "2026-05-27",
       "title": "Fix session-expired kick-out right after sign-in",

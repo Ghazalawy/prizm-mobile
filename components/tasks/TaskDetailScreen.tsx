@@ -3,9 +3,12 @@ import {
   Alert,
   Image,
   KeyboardAvoidingView,
+  Modal,
   Platform,
+  Pressable,
   RefreshControl,
   ScrollView,
+  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
@@ -110,10 +113,33 @@ const TASK_STATUS: Record<string, { label: string; color: string; bg: string }> 
 
 type TabKey = "checklist" | "comments" | "files" | "activity" | "timesheets" | "reminders";
 
+type TaskChoiceOption = {
+  key: string;
+  label: string;
+  description?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  color?: string;
+  selected?: boolean;
+  destructive?: boolean;
+  avatarUri?: string;
+  initial?: string;
+  onPress: () => void | Promise<void>;
+};
+
+type TaskChoiceSheetConfig = {
+  title: string;
+  eyebrow?: string;
+  subtitle?: string;
+  icon: keyof typeof Ionicons.glyphMap;
+  options: TaskChoiceOption[];
+  footerText?: string;
+};
+
 export function TaskDetailScreen({ id }: Props) {
   const [refreshing, setRefreshing] = useState(false);
   const [tab, setTab] = useState<TabKey>("checklist");
   const [descExpanded, setDescExpanded] = useState(false);
+  const [choiceSheet, setChoiceSheet] = useState<TaskChoiceSheetConfig | null>(null);
   const qc = useQueryClient();
 
   const task = useQuery({
@@ -203,40 +229,51 @@ export function TaskDetailScreen({ id }: Props) {
 
   const copyMutation = useCopyTask();
   const handleCopy = useCallback(() => {
-    Alert.alert(
-      "Copy Task",
-      "Duplicate this task including assignees, followers, checklist items and attachments?",
-      [
-        { text: "Cancel", style: "cancel" },
+    setChoiceSheet({
+      title: "Copy task",
+      eyebrow: "Task action",
+      subtitle: "Duplicate this task including assignees, followers, checklist items and attachments.",
+      icon: "copy-outline",
+      options: [
         {
-          text: "Copy",
-          onPress: () => copyMutation.mutate({ taskId: id }, {
-            onSuccess: (result: any) => {
-              Toast.show({ type: "success", text1: "Task copied", text2: `New task #${result.id}` });
-              qc.invalidateQueries({ queryKey: ["tasks"] });
-            },
-            onError: (err: any) => Toast.show({ type: "error", text1: "Copy failed", text2: err?.message }),
-          }),
+          key: "copy",
+          label: "Create duplicate",
+          description: "A new task will be created from this one.",
+          icon: "copy-outline",
+          color: "#0369A1",
+          onPress: () => {
+            copyMutation.mutate({ taskId: id }, {
+              onSuccess: (result: any) => {
+                Toast.show({ type: "success", text1: "Task copied", text2: `New task #${result.id}` });
+                qc.invalidateQueries({ queryKey: ["tasks"] });
+              },
+              onError: (err: any) => Toast.show({ type: "error", text1: "Copy failed", text2: err?.message }),
+            });
+          },
         },
       ],
-    );
+    });
   }, [copyMutation, id, qc]);
 
   const handleDelete = useCallback(() => {
-    Alert.alert(
-      "Delete task",
-      "This action cannot be undone.",
-      [
-        { text: "Cancel", style: "cancel" },
+    setChoiceSheet({
+      title: "Delete task",
+      eyebrow: "Danger zone",
+      subtitle: "This action cannot be undone.",
+      icon: "trash-outline",
+      options: [
         {
-          text: "Delete",
-          style: "destructive",
+          key: "delete",
+          label: "Delete permanently",
+          description: row?.name || "Remove this task from the CRM.",
+          icon: "trash-outline",
+          color: "#DC2626",
+          destructive: true,
           onPress: () => deleteMutation.mutate(),
         },
       ],
-      { cancelable: true }
-    );
-  }, [deleteMutation]);
+    });
+  }, [deleteMutation, row?.name]);
 
   if (task.isLoading && !row) {
     return (
@@ -275,6 +312,15 @@ export function TaskDetailScreen({ id }: Props) {
   const hourlyRate = numericOrZero(row.hourly_rate);
   const totalLogged = formatDuration(row.total_logged_time);
   const isComplete = String(row.status) === "5";
+  const updateTaskFields = async (payload: Record<string, any>, successMessage: string) => {
+    try {
+      await updateEntity("tasks", id, payload);
+      await task.refetch();
+      Toast.show({ type: "success", text1: successMessage });
+    } catch (err: any) {
+      Toast.show({ type: "error", text1: "Update failed", text2: err?.message?.slice(0, 90) });
+    }
+  };
 
   return (
     <KeyboardAvoidingView
@@ -505,22 +551,48 @@ export function TaskDetailScreen({ id }: Props) {
           await quickTaskAction(id, "timer/start", "POST", "Timer started");
         }}
         onStatus={() => {
-          Alert.alert("Change Status", "Select new status:", [
-            { text: "Not Started", onPress: () => { updateEntity("tasks", id, { status: 1 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "In Progress", onPress: () => { updateEntity("tasks", id, { status: 4 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Testing", onPress: () => { updateEntity("tasks", id, { status: 3 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Await Feedback", onPress: () => { updateEntity("tasks", id, { status: 2 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Cancel", style: "cancel" as const },
-          ]);
+          const currentStatus = String(row.status || "1");
+          setChoiceSheet({
+            title: "Change status",
+            eyebrow: "Task workflow",
+            subtitle: "Move this task to the right working state.",
+            icon: "swap-horizontal-outline",
+            options: [
+              { key: "1", label: TASK_STATUS["1"].label, description: "Queued and not yet active.", icon: "ellipse-outline" as const, color: TASK_STATUS["1"].color },
+              { key: "4", label: TASK_STATUS["4"].label, description: "Work is currently underway.", icon: "play-circle-outline" as const, color: TASK_STATUS["4"].color },
+              { key: "3", label: TASK_STATUS["3"].label, description: "Ready for review or validation.", icon: "flask-outline" as const, color: TASK_STATUS["3"].color },
+              { key: "2", label: TASK_STATUS["2"].label, description: "Waiting for another response.", icon: "chatbubble-ellipses-outline" as const, color: TASK_STATUS["2"].color },
+            ].map((option) => ({
+              ...option,
+              selected: option.key === currentStatus,
+              onPress: () => updateTaskFields({ status: Number(option.key) }, "Status updated"),
+            })),
+          });
         }}
         onPriority={() => {
-          Alert.alert("Change Priority", "Select priority:", [
-            { text: "Low", onPress: () => { updateEntity("tasks", id, { priority: 1 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Medium", onPress: () => { updateEntity("tasks", id, { priority: 2 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "High", onPress: () => { updateEntity("tasks", id, { priority: 3 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Urgent", onPress: () => { updateEntity("tasks", id, { priority: 4 }).then(() => task.refetch()).catch(() => {}); } },
-            { text: "Cancel", style: "cancel" as const },
-          ]);
+          const currentPriority = String(row.priority || "2");
+          setChoiceSheet({
+            title: "Change priority",
+            eyebrow: "Task priority",
+            subtitle: "Set how prominently this task should surface.",
+            icon: "flag-outline",
+            options: Object.entries(PRIORITY).map(([key, value]) => ({
+              key,
+              label: value.label,
+              description:
+                key === "1"
+                  ? "Normal background work."
+                  : key === "2"
+                    ? "Needs steady attention."
+                    : key === "3"
+                      ? "Important and time sensitive."
+                      : "Escalated work that needs fast handling.",
+              icon: "flag-outline" as const,
+              color: value.color,
+              selected: key === currentPriority,
+              onPress: () => updateTaskFields({ priority: Number(key) }, "Priority updated"),
+            })),
+          });
         }}
         onCopy={handleCopy}
         onTogglePublic={() => {
@@ -531,6 +603,7 @@ export function TaskDetailScreen({ id }: Props) {
             });
         }}
       />
+      <TaskChoiceSheet config={choiceSheet} onClose={() => setChoiceSheet(null)} />
     </KeyboardAvoidingView>
   );
 }
@@ -800,6 +873,173 @@ function TaskActionButton({
         {label}
       </Text>
     </TouchableOpacity>
+  );
+}
+
+function TaskChoiceSheet({
+  config,
+  onClose,
+}: {
+  config: TaskChoiceSheetConfig | null;
+  onClose: () => void;
+}) {
+  const [busyKey, setBusyKey] = useState<string | null>(null);
+
+  if (!config) return null;
+
+  const runOption = async (option: TaskChoiceOption) => {
+    if (busyKey) return;
+    try {
+      setBusyKey(option.key);
+      onClose();
+      await option.onPress();
+    } finally {
+      setBusyKey(null);
+    }
+  };
+
+  return (
+    <Modal
+      visible={!!config}
+      animationType="fade"
+      transparent
+      statusBarTranslucent
+      navigationBarTranslucent
+      onRequestClose={onClose}
+    >
+      <View className="flex-1 justify-end bg-black/45">
+        <Pressable style={StyleSheet.absoluteFillObject} onPress={onClose} />
+        <View className="px-3 pb-4">
+          <View className="bg-white rounded-3xl overflow-hidden shadow-lg">
+            <View className="bg-primary px-5 pt-5 pb-4">
+              <View className="flex-row items-start">
+                <View className="w-10 h-10 rounded-2xl bg-white/20 items-center justify-center">
+                  <Ionicons name={config.icon} size={21} color="#FFFFFF" />
+                </View>
+                <View className="flex-1 ml-3">
+                  {config.eyebrow ? (
+                    <Text className="text-white/75 text-xs uppercase tracking-wide">
+                      {config.eyebrow}
+                    </Text>
+                  ) : null}
+                  <Text className="text-white text-xl font-bold mt-0.5" numberOfLines={2}>
+                    {config.title}
+                  </Text>
+                  {config.subtitle ? (
+                    <Text className="text-white/85 text-sm mt-1 leading-5" numberOfLines={3}>
+                      {config.subtitle}
+                    </Text>
+                  ) : null}
+                </View>
+                <TouchableOpacity
+                  onPress={onClose}
+                  className="w-9 h-9 rounded-full bg-white/15 items-center justify-center ml-2"
+                  hitSlop={8}
+                >
+                  <Ionicons name="close" size={19} color="#FFFFFF" />
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <ScrollView
+              style={{ maxHeight: 430 }}
+              contentContainerStyle={{ padding: 12, paddingBottom: 4 }}
+              showsVerticalScrollIndicator={false}
+            >
+              {config.options.map((option) => {
+                const color = option.destructive ? "#DC2626" : option.color || "#F59E0B";
+                const bg = option.destructive
+                  ? "#FEF2F2"
+                  : option.selected
+                    ? "#FFF7ED"
+                    : "#F8FAFC";
+                const border = option.destructive
+                  ? "#FECACA"
+                  : option.selected
+                    ? "#FDBA74"
+                    : "#E2E8F0";
+                return (
+                  <TouchableOpacity
+                    key={option.key}
+                    onPress={() => runOption(option)}
+                    activeOpacity={0.78}
+                    style={{
+                      flexDirection: "row",
+                      alignItems: "center",
+                      padding: 12,
+                      borderRadius: 18,
+                      backgroundColor: bg,
+                      borderWidth: 1,
+                      borderColor: border,
+                      marginBottom: 8,
+                    }}
+                  >
+                    <View
+                      style={{
+                        width: 40,
+                        height: 40,
+                        borderRadius: 16,
+                        alignItems: "center",
+                        justifyContent: "center",
+                        overflow: "hidden",
+                        backgroundColor: option.selected ? "#FFFFFF" : "#FFFFFF",
+                        borderWidth: option.avatarUri ? 1 : 0,
+                        borderColor: "#E2E8F0",
+                      }}
+                    >
+                      {option.avatarUri ? (
+                        <Image source={{ uri: option.avatarUri }} style={{ width: 40, height: 40 }} />
+                      ) : option.initial ? (
+                        <Text style={{ color, fontWeight: "800", fontSize: 15 }}>
+                          {option.initial}
+                        </Text>
+                      ) : option.icon ? (
+                        <Ionicons name={option.icon} size={20} color={color} />
+                      ) : (
+                        <Ionicons name="ellipse-outline" size={20} color={color} />
+                      )}
+                    </View>
+                    <View style={{ flex: 1, marginLeft: 12 }}>
+                      <Text
+                        style={{
+                          color: option.destructive ? "#991B1B" : "#0F172A",
+                          fontSize: 15,
+                          fontWeight: "800",
+                        }}
+                        numberOfLines={1}
+                      >
+                        {option.label}
+                      </Text>
+                      {option.description ? (
+                        <Text
+                          style={{ color: "#64748B", fontSize: 12, marginTop: 2, lineHeight: 16 }}
+                          numberOfLines={2}
+                        >
+                          {option.description}
+                        </Text>
+                      ) : null}
+                    </View>
+                    {option.selected ? (
+                      <Ionicons name="checkmark-circle" size={22} color="#F59E0B" />
+                    ) : (
+                      <Ionicons name="chevron-forward" size={18} color="#CBD5E1" />
+                    )}
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+
+            {config.footerText ? (
+              <Text className="px-5 pb-4 pt-1 text-xs text-muted">
+                {config.footerText}
+              </Text>
+            ) : (
+              <View className="h-3" />
+            )}
+          </View>
+        </View>
+      </View>
+    </Modal>
   );
 }
 
@@ -1451,29 +1691,37 @@ function InteractivePeopleBlock({
   onRefresh: () => void;
   allStaff: any[];
 }) {
+  const [choiceSheet, setChoiceSheet] = useState<TaskChoiceSheetConfig | null>(null);
   const shown = rows.slice(0, 5);
   const overflow = Math.max(0, rows.length - shown.length);
   const endpoint = type === "assignee" ? "tasks/assignments" : "tasks/followers";
   const removeEndpoint = type === "assignee" ? "tasks/assignments" : "tasks/followers";
+  const typeLabel = type === "assignee" ? "assignee" : "follower";
 
   const handleRemove = useCallback((rowId: string) => {
-    Alert.alert(
-      `Remove ${type}?`,
-      `Remove ${rows.find((r) => r.id === rowId)?.name || "this person"} from this task?`,
-      [
-        { text: "Cancel", style: "cancel" },
+    const person = rows.find((r) => r.id === rowId);
+    setChoiceSheet({
+      title: `Remove ${typeLabel}`,
+      eyebrow: "Task people",
+      subtitle: `Remove ${person?.name || "this person"} from this task.`,
+      icon: type === "assignee" ? "people-outline" : "eye-outline",
+      options: [
         {
-          text: "Remove",
-          style: "destructive",
+          key: "remove",
+          label: "Remove from task",
+          description: person?.name,
+          icon: "person-remove-outline",
+          color: "#DC2626",
+          destructive: true,
           onPress: () => {
             apiRequest(`${removeEndpoint}/${encodeURIComponent(rowId)}`, { method: "DELETE" })
-              .then(() => { onRefresh(); Toast.show({ type: "success", text1: `${type} removed` }); })
+              .then(() => { onRefresh(); Toast.show({ type: "success", text1: `${typeLabel} removed` }); })
               .catch((e: any) => Toast.show({ type: "error", text1: "Failed", text2: e?.message }));
           },
         },
       ],
-    );
-  }, [rows, type, removeEndpoint, onRefresh]);
+    });
+  }, [rows, type, typeLabel, removeEndpoint, onRefresh]);
 
   const handleAdd = useCallback(() => {
     const available = allStaff.filter((s: any) => {
@@ -1481,87 +1729,101 @@ function InteractivePeopleBlock({
       return !rows.some((r) => r.id === sid);
     });
     if (available.length === 0) {
-      Alert.alert("No one available", "All staff members are already assigned or following this task.");
+      Toast.show({
+        type: "info",
+        text1: "No one available",
+        text2: "Every staff member is already on this task.",
+      });
       return;
     }
-    const buttons: any[] = available.slice(0, 10).map((s: any) => {
-      const sid = String(s.staffid ?? s.id);
-      const name = joinName(s.firstname, s.lastname) || `Staff #${sid}`;
-      return {
-        text: name,
-        onPress: () => {
-          apiRequest(endpoint, {
-            method: "POST",
-            body: JSON.stringify({ taskid: taskId, staff_id: sid }),
-          })
-            .then(() => { onRefresh(); Toast.show({ type: "success", text1: `${type} added` }); })
-            .catch((e: any) => Toast.show({ type: "error", text1: "Failed", text2: e?.message }));
-        },
-      };
+    const visibleStaff = available.slice(0, 25);
+    setChoiceSheet({
+      title: `Add ${typeLabel}`,
+      eyebrow: "Task people",
+      subtitle: "Select a staff member to add to this task.",
+      icon: type === "assignee" ? "people-outline" : "eye-outline",
+      footerText: available.length > visibleStaff.length ? `Showing 25 of ${available.length} available staff.` : undefined,
+      options: visibleStaff.map((s: any) => {
+        const sid = String(s.staffid ?? s.id);
+        const name = joinName(s.firstname, s.lastname) || `Staff #${sid}`;
+        return {
+          key: sid,
+          label: name,
+          description: s.email || s.role || `Staff #${sid}`,
+          avatarUri: staffAvatarUrl(sid, s.profile_image, "thumb") || undefined,
+          initial: name[0]?.toUpperCase(),
+          color: "#2563EB",
+          onPress: () => {
+            apiRequest(endpoint, {
+              method: "POST",
+              body: JSON.stringify({ taskid: taskId, staff_id: sid }),
+            })
+              .then(() => { onRefresh(); Toast.show({ type: "success", text1: `${typeLabel} added` }); })
+              .catch((e: any) => Toast.show({ type: "error", text1: "Failed", text2: e?.message }));
+          },
+        };
+      }),
     });
-    if (available.length > 10) {
-      buttons.push({ text: `... and ${available.length - 10} more`, style: "cancel" });
-    }
-    buttons.push({ text: "Cancel", style: "cancel" });
-    Alert.alert(`Add ${type}`, "Select a staff member:", buttons);
-  }, [allStaff, rows, type, endpoint, taskId, onRefresh]);
+  }, [allStaff, rows, type, typeLabel, endpoint, taskId, onRefresh]);
 
   return (
-    <View className="bg-white rounded-2xl p-3 shadow-sm">
-      <View className="flex-row items-center mb-2">
-        <Ionicons name={icon} size={13} color="#64748B" />
-        <Text className="text-xs uppercase tracking-wide text-muted ml-1.5">{title}</Text>
-      </View>
-      <View className="flex-row items-center">
-        {shown.map((r, idx) => (
+    <>
+      <View className="bg-white rounded-2xl p-3 shadow-sm">
+        <View className="flex-row items-center mb-2">
+          <Ionicons name={icon} size={13} color="#64748B" />
+          <Text className="text-xs uppercase tracking-wide text-muted ml-1.5">{title}</Text>
+        </View>
+        <View className="flex-row items-center">
+          {shown.map((r, idx) => (
+            <TouchableOpacity
+              key={r.id}
+              onLongPress={() => handleRemove(r.id)}
+              style={{ marginLeft: idx === 0 ? 0 : -8, zIndex: shown.length - idx }}
+            >
+              <Avatar name={r.name} uri={r.avatar} />
+            </TouchableOpacity>
+          ))}
+          {overflow > 0 ? (
+            <View
+              style={{
+                marginLeft: -8,
+                width: 28,
+                height: 28,
+                borderRadius: 14,
+                backgroundColor: "#E2E8F0",
+                alignItems: "center",
+                justifyContent: "center",
+                borderWidth: 2,
+                borderColor: "#FFFFFF",
+              }}
+            >
+              <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>+{overflow}</Text>
+            </View>
+          ) : null}
           <TouchableOpacity
-            key={r.id}
-            onLongPress={() => handleRemove(r.id)}
-            style={{ marginLeft: idx === 0 ? 0 : -8, zIndex: shown.length - idx }}
-          >
-            <Avatar name={r.name} uri={r.avatar} />
-          </TouchableOpacity>
-        ))}
-        {overflow > 0 ? (
-          <View
+            onPress={handleAdd}
             style={{
-              marginLeft: -8,
+              marginLeft: rows.length > 0 ? -4 : 0,
               width: 28,
               height: 28,
               borderRadius: 14,
-              backgroundColor: "#E2E8F0",
+              backgroundColor: "#EFF6FF",
               alignItems: "center",
               justifyContent: "center",
-              borderWidth: 2,
-              borderColor: "#FFFFFF",
+              borderWidth: 1.5,
+              borderColor: "#BFDBFE",
+              borderStyle: "dashed",
             }}
           >
-            <Text style={{ fontSize: 10, fontWeight: "700", color: "#475569" }}>+{overflow}</Text>
-          </View>
-        ) : null}
-        {/* Add button */}
-        <TouchableOpacity
-          onPress={handleAdd}
-          style={{
-            marginLeft: rows.length > 0 ? -4 : 0,
-            width: 28,
-            height: 28,
-            borderRadius: 14,
-            backgroundColor: "#EFF6FF",
-            alignItems: "center",
-            justifyContent: "center",
-            borderWidth: 1.5,
-            borderColor: "#BFDBFE",
-            borderStyle: "dashed",
-          }}
-        >
-          <Ionicons name="add" size={16} color="#2563EB" />
-        </TouchableOpacity>
+            <Ionicons name="add" size={16} color="#2563EB" />
+          </TouchableOpacity>
+        </View>
+        <Text className="text-xs text-muted mt-2" numberOfLines={1}>
+          {rows.map((r) => firstName(r.name)).join(", ")}
+        </Text>
       </View>
-      <Text className="text-xs text-muted mt-2" numberOfLines={1}>
-        {rows.map((r) => firstName(r.name)).join(", ")}
-      </Text>
-    </View>
+      <TaskChoiceSheet config={choiceSheet} onClose={() => setChoiceSheet(null)} />
+    </>
   );
 }
 

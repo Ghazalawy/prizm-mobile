@@ -36,6 +36,9 @@ export function ReportListScreen() {
   const router = useRouter();
   const [search, setSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState<number | undefined>();
+  const [selectedStatus, setSelectedStatus] = useState<string | undefined>();
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const { canCreate: canCreatePerm, isAdmin, hasAnyPermission } = usePermissions();
   const canCreateReport = isAdmin || canCreatePerm("prizm_reports") || hasAnyPermission("prizm_reports");
@@ -44,9 +47,12 @@ export function ReportListScreen() {
     () => ({
       search: search || undefined,
       project_id: selectedProject,
+      status: selectedStatus,
+      date_from: dateFrom || undefined,
+      date_to: dateTo || undefined,
       limit: 100,
     }),
-    [search, selectedProject]
+    [search, selectedProject, selectedStatus, dateFrom, dateTo]
   );
 
   const { data, isLoading, isError, refetch, isRefetching } = useReportsList(filters);
@@ -208,6 +214,56 @@ export function ReportListScreen() {
             <Ionicons name="chevron-down-outline" size={16} color="#94A3B8" />
           )}
         </TouchableOpacity>
+
+        {/* Status filter */}
+        <View className="flex-row gap-2 mt-2">
+          {[
+            { key: undefined, label: "All" },
+            { key: "1", label: "Active" },
+            { key: "2", label: "Approved" },
+            { key: "0", label: "Draft" },
+          ].map((opt) => {
+            const active = selectedStatus === opt.key;
+            return (
+              <TouchableOpacity
+                key={opt.key ?? "all"}
+                onPress={() => setSelectedStatus(opt.key)}
+                className="px-3 py-1.5 rounded-full"
+                style={{
+                  backgroundColor: active ? ACCENT : "#F1F5F9",
+                }}
+                activeOpacity={0.7}
+              >
+                <Text
+                  className="text-xs font-semibold"
+                  style={{ color: active ? "#FFF" : "#64748B" }}
+                >
+                  {opt.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+
+        {/* Date range */}
+        <View className="flex-row gap-2 mt-2">
+          <TextInput
+            className="flex-1 bg-slate-100 rounded-lg px-3 py-2 text-xs text-slate-700"
+            placeholder="From (YYYY-MM-DD)"
+            placeholderTextColor="#94A3B8"
+            value={dateFrom}
+            onChangeText={setDateFrom}
+            keyboardType="numbers-and-punctuation"
+          />
+          <TextInput
+            className="flex-1 bg-slate-100 rounded-lg px-3 py-2 text-xs text-slate-700"
+            placeholder="To (YYYY-MM-DD)"
+            placeholderTextColor="#94A3B8"
+            value={dateTo}
+            onChangeText={setDateTo}
+            keyboardType="numbers-and-punctuation"
+          />
+        </View>
       </View>
 
       {/* List */}

@@ -50,6 +50,10 @@ export type InboxItem = {
    *  Date.parse on the client. Null when the source row has no
    *  usable timestamp (degrades gracefully — no badge rendered). */
   triggered_at?: string | null;
+  /** Server-backed notification read flags. Used only by the notifications
+   *  category, which mirrors the web ERP's isread/isread_inline behavior. */
+  read?: boolean;
+  inlineRead?: boolean;
 };
 
 export type InboxSummary = {

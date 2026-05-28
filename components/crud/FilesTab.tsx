@@ -11,6 +11,7 @@ import { useCallback, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { listEntities, normalizeList, deleteEntity, buildQS, buildAuthHeaders } from "@/lib/api";
 import {
+  pickClipboardImage,
   pickDocument,
   pickImage,
   takePhoto,
@@ -146,6 +147,13 @@ export function FilesTab({ relType, relId, color }: FilesTabProps) {
           disabled={uploading}
           onPress={() => handleUpload("File", pickDocument)}
         />
+        <UploadButton
+          icon="clipboard-outline"
+          label="Paste"
+          color={color}
+          disabled={uploading}
+          onPress={() => handleUpload("Clipboard", pickClipboardImage)}
+        />
       </View>
 
       {uploading ? (
@@ -169,7 +177,7 @@ export function FilesTab({ relType, relId, color }: FilesTabProps) {
           <Ionicons name="document-outline" size={48} color="#94A3B8" />
           <Text className="text-muted mt-3">No files yet</Text>
           <Text className="text-muted text-xs mt-1 text-center">
-            Tap Camera / Gallery / File above to attach.
+            Tap Camera, Gallery, File, or Paste above to attach.
           </Text>
         </View>
       ) : (

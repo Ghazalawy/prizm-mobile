@@ -2,6 +2,8 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  KeyboardAvoidingView,
+  Platform,
   RefreshControl,
   ScrollView,
   Text,
@@ -28,8 +30,15 @@ import { API_URL, staffAvatarUrl } from "@/lib/config";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
-import { pickImage, takePhoto, uploadAttachment, type PickedFile } from "@/lib/files";
-import * as Clipboard from "expo-clipboard";
+import {
+  normalizePastedFile,
+  pickClipboardImage,
+  pickImage,
+  takePhoto,
+  uploadAttachment,
+  type PickedFile,
+} from "@/lib/files";
+import PasteInput, { type PastedFile } from "@mattermost/react-native-paste-input";
 import {
   useCopyTask,
   useTaskTimesheets,
@@ -268,7 +277,11 @@ export function TaskDetailScreen({ id }: Props) {
   const isComplete = String(row.status) === "5";
 
   return (
-    <View className="flex-1 bg-surface">
+    <KeyboardAvoidingView
+      className="flex-1 bg-surface"
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      keyboardVerticalOffset={0}
+    >
       {/* Header — back, title fragment, edit/delete. Compact 48px. */}
       <View className="bg-white border-b border-slate-200 flex-row items-center px-3" style={{ minHeight: 48 }}>
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
@@ -296,7 +309,7 @@ export function TaskDetailScreen({ id }: Props) {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 12, paddingBottom: 32 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 96 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
       >
         {/* ── 1. Hero ──────────────────────────────────────────────── */}
@@ -476,90 +489,49 @@ export function TaskDetailScreen({ id }: Props) {
           </View>
         </View>
 
-        {/* ── 7. Quick actions ─────────────────────────────────────── */}
-        <View className="flex-row flex-wrap mt-3">
-          {!isComplete ? (
-            <QuickActionButton
-              icon="checkmark-done-circle-outline"
-              label="Complete"
-              color="#15803D"
-              bg="#DCFCE7"
-              onPress={() => quickTaskAction(id, "mark_complete", "PUT", "Task marked complete")}
-            />
-          ) : (
-            <QuickActionButton
-              icon="refresh-circle-outline"
-              label="Reopen"
-              color="#0369A1"
-              bg="#E0F2FE"
-              onPress={() => quickTaskAction(id, "reopen", "PUT", "Task reopened")}
-            />
-          )}
-          <QuickActionButton
-            icon="play-circle-outline"
-            label="Timer"
-            color="#B45309"
-            bg="#FEF3C7"
-            onPress={() => quickTaskAction(id, "timer/start", "POST", "Timer started")}
-            marginLeft={8}
-          />
-          <QuickActionButton
-            icon="swap-horizontal-outline"
-            label="Status"
-            color="#7C3AED"
-            bg="#F5F3FF"
-            onPress={() => {
-              Alert.alert("Change Status", "Select new status:", [
-                { text: "Not Started", onPress: () => { updateEntity("tasks", id, { status: 1 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "In Progress", onPress: () => { updateEntity("tasks", id, { status: 4 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Testing", onPress: () => { updateEntity("tasks", id, { status: 3 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Await Feedback", onPress: () => { updateEntity("tasks", id, { status: 2 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Cancel", style: "cancel" as const },
-              ]);
-            }}
-            marginLeft={8}
-          />
-          <QuickActionButton
-            icon="flag-outline"
-            label="Priority"
-            color="#B45309"
-            bg="#FEF3C7"
-            onPress={() => {
-              Alert.alert("Change Priority", "Select priority:", [
-                { text: "Low", onPress: () => { updateEntity("tasks", id, { priority: 1 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Medium", onPress: () => { updateEntity("tasks", id, { priority: 2 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "High", onPress: () => { updateEntity("tasks", id, { priority: 3 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Urgent", onPress: () => { updateEntity("tasks", id, { priority: 4 }).then(() => task.refetch()).catch(() => {}); } },
-                { text: "Cancel", style: "cancel" as const },
-              ]);
-            }}
-            marginLeft={8}
-          />
-          <QuickActionButton
-            icon="copy-outline"
-            label="Copy"
-            color="#0369A1"
-            bg="#E0F2FE"
-            onPress={handleCopy}
-            marginLeft={8}
-          />
-          <QuickActionButton
-            icon={row.is_public == 1 ? "eye-off-outline" : "eye-outline"}
-            label={row.is_public == 1 ? "Make Private" : "Make Public"}
-            color="#7C3AED"
-            bg="#F5F3FF"
-            onPress={() => {
-              updateEntity("tasks", id, { is_public: row.is_public == 1 ? 0 : 1 })
-                .then(() => task.refetch())
-                .catch(() => {
-                  Toast.show({ type: "error", text1: "Failed to update visibility" });
-                });
-            }}
-            marginLeft={8}
-          />
-        </View>
       </ScrollView>
-    </View>
+      <TaskActionBar
+        isComplete={isComplete}
+        isPublic={row.is_public == 1}
+        onComplete={async () => {
+          const ok = await quickTaskAction(id, "mark_complete", "PUT", "Task marked complete");
+          if (ok) task.refetch();
+        }}
+        onReopen={async () => {
+          const ok = await quickTaskAction(id, "reopen", "PUT", "Task reopened");
+          if (ok) task.refetch();
+        }}
+        onTimer={async () => {
+          await quickTaskAction(id, "timer/start", "POST", "Timer started");
+        }}
+        onStatus={() => {
+          Alert.alert("Change Status", "Select new status:", [
+            { text: "Not Started", onPress: () => { updateEntity("tasks", id, { status: 1 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "In Progress", onPress: () => { updateEntity("tasks", id, { status: 4 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Testing", onPress: () => { updateEntity("tasks", id, { status: 3 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Await Feedback", onPress: () => { updateEntity("tasks", id, { status: 2 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Cancel", style: "cancel" as const },
+          ]);
+        }}
+        onPriority={() => {
+          Alert.alert("Change Priority", "Select priority:", [
+            { text: "Low", onPress: () => { updateEntity("tasks", id, { priority: 1 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Medium", onPress: () => { updateEntity("tasks", id, { priority: 2 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "High", onPress: () => { updateEntity("tasks", id, { priority: 3 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Urgent", onPress: () => { updateEntity("tasks", id, { priority: 4 }).then(() => task.refetch()).catch(() => {}); } },
+            { text: "Cancel", style: "cancel" as const },
+          ]);
+        }}
+        onCopy={handleCopy}
+        onTogglePublic={() => {
+          updateEntity("tasks", id, { is_public: row.is_public == 1 ? 0 : 1 })
+            .then(() => task.refetch())
+            .catch(() => {
+              Toast.show({ type: "error", text1: "Failed to update visibility" });
+            });
+        }}
+      />
+    </KeyboardAvoidingView>
   );
 }
 
@@ -744,44 +716,89 @@ function Avatar({
   );
 }
 
-function QuickActionButton({
+function TaskActionBar({
+  isComplete,
+  isPublic,
+  onComplete,
+  onReopen,
+  onTimer,
+  onStatus,
+  onPriority,
+  onCopy,
+  onTogglePublic,
+}: {
+  isComplete: boolean;
+  isPublic: boolean;
+  onComplete: () => void;
+  onReopen: () => void;
+  onTimer: () => void;
+  onStatus: () => void;
+  onPriority: () => void;
+  onCopy: () => void;
+  onTogglePublic: () => void;
+}) {
+  return (
+    <View className="bg-white border-t border-slate-200">
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8, gap: 8 }}
+      >
+        <TaskActionButton
+          icon={isComplete ? "refresh-circle-outline" : "checkmark-done-circle-outline"}
+          label={isComplete ? "Reopen" : "Done"}
+          color={isComplete ? "#0369A1" : "#15803D"}
+          onPress={isComplete ? onReopen : onComplete}
+        />
+        <TaskActionButton icon="play-circle-outline" label="Timer" color="#B45309" onPress={onTimer} />
+        <TaskActionButton icon="swap-horizontal-outline" label="Status" color="#7C3AED" onPress={onStatus} />
+        <TaskActionButton icon="flag-outline" label="Priority" color="#B45309" onPress={onPriority} />
+        <TaskActionButton icon="copy-outline" label="Copy" color="#0369A1" onPress={onCopy} />
+        <TaskActionButton
+          icon={isPublic ? "eye-off-outline" : "eye-outline"}
+          label={isPublic ? "Private" : "Public"}
+          color="#7C3AED"
+          onPress={onTogglePublic}
+        />
+      </ScrollView>
+    </View>
+  );
+}
+
+function TaskActionButton({
   icon,
   label,
   color,
-  bg,
   onPress,
-  marginLeft = 0,
-  marginRight = 0,
-  marginBottom = 0,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   color: string;
-  bg: string;
   onPress: () => void;
-  marginLeft?: number;
-  marginRight?: number;
-  marginBottom?: number;
 }) {
   return (
     <TouchableOpacity
       onPress={onPress}
       activeOpacity={0.7}
       style={{
-        flex: 1,
-        flexDirection: "row",
+        width: 68,
+        minHeight: 52,
         alignItems: "center",
         justifyContent: "center",
-        backgroundColor: bg,
-        paddingVertical: 11,
-        borderRadius: 12,
-        marginLeft,
-        marginRight,
-        marginBottom,
+        borderRadius: 10,
+        backgroundColor: "#F8FAFC",
+        borderWidth: 1,
+        borderColor: "#E2E8F0",
       }}
     >
-      <Ionicons name={icon} size={16} color={color} style={{ marginRight: 6 }} />
-      <Text style={{ color, fontSize: 13, fontWeight: "600" }}>{label}</Text>
+      <Ionicons name={icon} size={19} color={color} />
+      <Text
+        style={{ color: "#475569", fontSize: 10, fontWeight: "700", marginTop: 3, textAlign: "center" }}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+      >
+        {label}
+      </Text>
     </TouchableOpacity>
   );
 }
@@ -1055,20 +1072,30 @@ function CommentsPanel({ taskId, taskRefetch }: { taskId: string; taskRefetch?: 
 
   const handlePasteImage = useCallback(async () => {
     try {
-      const hasImage = await Clipboard.hasImageAsync();
-      if (!hasImage) {
+      const file = await pickClipboardImage();
+      if (!file) {
         Alert.alert("No image", "No image found in clipboard. Copy an image first.");
         return;
       }
-      const result = await Clipboard.getImageAsync({ format: "png" });
-      if (result?.data) {
-        const uri = result.data.startsWith("data:") ? result.data : `data:image/png;base64,${result.data}`;
-        const name = `pasted-${Date.now()}.png`;
-        setAttachments((prev) => [...prev, { uri, name, mimeType: "image/png" }]);
-      }
-    } catch {
-      Alert.alert("Paste failed", "Could not read image from clipboard.");
+      setAttachments((prev) => [...prev, file]);
+      Toast.show({ type: "success", text1: "Snapshot attached", text2: file.name });
+    } catch (e: any) {
+      Alert.alert("Paste failed", e?.message || "Could not read image from clipboard.");
     }
+  }, []);
+
+  const handleNativePaste = useCallback((error: string | null | undefined, files: PastedFile[]) => {
+    if (error) {
+      Toast.show({ type: "error", text1: "Paste failed", text2: error.slice(0, 90) });
+      return;
+    }
+    if (!files.length) return;
+    const pasted = files.map(normalizePastedFile);
+    setAttachments((prev) => [...prev, ...pasted]);
+    Toast.show({
+      type: "success",
+      text1: pasted.length === 1 ? "Snapshot attached" : `${pasted.length} files attached`,
+    });
   }, []);
 
   const removeAttachment = useCallback((idx: number) => {
@@ -1176,13 +1203,35 @@ function CommentsPanel({ taskId, taskRefetch }: { taskId: string; taskRefetch?: 
         >
           <Ionicons name="clipboard-outline" size={18} color="#64748B" />
         </TouchableOpacity>
-        <TextInput
+        <PasteInput
           value={draft}
           onChangeText={setDraft}
+          onPaste={handleNativePaste}
+          disableCopyPaste={false}
           placeholder="Add a comment…"
           placeholderTextColor="#94A3B8"
           multiline
-          className="flex-1 bg-surface rounded-lg px-3 py-2 text-sm text-foreground"
+          blurOnSubmit={false}
+          underlineColorAndroid="transparent"
+          keyboardType="default"
+          disableFullscreenUI
+          autoComplete="off"
+          textContentType="none"
+          style={[
+            {
+              flex: 1,
+              minHeight: 40,
+              maxHeight: 104,
+              borderRadius: 10,
+              backgroundColor: "#F8FAFC",
+              paddingHorizontal: 12,
+              paddingVertical: 8,
+              color: "#0F172A",
+              fontSize: 14,
+              textAlignVertical: "top",
+            },
+            rtlTextStyle(draft),
+          ]}
         />
         <TouchableOpacity
           onPress={handleSend}
@@ -1253,7 +1302,7 @@ async function quickTaskAction(
   endpoint: string,
   method: "POST" | "PUT",
   successMessage: string
-) {
+): Promise<boolean> {
   try {
     const headers = await buildAuthHeaders();
     const res = await fetch(`${API_URL}/tasks/${encodeURIComponent(id)}/${endpoint}`, {
@@ -1270,12 +1319,14 @@ async function quickTaskAction(
     }
     if (body && body.status === false) throw new Error(body.message || "Action failed");
     Toast.show({ type: "success", text1: successMessage });
+    return true;
   } catch (err: any) {
     Toast.show({
       type: "error",
       text1: "Action failed",
       text2: err?.message?.slice(0, 90),
     });
+    return false;
   }
 }
 

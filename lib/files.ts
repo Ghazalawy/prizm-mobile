@@ -1,6 +1,7 @@
 import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system/legacy";
+import * as Clipboard from "expo-clipboard";
 import { API_URL } from "./config";
 import { buildAuthHeaders, parseApiResponse } from "./api";
 import { getSessionGeneration } from "./auth-events";
@@ -15,6 +16,57 @@ export type PickedFile = {
   mimeType: string;
   sizeBytes?: number;
 };
+
+export type NativePastedFile = {
+  uri: string;
+  fileName?: string | null;
+  name?: string | null;
+  type?: string | null;
+  mimeType?: string | null;
+  fileSize?: number | null;
+  sizeBytes?: number | null;
+};
+
+export function normalizePastedFile(file: NativePastedFile): PickedFile {
+  const mimeType = file.type || file.mimeType || "application/octet-stream";
+  const ext = extensionForMime(mimeType);
+  return {
+    uri: file.uri,
+    name: file.fileName || file.name || `pasted-${Date.now()}${ext}`,
+    mimeType,
+    sizeBytes: file.fileSize ?? file.sizeBytes ?? undefined,
+  };
+}
+
+export async function pickClipboardImage(): Promise<PickedFile | null> {
+  const hasImage = await Clipboard.hasImageAsync();
+  if (!hasImage) return null;
+
+  const result = await Clipboard.getImageAsync({ format: "png" });
+  if (!result?.data) return null;
+
+  const cacheDir = FileSystem.cacheDirectory;
+  if (!cacheDir) {
+    throw new Error("Device cache is unavailable.");
+  }
+
+  const dir = `${cacheDir}clipboard/`;
+  await FileSystem.makeDirectoryAsync(dir, { intermediates: true }).catch(() => undefined);
+
+  const name = `pasted-${Date.now()}.png`;
+  const uri = `${dir}${name}`;
+  const base64 = result.data.replace(/^data:image\/[a-zA-Z0-9.+-]+;base64,/, "");
+  await FileSystem.writeAsStringAsync(uri, base64, {
+    encoding: FileSystem.EncodingType.Base64,
+  });
+
+  return {
+    uri,
+    name,
+    mimeType: "image/png",
+    sizeBytes: Math.floor((base64.length * 3) / 4),
+  };
+}
 
 /** Launch the camera. Returns null if user cancelled or denied permission. */
 export async function takePhoto(): Promise<PickedFile | null> {
@@ -116,4 +168,13 @@ export async function uploadAttachment(params: UploadParams): Promise<{ id: numb
   }
   // upload_bytes_post returns { status: true, id: N, file_name: "..." }
   return { id: Number(j.id ?? j.data?.id ?? 0), file_name: j.file_name ?? params.file.name };
+}
+
+function extensionForMime(mimeType: string): string {
+  if (mimeType.includes("png")) return ".png";
+  if (mimeType.includes("jpeg") || mimeType.includes("jpg")) return ".jpg";
+  if (mimeType.includes("gif")) return ".gif";
+  if (mimeType.includes("webp")) return ".webp";
+  if (mimeType.includes("pdf")) return ".pdf";
+  return "";
 }

@@ -28,6 +28,13 @@ import {
   type InboxItem,
 } from "@/lib/queries/inbox";
 import {
+  useMarkAllNotificationsRead,
+  useMarkNotificationRead,
+  useMarkNotificationsSeen,
+  useMyNotifications,
+  type MyNotification,
+} from "@/lib/queries/my";
+import {
   inboxKey,
   markRead,
   markAllRead,
@@ -41,6 +48,9 @@ import { formatRelativeShort, formatAbsolute } from "@/lib/time";
  */
 const PERFEX_ROUTE_PATTERNS: Array<{ re: RegExp; to: (m: RegExpMatchArray) => string }> = [
   { re: /^(?:admin\/)?tasks\/view\/(\d+)/,                        to: (m) => `/(tabs)/tasks/${m[1]}` },
+  { re: /^#taskid=(\d+)/,                                          to: (m) => `/(tabs)/tasks/${m[1]}` },
+  { re: /^#leadid=(\d+)/,                                          to: (m) => `/(tabs)/leads/${m[1]}` },
+  { re: /^#eventid=(\d+)/,                                         to: (m) => `/(tabs)/calendar/${m[1]}` },
   { re: /^(?:admin\/)?projects\/view\/(\d+)/,                      to: (m) => `/(tabs)/projects/${m[1]}` },
   { re: /^(?:admin\/)?invoices\/list_invoices\/(\d+)/,             to: (m) => `/(tabs)/invoices/${m[1]}` },
   { re: /^(?:admin\/)?estimates\/list_estimates\/(\d+)/,           to: (m) => `/(tabs)/estimates/${m[1]}` },
@@ -198,12 +208,14 @@ function InboxRow({
   unread,
   onRunAction,
   onClose,
+  onItemRead,
 }: {
   item: InboxItem;
   /** Pre-computed: parent does the lookup once per render against the
    *  read-set so each row doesn't re-query the store. */
   unread: boolean;
   onRunAction: (a: NonNullable<InboxItem["actions"]>[number]) => Promise<void>;
+  onItemRead?: (item: InboxItem) => void;
   /** Called before navigation so the floating popover doesn't linger
    *  behind the destination screen. */
   onClose: () => void;
@@ -212,6 +224,7 @@ function InboxRow({
 
   const handleTap = () => {
     markRead(inboxKey(item.type, item.id));
+    onItemRead?.(item);
     const link = item.deeplink;
     if (!link) {
       onClose();
@@ -353,6 +366,31 @@ function InboxRow({
   );
 }
 
+function notificationToInboxItem(n: MyNotification): InboxItem {
+  const title =
+    n.from_fullname?.trim() ||
+    n.fromcompany?.trim() ||
+    (Number(n.fromuserid ?? 0) > 0 ? `Staff #${n.fromuserid}` : "System");
+
+  return {
+    type: "notification",
+    id: Number(n.id),
+    title,
+    subtitle: n.description || n.description_key || "",
+    deeplink: n.link || undefined,
+    priority: Number(n.isread_inline) === 0 ? "normal" : "low",
+    triggered_at: toIsoish(n.date),
+    read: Number(n.isread) !== 0,
+    inlineRead: Number(n.isread_inline) !== 0,
+  };
+}
+
+function toIsoish(value: string | null | undefined): string | null {
+  const s = String(value ?? "").trim();
+  if (!s || s.startsWith("0000-00-00")) return null;
+  return s.includes("T") ? s : s.replace(" ", "T");
+}
+
 // Popover sizing — width clipped to the screen, height capped so it
 // never crowds the bottom tabs.
 const POPOVER_WIDTH = 320;
@@ -367,6 +405,10 @@ export function ActionCenter() {
   // directly under that specific icon — not a generic bottom sheet.
   const [anchor, setAnchor] = useState<AnchorRect | null>(null);
   const q = useInbox();
+  const notifications = useMyNotifications({ limit: 30 });
+  const markNotificationRead = useMarkNotificationRead();
+  const markNotificationsSeen = useMarkNotificationsSeen();
+  const markAllServerNotificationsRead = useMarkAllNotificationsRead();
   const qc = useQueryClient();
   // Renders the IMPERSONATED user when in a View-As session, real user
   // otherwise. Avatar in top-right thus reflects who you're acting as,
@@ -391,6 +433,16 @@ export function ActionCenter() {
   // doesn't change coord systems).
   const statusBarOffset = Platform.OS === "android" ? insets.top : 0;
 
+  const notificationItems = useMemo(
+    () => (notifications.data?.data ?? []).map(notificationToInboxItem),
+    [notifications.data],
+  );
+  const notificationUnreadTotal = Number(notifications.data?.meta?.unread_total ?? 0);
+  const notificationInlineUnreadTotal = Number(
+    notifications.data?.meta?.unread_inline_total ??
+    notificationItems.filter((it) => !it.inlineRead).length,
+  );
+
   // Approval badge follows the web header's pending-action count from
   // tblapprovals. Local read-state may soften a row after it is tapped,
   // but it must not reduce the approval counter; only the server-side
@@ -410,13 +462,17 @@ export function ActionCenter() {
       todos: Number(q.data?.summary?.todos ?? unreadFor("todos")),
       tasks: unreadFor("tasks"),
       mentions: unreadFor("mentions"),
-      notifications: unreadFor("notifications"),
+      notifications: notificationUnreadTotal,
       compliance: unreadFor("compliance"),
     };
-  }, [q.data, readKeys]);
+  }, [q.data, readKeys, notificationUnreadTotal]);
 
   const total = counts.approvals + counts.todos + counts.mentions + counts.notifications + counts.compliance;
-  const itemsForOpen: InboxItem[] = openCategory ? (q.data?.[openCategory] ?? []) : [];
+  const itemsForOpen: InboxItem[] = openCategory
+    ? openCategory === "notifications"
+      ? notificationItems
+      : (q.data?.[openCategory] ?? [])
+    : [];
 
   const runAction = useCallback(
     async (a: NonNullable<InboxItem["actions"]>[number]) => {
@@ -431,8 +487,11 @@ export function ActionCenter() {
     (cat: InboxCategory) => (rect: AnchorRect) => {
       setAnchor(rect);
       setOpenCategory(cat);
+      if (cat === "notifications" && notificationUnreadTotal > 0) {
+        markNotificationsSeen.mutate();
+      }
     },
-    [],
+    [markNotificationsSeen, notificationUnreadTotal],
   );
 
   const closePopover = useCallback(() => {
@@ -489,13 +548,25 @@ export function ActionCenter() {
   // Compute unread counts per category once per render so each row doesn't
   // run an O(n) lookup. Also drives the "Mark all read" affordance.
   const unreadInOpen = openCategory && openCategory !== "approvals"
-    ? itemsForOpen.filter((it) => !readKeys.has(inboxKey(it.type, it.id))).length
+    ? openCategory === "notifications"
+      ? notificationInlineUnreadTotal
+      : itemsForOpen.filter((it) => !readKeys.has(inboxKey(it.type, it.id))).length
     : 0;
   const markAllOpenRead = useCallback(() => {
     if (!openCategory || openCategory === "approvals") return;
+    if (openCategory === "notifications") {
+      markAllServerNotificationsRead.mutate();
+      return;
+    }
     const keys = itemsForOpen.map((it) => inboxKey(it.type, it.id));
     markAllRead(keys);
-  }, [openCategory, itemsForOpen]);
+  }, [openCategory, itemsForOpen, markAllServerNotificationsRead]);
+
+  const handleItemRead = useCallback((item: InboxItem) => {
+    if (item.type === "notification" && !item.inlineRead) {
+      markNotificationRead.mutate(Number(item.id));
+    }
+  }, [markNotificationRead]);
 
   return (
     <>
@@ -704,8 +775,11 @@ export function ActionCenter() {
                     <InboxRow
                       key={`${it.type}-${it.id}`}
                       item={it}
-                      unread={!readKeys.has(inboxKey(it.type, it.id))}
+                      unread={openCategory === "notifications"
+                        ? !it.inlineRead
+                        : !readKeys.has(inboxKey(it.type, it.id))}
                       onRunAction={runAction}
+                      onItemRead={handleItemRead}
                       onClose={closePopover}
                     />
                   ))}

@@ -7,7 +7,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -26,8 +25,15 @@ import { rtlTextStyle } from "@/lib/rtl";
 import { colors } from "@/lib/theme";
 import { FilesTab } from "@/components/crud/FilesTab";
 import Toast from "react-native-toast-message";
-import { pickImage, takePhoto, uploadAttachment, type PickedFile } from "@/lib/files";
-import * as Clipboard from "expo-clipboard";
+import {
+  normalizePastedFile,
+  pickClipboardImage,
+  pickImage,
+  takePhoto,
+  uploadAttachment,
+  type PickedFile,
+} from "@/lib/files";
+import PasteInput, { type PastedFile } from "@mattermost/react-native-paste-input";
 
 type Props = { id: string };
 
@@ -111,20 +117,30 @@ export function TicketDetailScreen({ id }: Props) {
 
   const handlePasteImage = useCallback(async () => {
     try {
-      const hasImage = await Clipboard.hasImageAsync();
-      if (!hasImage) {
+      const file = await pickClipboardImage();
+      if (!file) {
         Alert.alert("No image", "No image found in clipboard. Copy an image first.");
         return;
       }
-      const result = await Clipboard.getImageAsync({ format: "png" });
-      if (result?.data) {
-        const uri = result.data.startsWith("data:") ? result.data : `data:image/png;base64,${result.data}`;
-        const name = `pasted-${Date.now()}.png`;
-        setReplyAttachments((prev) => [...prev, { uri, name, mimeType: "image/png" }]);
-      }
-    } catch {
-      Alert.alert("Paste failed", "Could not read image from clipboard.");
+      setReplyAttachments((prev) => [...prev, file]);
+      Toast.show({ type: "success", text1: "Snapshot attached", text2: file.name });
+    } catch (e: any) {
+      Alert.alert("Paste failed", e?.message || "Could not read image from clipboard.");
     }
+  }, []);
+
+  const handleNativePaste = useCallback((error: string | null | undefined, files: PastedFile[]) => {
+    if (error) {
+      Toast.show({ type: "error", text1: "Paste failed", text2: error.slice(0, 90) });
+      return;
+    }
+    if (!files.length) return;
+    const pasted = files.map(normalizePastedFile);
+    setReplyAttachments((prev) => [...prev, ...pasted]);
+    Toast.show({
+      type: "success",
+      text1: pasted.length === 1 ? "Snapshot attached" : `${pasted.length} files attached`,
+    });
   }, []);
 
   const removeReplyAttachment = useCallback((idx: number) => {
@@ -357,14 +373,35 @@ export function TicketDetailScreen({ id }: Props) {
               >
                 <Ionicons name="clipboard-outline" size={18} color="#64748B" />
               </TouchableOpacity>
-              <TextInput
+              <PasteInput
                 value={replyText}
                 onChangeText={setReplyText}
+                onPaste={handleNativePaste}
+                disableCopyPaste={false}
                 placeholder={isInternal ? "Add internal note..." : "Type your reply..."}
                 placeholderTextColor="#94A3B8"
                 multiline
-                className="flex-1 bg-slate-100 rounded-xl px-3 py-2 text-sm text-foreground max-h-24"
-                style={rtlTextStyle(replyText)}
+                blurOnSubmit={false}
+                underlineColorAndroid="transparent"
+                keyboardType="default"
+                disableFullscreenUI
+                autoComplete="off"
+                textContentType="none"
+                style={[
+                  {
+                    flex: 1,
+                    minHeight: 40,
+                    maxHeight: 96,
+                    borderRadius: 12,
+                    backgroundColor: "#F1F5F9",
+                    paddingHorizontal: 12,
+                    paddingVertical: 8,
+                    color: "#0F172A",
+                    fontSize: 14,
+                    textAlignVertical: "top",
+                  },
+                  rtlTextStyle(replyText),
+                ]}
               />
               <TouchableOpacity
                 onPress={handleSendReply}

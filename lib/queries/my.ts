@@ -57,10 +57,12 @@ export type MyNotification = {
   id: number;
   isread: number;
   isread_inline: number;
+  description_key?: string;
   description: string;
   link?: string | null;
   date: string;
   fromuserid?: number | null;
+  fromclientid?: number | null;
   from_fullname?: string | null;
   fromcompany?: string | null;
   additional_data?: string | null;
@@ -181,7 +183,7 @@ export function useCheckinHistory(days = 30) {
 export type NotificationsResponse = {
   status: true;
   data: MyNotification[];
-  meta: { unread_total: number; limit: number; offset: number };
+  meta: { unread_total: number; unread_inline_total?: number; limit: number; offset: number };
 };
 
 export function useMyNotifications(opts: { limit?: number; unreadOnly?: boolean } = {}) {
@@ -207,6 +209,22 @@ export function useMarkNotificationRead() {
         `my/notifications/${id}/read`,
         { method: "PUT" }
       );
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["my", "notifications"] });
+      qc.invalidateQueries({ queryKey: ["my", "dashboard"] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+    },
+  });
+}
+
+export function useMarkNotificationsSeen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      return api<{ status: true; affected: number }>("my/notifications/seen", {
+        method: "PUT",
+      });
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["my", "notifications"] });

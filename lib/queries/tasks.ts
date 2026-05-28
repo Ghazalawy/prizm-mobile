@@ -283,3 +283,188 @@ export function useReopenTask() {
     },
   });
 }
+
+// ─── Copy task ─────────────────────────────────────────────────────────
+
+export function useCopyTask() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, ...opts }: { taskId: string; copy_task_assignees?: boolean; copy_task_followers?: boolean; copy_task_checklist_items?: boolean; copy_task_attachments?: boolean; copy_task_status?: number }) => {
+      const gen = getSessionGeneration();
+      const headers = await buildAuthHeaders();
+      const res = await fetch(`${API_URL}/tasks/${encodeURIComponent(taskId)}/copy`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(opts),
+      });
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
+      if (invalidToken) throw new Error("Session expired");
+      if (!res.ok) throw new Error(body?.message || `HTTP ${res.status}`);
+      return body;
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tasks"] });
+      qc.invalidateQueries({ queryKey: ["crud", "tasks"] });
+    },
+  });
+}
+
+// ─── Timesheets ─────────────────────────────────────────────────────────
+
+export type TimesheetEntry = {
+  id: number;
+  task_id: number;
+  staff_id: number;
+  start_time: string;
+  end_time: string | null;
+  note: string | null;
+  staff_name?: string;
+};
+
+export function useTaskTimesheets(taskId: string | number) {
+  return useQuery({
+    queryKey: ["task", String(taskId), "timesheets"],
+    queryFn: async () => {
+      const data = await apiRequest(`tasks/${encodeURIComponent(String(taskId))}/timesheets`);
+      return normalizeList(data).items as TimesheetEntry[];
+    },
+    enabled: !!taskId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useDeleteTimesheet() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, taskId }: { id: number; taskId: string }) => {
+      return apiRequest(`tasks/timesheets/${encodeURIComponent(String(id))}`, { method: "DELETE" });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "timesheets"] });
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId] });
+    },
+  });
+}
+
+export function useLogTime() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, start_time, end_time, note, staff_id }: { taskId: string; start_time: string; end_time: string; note?: string; staff_id?: number }) => {
+      const gen = getSessionGeneration();
+      const headers = await buildAuthHeaders();
+      const body: Record<string, unknown> = { start_time, end_time };
+      if (note) body.note = note;
+      if (staff_id) body.staff_id = staff_id;
+      const res = await fetch(`${API_URL}/tasks/${encodeURIComponent(taskId)}/log_time`, {
+        method: "POST",
+        headers,
+        body: JSON.stringify(body),
+      });
+      const { body: respBody, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
+      if (invalidToken) throw new Error("Session expired");
+      if (!res.ok) throw new Error(respBody?.message || `HTTP ${res.status}`);
+      return respBody;
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "timesheets"] });
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId] });
+    },
+  });
+}
+
+// ─── Reminders ──────────────────────────────────────────────────────────
+
+export type TaskReminder = {
+  id: number;
+  rel_id: number;
+  rel_type: string;
+  staff: number;
+  date: string;
+  creator: number;
+};
+
+export function useTaskReminders(taskId: string | number) {
+  return useQuery({
+    queryKey: ["task", String(taskId), "reminders"],
+    queryFn: async () => {
+      const data = await apiRequest(`tasks/${encodeURIComponent(String(taskId))}/reminders`);
+      return normalizeList(data).items as TaskReminder[];
+    },
+    enabled: !!taskId,
+    staleTime: 30 * 1000,
+  });
+}
+
+export function useAddReminder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ taskId, date }: { taskId: string; date: string }) => {
+      return apiRequest(`tasks/${encodeURIComponent(taskId)}/reminders`, {
+        method: "POST",
+        body: JSON.stringify({ date }),
+      });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "reminders"] });
+    },
+  });
+}
+
+export function useDeleteReminder() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, taskId }: { id: number; taskId: string }) => {
+      return apiRequest(`tasks/reminders/${encodeURIComponent(String(id))}`, { method: "DELETE" });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "reminders"] });
+    },
+  });
+}
+
+// ─── Edit comment ──────────────────────────────────────────────────────
+
+export function useEditTaskComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ commentId, content, taskId }: { commentId: number; content: string; taskId: string }) => {
+      return apiRequest(`tasks/comments/${encodeURIComponent(String(commentId))}`, {
+        method: "PUT",
+        body: JSON.stringify({ content }),
+      });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "comments"] });
+    },
+  });
+}
+
+// ─── Delete comment ────────────────────────────────────────────────────
+
+export function useDeleteTaskComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ commentId, taskId }: { commentId: number; taskId: string }) => {
+      return apiRequest(`tasks/comments/${encodeURIComponent(String(commentId))}`, { method: "DELETE" });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["task", vars.taskId, "comments"] });
+    },
+  });
+}
+
+// --- Search ---------------------------------------------------------------
+
+export function useSearchTasks(query: string) {
+  const scope = useTaskQueryScope();
+  return useQuery({
+    queryKey: ["tasks", "search", scope, query],
+    queryFn: async () => {
+      const data = await apiRequest("tasks/search/" + encodeURIComponent(query));
+      return normalizeList(data).items as TaskListItem[];
+    },
+    enabled: !!query && query.length >= 2,
+    staleTime: 30 * 1000,
+  });
+}
+

@@ -7,6 +7,7 @@ import {
   Platform,
   Pressable,
   RefreshControl,
+  Share,
   ScrollView,
   StyleSheet,
   Text,
@@ -29,7 +30,7 @@ import {
   parseApiResponse,
   updateEntity,
 } from "@/lib/api";
-import { API_URL, staffAvatarUrl } from "@/lib/config";
+import { ADMIN_URL, API_URL, staffAvatarUrl } from "@/lib/config";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -312,6 +313,33 @@ export function TaskDetailScreen({ id }: Props) {
   const hourlyRate = numericOrZero(row.hourly_rate);
   const totalLogged = formatDuration(row.total_logged_time);
   const isComplete = String(row.status) === "5";
+  const creatorId = String(row.addedfrom ?? row.added_from ?? "").trim();
+  const creatorStaff = creatorId ? staffById.get(creatorId) : null;
+  const createdByName =
+    row.addedfrom_name ||
+    row.added_by_name ||
+    joinName(creatorStaff?.firstname, creatorStaff?.lastname) ||
+    (creatorId ? `Staff #${creatorId}` : "");
+  const taskShareUrl = `${ADMIN_URL}/tasks/view/${encodeURIComponent(String(id))}`;
+
+  const handleShare = async () => {
+    try {
+      const lines = [
+        row.name || "Prizm task",
+        status.label,
+        priority.label ? `Priority: ${priority.label}` : "",
+        due ? `Due: ${due}` : "",
+        taskShareUrl,
+      ].filter(Boolean);
+      await Share.share({
+        title: row.name || "Prizm task",
+        message: lines.join("\n"),
+      });
+    } catch {
+      // User cancelled the native share sheet.
+    }
+  };
+
   const updateTaskFields = async (payload: Record<string, any>, successMessage: string) => {
     try {
       await updateEntity("tasks", id, payload);
@@ -355,11 +383,11 @@ export function TaskDetailScreen({ id }: Props) {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 12, paddingBottom: 96 }}
+        contentContainerStyle={{ padding: 12, paddingBottom: 28 }}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#F59E0B" />}
       >
         {/* ── 1. Hero ──────────────────────────────────────────────── */}
-        <View className="bg-white rounded-2xl p-4 shadow-sm">
+        <View className="bg-white rounded-2xl px-4 pt-4 pb-3 shadow-sm">
           <View className="flex-row items-start">
             <View
               className="w-10 h-10 rounded-xl items-center justify-center"
@@ -369,38 +397,48 @@ export function TaskDetailScreen({ id }: Props) {
             </View>
             <View className="flex-1 ml-3">
               <Text
-                className="text-xl font-bold text-foreground"
+                className="text-xl font-bold text-foreground leading-6"
                 selectable
                 style={rtlTextStyle(row.name)}
+                numberOfLines={2}
               >
                 {row.name}
               </Text>
-              <View className="flex-row items-center mt-1 flex-wrap">
-                <Pill bg={status.bg} color={status.color} label={status.label} />
-                {due ? (
-                  <Pill
-                    bg="#F1F5F9"
-                    color="#475569"
-                    icon="calendar-outline"
-                    label={due}
-                    marginLeft={6}
-                  />
-                ) : null}
-                {row.rel_type ? (
-                  <Pill
-                    bg="#F1F5F9"
-                    color="#475569"
-                    icon="link-outline"
-                    label={`${row.rel_type} #${row.rel_id ?? "-"}`}
-                    marginLeft={6}
-                  />
-                ) : null}
-              </View>
+              {createdByName ? (
+                <Text
+                  className="mt-0.5 text-[10px] text-slate-300"
+                  style={{ fontWeight: "300" }}
+                  numberOfLines={1}
+                >
+                  created by {createdByName}
+                </Text>
+              ) : null}
             </View>
           </View>
 
-          {/* ── 2. Stat strip — second row of pills, denser ─────────── */}
           <View className="flex-row flex-wrap mt-3 -mr-1.5">
+            <Pill bg={status.bg} color={status.color} label={status.label} />
+            {due ? (
+              <Pill
+                bg="#F1F5F9"
+                color="#475569"
+                icon="calendar-outline"
+                label={due}
+                marginLeft={6}
+              />
+            ) : null}
+            {row.rel_type ? (
+              <Pill
+                bg="#F1F5F9"
+                color="#475569"
+                icon="link-outline"
+                label={`${row.rel_type} #${row.rel_id ?? "-"}`}
+                marginLeft={6}
+              />
+            ) : null}
+          </View>
+
+          <View className="flex-row flex-wrap mt-2 -mr-1.5">
             <Pill bg={priority.bg} color={priority.color} label={priority.label} icon="flag-outline" />
             {hasDates ? (
               <Pill
@@ -444,6 +482,75 @@ export function TaskDetailScreen({ id }: Props) {
             ) : null}
           </View>
         </View>
+
+        <TaskActionBar
+          isComplete={isComplete}
+          isPublic={row.is_public == 1}
+          onComplete={async () => {
+            const ok = await quickTaskAction(id, "mark_complete", "PUT", "Task marked complete");
+            if (ok) task.refetch();
+          }}
+          onReopen={async () => {
+            const ok = await quickTaskAction(id, "reopen", "PUT", "Task reopened");
+            if (ok) task.refetch();
+          }}
+          onTimer={async () => {
+            await quickTaskAction(id, "timer/start", "POST", "Timer started");
+          }}
+          onStatus={() => {
+            const currentStatus = String(row.status || "1");
+            setChoiceSheet({
+              title: "Change status",
+              eyebrow: "Task workflow",
+              subtitle: "Move this task to the right working state.",
+              icon: "swap-horizontal-outline",
+              options: [
+                { key: "1", label: TASK_STATUS["1"].label, description: "Queued and not yet active.", icon: "ellipse-outline" as const, color: TASK_STATUS["1"].color },
+                { key: "4", label: TASK_STATUS["4"].label, description: "Work is currently underway.", icon: "play-circle-outline" as const, color: TASK_STATUS["4"].color },
+                { key: "3", label: TASK_STATUS["3"].label, description: "Ready for review or validation.", icon: "flask-outline" as const, color: TASK_STATUS["3"].color },
+                { key: "2", label: TASK_STATUS["2"].label, description: "Waiting for another response.", icon: "chatbubble-ellipses-outline" as const, color: TASK_STATUS["2"].color },
+              ].map((option) => ({
+                ...option,
+                selected: option.key === currentStatus,
+                onPress: () => updateTaskFields({ status: Number(option.key) }, "Status updated"),
+              })),
+            });
+          }}
+          onPriority={() => {
+            const currentPriority = String(row.priority || "2");
+            setChoiceSheet({
+              title: "Change priority",
+              eyebrow: "Task priority",
+              subtitle: "Set how prominently this task should surface.",
+              icon: "flag-outline",
+              options: Object.entries(PRIORITY).map(([key, value]) => ({
+                key,
+                label: value.label,
+                description:
+                  key === "1"
+                    ? "Normal background work."
+                    : key === "2"
+                      ? "Needs steady attention."
+                      : key === "3"
+                        ? "Important and time sensitive."
+                        : "Escalated work that needs fast handling.",
+                icon: "flag-outline" as const,
+                color: value.color,
+                selected: key === currentPriority,
+                onPress: () => updateTaskFields({ priority: Number(key) }, "Priority updated"),
+              })),
+            });
+          }}
+          onCopy={handleCopy}
+          onShare={handleShare}
+          onTogglePublic={() => {
+            updateEntity("tasks", id, { is_public: row.is_public == 1 ? 0 : 1 })
+              .then(() => task.refetch())
+              .catch(() => {
+                Toast.show({ type: "error", text1: "Failed to update visibility" });
+              });
+          }}
+        />
 
         {/* ── 3. Description (description-first, per spec) ─────────── */}
         {description ? (
@@ -536,73 +643,6 @@ export function TaskDetailScreen({ id }: Props) {
         </View>
 
       </ScrollView>
-      <TaskActionBar
-        isComplete={isComplete}
-        isPublic={row.is_public == 1}
-        onComplete={async () => {
-          const ok = await quickTaskAction(id, "mark_complete", "PUT", "Task marked complete");
-          if (ok) task.refetch();
-        }}
-        onReopen={async () => {
-          const ok = await quickTaskAction(id, "reopen", "PUT", "Task reopened");
-          if (ok) task.refetch();
-        }}
-        onTimer={async () => {
-          await quickTaskAction(id, "timer/start", "POST", "Timer started");
-        }}
-        onStatus={() => {
-          const currentStatus = String(row.status || "1");
-          setChoiceSheet({
-            title: "Change status",
-            eyebrow: "Task workflow",
-            subtitle: "Move this task to the right working state.",
-            icon: "swap-horizontal-outline",
-            options: [
-              { key: "1", label: TASK_STATUS["1"].label, description: "Queued and not yet active.", icon: "ellipse-outline" as const, color: TASK_STATUS["1"].color },
-              { key: "4", label: TASK_STATUS["4"].label, description: "Work is currently underway.", icon: "play-circle-outline" as const, color: TASK_STATUS["4"].color },
-              { key: "3", label: TASK_STATUS["3"].label, description: "Ready for review or validation.", icon: "flask-outline" as const, color: TASK_STATUS["3"].color },
-              { key: "2", label: TASK_STATUS["2"].label, description: "Waiting for another response.", icon: "chatbubble-ellipses-outline" as const, color: TASK_STATUS["2"].color },
-            ].map((option) => ({
-              ...option,
-              selected: option.key === currentStatus,
-              onPress: () => updateTaskFields({ status: Number(option.key) }, "Status updated"),
-            })),
-          });
-        }}
-        onPriority={() => {
-          const currentPriority = String(row.priority || "2");
-          setChoiceSheet({
-            title: "Change priority",
-            eyebrow: "Task priority",
-            subtitle: "Set how prominently this task should surface.",
-            icon: "flag-outline",
-            options: Object.entries(PRIORITY).map(([key, value]) => ({
-              key,
-              label: value.label,
-              description:
-                key === "1"
-                  ? "Normal background work."
-                  : key === "2"
-                    ? "Needs steady attention."
-                    : key === "3"
-                      ? "Important and time sensitive."
-                      : "Escalated work that needs fast handling.",
-              icon: "flag-outline" as const,
-              color: value.color,
-              selected: key === currentPriority,
-              onPress: () => updateTaskFields({ priority: Number(key) }, "Priority updated"),
-            })),
-          });
-        }}
-        onCopy={handleCopy}
-        onTogglePublic={() => {
-          updateEntity("tasks", id, { is_public: row.is_public == 1 ? 0 : 1 })
-            .then(() => task.refetch())
-            .catch(() => {
-              Toast.show({ type: "error", text1: "Failed to update visibility" });
-            });
-        }}
-      />
       <TaskChoiceSheet config={choiceSheet} onClose={() => setChoiceSheet(null)} />
     </KeyboardAvoidingView>
   );
@@ -798,6 +838,7 @@ function TaskActionBar({
   onStatus,
   onPriority,
   onCopy,
+  onShare,
   onTogglePublic,
 }: {
   isComplete: boolean;
@@ -808,15 +849,12 @@ function TaskActionBar({
   onStatus: () => void;
   onPriority: () => void;
   onCopy: () => void;
+  onShare: () => void;
   onTogglePublic: () => void;
 }) {
   return (
-    <View className="bg-white border-t border-slate-200">
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 10, paddingVertical: 8, gap: 8 }}
-      >
+    <View className="mt-2 bg-white rounded-2xl p-2 shadow-sm">
+      <View style={{ flexDirection: "row", gap: 5 }}>
         <TaskActionButton
           icon={isComplete ? "refresh-circle-outline" : "checkmark-done-circle-outline"}
           label={isComplete ? "Reopen" : "Done"}
@@ -827,13 +865,14 @@ function TaskActionBar({
         <TaskActionButton icon="swap-horizontal-outline" label="Status" color="#7C3AED" onPress={onStatus} />
         <TaskActionButton icon="flag-outline" label="Priority" color="#B45309" onPress={onPriority} />
         <TaskActionButton icon="copy-outline" label="Copy" color="#0369A1" onPress={onCopy} />
+        <TaskActionButton icon="share-social-outline" label="Share" color="#0F766E" onPress={onShare} />
         <TaskActionButton
           icon={isPublic ? "eye-off-outline" : "eye-outline"}
           label={isPublic ? "Private" : "Public"}
           color="#7C3AED"
           onPress={onTogglePublic}
         />
-      </ScrollView>
+      </View>
     </View>
   );
 }
@@ -854,21 +893,24 @@ function TaskActionButton({
       onPress={onPress}
       activeOpacity={0.7}
       style={{
-        width: 68,
-        minHeight: 52,
+        flex: 1,
+        minWidth: 0,
+        minHeight: 46,
         alignItems: "center",
         justifyContent: "center",
-        borderRadius: 10,
+        borderRadius: 12,
         backgroundColor: "#F8FAFC",
         borderWidth: 1,
         borderColor: "#E2E8F0",
+        paddingHorizontal: 2,
       }}
     >
-      <Ionicons name={icon} size={19} color={color} />
+      <Ionicons name={icon} size={17} color={color} />
       <Text
-        style={{ color: "#475569", fontSize: 10, fontWeight: "700", marginTop: 3, textAlign: "center" }}
+        style={{ color: "#475569", fontSize: 9, fontWeight: "700", marginTop: 3, textAlign: "center" }}
         numberOfLines={1}
         adjustsFontSizeToFit
+        minimumFontScale={0.72}
       >
         {label}
       </Text>

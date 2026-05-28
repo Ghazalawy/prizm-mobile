@@ -1,0 +1,25 @@
+diff --git a/node_modules/@mattermost/react-native-paste-input/android/src/main/java/com/mattermost/pasteinputtext/PasteInputEditText.kt b/node_modules/@mattermost/react-native-paste-input/android/src/main/java/com/mattermost/pasteinputtext/PasteInputEditText.kt
+index 1794b53..cf28e00 100644
+--- a/node_modules/@mattermost/react-native-paste-input/android/src/main/java/com/mattermost/pasteinputtext/PasteInputEditText.kt
++++ b/node_modules/@mattermost/react-native-paste-input/android/src/main/java/com/mattermost/pasteinputtext/PasteInputEditText.kt
+@@ -36,7 +36,19 @@ class PasteInputEditText(context: ThemedReactContext) : ReactEditText(context) {
+   override fun onCreateInputConnection(outAttrs: EditorInfo): InputConnection {
+     val ic = super.onCreateInputConnection(outAttrs)
+ 
+-    EditorInfoCompat.setContentMimeTypes(outAttrs, arrayOf("*/*"))
++    EditorInfoCompat.setContentMimeTypes(
++      outAttrs,
++      arrayOf(
++        "image/png",
++        "image/jpeg",
++        "image/jpg",
++        "image/gif",
++        "image/webp",
++        "image/heic",
++        "image/heif",
++        "image/*"
++      )
++    )
+ 
+     val callback = InputConnectionCompat.OnCommitContentListener { inputContentInfo, flags, _ ->
+       val lacksPermission = (flags and InputConnectionCompat.INPUT_CONTENT_GRANT_READ_URI_PERMISSION) != 0

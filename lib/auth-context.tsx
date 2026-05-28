@@ -77,7 +77,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           headers: { "Content-Type": "application/json", authtoken: token },
         });
         if (res.status === 401) {
-          await clearSession();
+          // Don't clear the stored token — the server might be temporarily
+          // unreachable or the endpoint may be down. The biometric retry
+          // button needs the token to exist in SecureStore.
           setIsAuthenticated(false);
           setIsLoading(false);
           return;
@@ -89,6 +91,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           typeof body.message === "string" &&
           /signature verification failed|token expired/i.test(body.message)
         ) {
+          // Token is genuinely expired/invalid — clear it.
           await clearSession();
           setIsAuthenticated(false);
           setIsLoading(false);
@@ -111,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       setIsAuthenticated(true);
       setBiometricPending(false);
+      resetInvalidTokenDebounce();
       const profile = await getStaffProfile();
       if (profile) setCurrentUser(profile);
       setIsLoading(false);
@@ -203,6 +207,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (!ok) return false;
     setIsAuthenticated(true);
     setBiometricPending(false);
+    resetInvalidTokenDebounce();
     const profile = await getStaffProfile();
     if (profile) setCurrentUser(profile);
     return true;

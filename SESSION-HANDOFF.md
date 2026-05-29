@@ -9,8 +9,9 @@
 
 ## Session 2026-05-29 — Perfix Dynamic Filters System-Wide
 
-**Commit:** `614aece` — pushed to `main`  
+**Commits:** `614aece` → `6ac72ab` → `17ea33f` → `54bc837` (last: fix CI)  
 **QC Report:** `docs/qc/PE-QAQC-QC-RPT-26005-R01__perfix-filters.md`  
+**CI Lessons:** `docs/CI-LESSONS-LEARNED.md` — 2 trapped failures, 4 pre-push gates  
 **Status:** ✅ Deployed (GitHub Actions auto-build)
 
 ### What was done
@@ -19,7 +20,9 @@
 - Added `evaluateFilterRule()` with all 19 operators (equal, contains, begins_with, ends_with, between, less, greater, is_empty, is_not_empty, dynamic, etc.)
 - Defined `filterRules` for 14 core modules (MultiSelectRule for status fields)
 - Auto-infers filter operators from field types for all other modules
-- TypeScript: 0 errors. 1 pre-existing S4 defect fixed (FilterSheet.tsx:84)
+- **CI fix:** 19 missing dependency files committed (`lib/filter-configs/`, `lib/filters.ts`, `lib/hooks/`, `components/ui/Filter*`)
+- **CI fix:** `app.json` — added `expo-font` plugin
+- **Permanent:** Created `docs/CI-LESSONS-LEARNED.md` — 4 mandatory pre-push gates to prevent repeat failures
 
 ---
 
@@ -173,6 +176,12 @@ OPEN → IN_PROGRESS → FIXED → RETEST → VERIFIED
 3. **Test API endpoints with curl BEFORE building mobile UI.** API is the foundation.
 4. **Update the CSV tick marks as you test.** Single source of truth.
 5. **Each batch finishes with Ship (git push + Hetzner pull for prizm331).**
+6. **MANDATORY PRE-PUSH GATE — before EVERY `git push`:** See `docs/CI-LESSONS-LEARNED.md` for full details. At minimum:
+   - `git status --porcelain` — no untracked files imported by tracked code
+   - `npx tsc --noEmit` — zero errors
+   - `npx expo install --check` — must pass
+   - No dirty working tree — commit or stash everything
+   - **CI failures cost 2-3 extra fix commits. Pre-push gate prevents all of them.**
 
 ### Phase 0: Module Sweep
 

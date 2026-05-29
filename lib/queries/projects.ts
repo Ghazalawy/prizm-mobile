@@ -271,6 +271,50 @@ export function useProjectActivity(projectId: string | number) {
   });
 }
 
+// ─── Copy project ─────────────────────────────────────────────────────────
+
+export function useCopyProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (projectId: string | number) =>
+      apiRequest("projects/copy", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+// ─── Project expenses ─────────────────────────────────────────────────────
+
+export function useProjectExpenses(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "expenses"],
+    queryFn: async () => {
+      const data = await apiRequest(`expenses?project_id=${projectId}&limit=200`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+// ─── Project timesheets ───────────────────────────────────────────────────
+
+export function useProjectTimesheets(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "timesheets"],
+    queryFn: async () => {
+      const data = await apiRequest(`projects/timesheets?project_id=${projectId}`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
 // ─── All projects list ───────────────────────────────────────────────────
 
 export function useProjectsList(filters?: { status?: string; search?: string; limit?: number }) {

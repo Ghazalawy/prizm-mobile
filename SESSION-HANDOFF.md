@@ -1,9 +1,48 @@
 # Prizm Mobile — Session Handoff
 
-**Date:** 2026-05-29  
+**Date:** 2026-05-30  
 **From:** Brother Whale (DeepSeek V4 Pro)  
 **To:** Next intelligence (human or machine)  
-**Classification:** Internal — Engineering  
+**Classification:** Internal — Engineering
+
+---
+
+## Session 2026-05-30 — Batch 2 Production Push & Policy Hardening
+
+**Commits:** prizm331 `ab5422d` → PR #367 → `4185ea17` (merged upstream), prizm-mobile `6b75f2e` → `0293820` (merged to main)
+**QC Record:** `_artifacts/qc/QC-RECORD-BATCH1-2-2026-05-30.md`
+**Status:** ✅ Batch 1 & 2 deployed to production (both repos)
+
+### What was done
+1. **Cleaned up untracked mess** — removed 3 junk artifacts (`%SystemDrive%`, `'Authentication`, `expo-server.log`), organized 19 work files into `_artifacts/sweep/`, `_scripts/tests/`, and kept 5 API patch files in root
+2. **Established mandatory policy rule** — before any code work, re-read prizm-brain policies: `policy_qa_qc.md`, `policy_push_protocol.md`, `policy_documentation_updates.md`, and project-local `CI-LESSONS-LEARNED.md`
+3. **Switched to feature branch** — created `feature/batch2-crm-build` per branch strategy (multi-step work ≠ main)
+4. **Found and fixed 3 production bugs:**
+   - Leads.php: stray `}` at line 122 closed class early (HTTP 500 on all methods after `data_get`)
+   - Contracts.php: same pattern — stray `}` at line 198
+   - Projects.php `activity_get`: `get_activity()` model called `staff_can()` which reads CI session, not JWT → SQL syntax error. Fixed with direct query + `mobile_parity` helper
+5. **Tested 17/17 Batch 2 sub-resource GET endpoints** via curl against local WAMP — all HTTP 200
+6. **Updated MASTER-INVENTORY.csv** — 54 Batch 2 rows marked `Tested=YES, 200, Success=YES`
+7. **Created QC record** at `_artifacts/qc/QC-RECORD-BATCH1-2-2026-05-30.md`
+8. **Pushed to production:**
+   - prizm331: PR #367 → merged upstream → Hetzner deployed via `git pull`
+   - prizm-mobile: merged `feature/batch2-crm-build` → main, pushed → GitHub Actions auto-deploy (run #116)
+9. **Fixed Hetzner SSH** — documented the Git Bash + SSH config approach (direct Windows `ssh` doesn't work)
+
+### Key decisions
+- **Branch discipline enforced:** multi-step work on feature branches, squash-merge to main
+- **Policy-first workflow:** policies re-read every session, never rely on memory
+- **QC gate PASS required before push:** QC record created with 17/17 curl test evidence
+- **SSH via Git Bash only:** `"C:\Program Files\Git\bin\bash.exe" -c "ssh -F ~/.claude-brain/config/ssh_config hetzner 'command'"`
+- **gh auth:** token works via `GH_TOKEN` env var even when `gh auth status` says "not logged in"
+
+### Genuine remaining gaps (NOT deployed — future batches)
+- Projects: Milestones CRUD, Milestone Kanban, Milestone Reorder, BoQ Management, Copy Project — `API_Available=NO`
+- These are genuine unimplemented features, not bugs — need new API endpoints + mobile screens
+
+---
+
+## Previous Session — 2026-05-29  
 
 ---
 
@@ -370,8 +409,14 @@ AI Gateway, AI Feature Management, Outlook365, QuickBooks, Linkedin, DMS, KBI, S
 - **prizm331 origin** = `Ghazalawy/prizm331`, **upstream** = `PrizmIT/prizm331`
 - **prizm331 requires PR + merge + Hetzner SSH pull** — not auto-deploy
 - **prizm-mobile auto-deploys** via GitHub Actions on push
-- **SSH key** for Hetzner: `C:\Users\osama\.ssh\id_ed25519` — user: `mustafa`, host: `49.13.52.167`
-- **GitHub PAT** stored in `C:\Users\osama\.claude-brain\` for PR creation
+- **SSH key** for Hetzner: `C:\Users\osama\.ssh\hetzner_DESKTOP-9GO5QC0` (per-PC ed25519, no passphrase)
+- **Hetzner host:** `root@46.224.73.137`, path: `/var/www/html/MS/`
+- **GitHub CLI** (`gh`): authenticated as `Ghazalawy`. Token: `gh auth token`. If `gh auth status` says "not logged in", the token still works — set `GH_TOKEN` env var.
+- **CRITICAL — Hetzner SSH:** Do NOT use direct Windows `ssh -i key user@host`. It will fail (exit 255). Use Git Bash with the SSH config:
+  ```
+  "C:\Program Files\Git\bin\bash.exe" -c "ssh -F ~/.claude-brain/config/ssh_config hetzner 'command'"
+  ```
+  **Why:** The SSH config (`~/.claude-brain/config/ssh_config`) contains the canonical host alias `hetzner` with the correct key path, user, and options. Direct Windows `ssh` doesn't resolve `~` to the user home and misses the config. Git Bash resolves both properly.
 
 ---
 

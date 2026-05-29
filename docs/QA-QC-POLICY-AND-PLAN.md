@@ -352,14 +352,24 @@ An index file `_INDEX.md` in the same directory SHALL list all reports with date
 ### 11.5 Generation Protocol
 
 1. At session end (or on demand), the agent SHALL:
-   - Populate the template with actual session data
+   - Populate the Markdown template with actual session data
+   - Populate the HTML template (for PDF rendering) with the same data
    - Execute a final API verification pass if not already done
    - Fill all acceptance criteria fields
    - List all commits with SHAs
    - Record deployment status
-2. Save the filled report to the canonical storage location
-3. Update `_INDEX.md` with the new report entry
-4. Reference the report in the SESSION-HANDOFF.md
+2. Save the filled Markdown report to the canonical storage location
+3. Generate PDF from the filled HTML template:
+   ```
+   pandoc QC-REPORT-TEMPLATE.html --pdf-engine=weasyprint -o PE-QAQC-QC-RPT-{YYNNN}-R{NN}__{session-id}.pdf
+   ```
+   or via Chrome headless:
+   ```
+   chrome --headless --disable-gpu --print-to-pdf="PE-QAQC-QC-RPT-{YYNNN}-R{NN}__{session-id}.pdf" QC-REPORT-TEMPLATE.html
+   ```
+4. Save both `.md` and `.pdf` files to `C:\Users\osama\.claude-brain\_audits\qc-reports\`
+5. Update `_INDEX.md` with the new report entry
+6. Reference the report in the SESSION-HANDOFF.md
 
 ---
 

@@ -121,18 +121,21 @@ identified. Don't repeat.
 After every coding session that modifies API endpoints, mobile screens, or
 database schemas — or when the user requests "run QC":
 
-1. Populate `docs/qc/QC-REPORT-TEMPLATE.md` with actual session data:
+1. Populate both `docs/qc/QC-REPORT-TEMPLATE.md` AND `docs/qc/QC-REPORT-TEMPLATE.html` with actual session data:
    - Report header: date, time, agent, model, workspace, session ID, turns
    - Test results: all endpoints verified with HTTP codes
    - Acceptance criteria: pass/fail percentages per severity
    - Code changes: files modified, commits with SHAs
    - Deployment status
-2. Save filled report per Asmaa naming grammar:
+2. Save Markdown report per Asmaa naming grammar:
    `PE-QAQC-QC-RPT-{YYNNN}-R{NN}__{session-id}.md`
-3. Store in canonical location:
+3. Generate PDF from HTML template:
+   `pandoc QC-REPORT-TEMPLATE.html --pdf-engine=weasyprint -o {filename}.pdf`
+   (or Chrome headless: `chrome --headless --print-to-pdf="{filename}.pdf" QC-REPORT-TEMPLATE.html`)
+4. Store both `.md` and `.pdf` in canonical location:
    `C:\Users\osama\.claude-brain\_audits\qc-reports\`
-4. Update `_INDEX.md` with the new report entry
-5. Reference the report in `SESSION-HANDOFF.md`
+5. Update `_INDEX.md` with the new report entry
+6. Reference the report in `SESSION-HANDOFF.md`
 
 Template and policy at `docs/QA-QC-POLICY-AND-PLAN.md` §11.0.
 Brand identity by Hawiya v0.1. Naming by Asmaa v1.2.

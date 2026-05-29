@@ -1,4 +1,29 @@
-# Prizm Mobile — Tasks Module Pilot: Session Handoff
+# Prizm Mobile — Session Handoff
+
+**Date:** 2026-05-29  
+**From:** Brother Whale (DeepSeek V4 Pro)  
+**To:** Next intelligence (human or machine)  
+**Classification:** Internal — Engineering  
+
+---
+
+## Session 2026-05-29 — Perfix Dynamic Filters System-Wide
+
+**Commit:** `614aece` — pushed to `main`  
+**QC Report:** `docs/qc/PE-QAQC-QC-RPT-26005-R01__perfix-filters.md`  
+**Status:** ✅ Deployed (GitHub Actions auto-build)
+
+### What was done
+- Implemented Perfix rule-based dynamic filter system across all 70 modules
+- Rewrote FilterPanel as full rule builder: field → operator → value, AND/OR toggle, presets
+- Added `evaluateFilterRule()` with all 19 operators (equal, contains, begins_with, ends_with, between, less, greater, is_empty, is_not_empty, dynamic, etc.)
+- Defined `filterRules` for 14 core modules (MultiSelectRule for status fields)
+- Auto-infers filter operators from field types for all other modules
+- TypeScript: 0 errors. 1 pre-existing S4 defect fixed (FilterSheet.tsx:84)
+
+---
+
+## Previous Session — Tasks Module Pilot
 
 **Date:** 2026-05-28  
 **From:** Brother Whale (DeepSeek V4 Pro, session ending)  

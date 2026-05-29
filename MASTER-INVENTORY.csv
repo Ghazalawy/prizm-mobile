@@ -1,0 +1,293 @@
+# =============================================================================
+# PRIZM MOBILE — MASTER INVENTORY & TRACEABILITY MATRIX
+# =============================================================================
+# 
+# Standard: IEEE 829-2008 / QA-QC-POLICY-AND-PLAN.md §4.0
+# Single source of truth for ALL module operations across ALL batches.
+# Every agent MUST update this file when sweeping, testing, or deploying.
+#
+# ── MANDATORY HEADER (do not change column order or names) ──────────────────
+#
+# #,Batch,Round,Module,Operation,Category,HTTPMethod,APIEndpoint,WEBUI_Method,
+# WEBUI_Available,API_Available,Mobile_Available,Tested,HTTP_Code,Success,
+# Iterations,Gap_Severity,Fields,Notes
+#
+# ── HOW TO UPDATE ────────────────────────────────────────────────────────────
+#
+# 1. NEVER change the header row. All agents use same columns.
+# 2. Sweeping new module: add rows with Round=1, Tested=NO, Success=PENDING
+# 3. Testing: update Tested=YES, HTTP_Code=200, Success=YES/NO, increment Iterations
+# 4. Fixing: increment Round, update Notes with fix description
+# 5. Each batch round = new block with blank line + separator comment
+# 6. Do NOT delete old rows — increment Iterations and update Success
+#
+# ── BATCH DEFINITIONS (from QA-QC-POLICY-AND-PLAN.md §2.2) ──────────────────
+#
+# BATCH 1: Tasks (Pilot)
+# BATCH 2: Customers · Contacts · Leads · Contracts · Business Partners · Projects · Milestones
+# BATCH 3: Invoices · Estimates · Proposals · Payments · Items · Credit Notes · Expenses · Budget · Cost Centers
+# BATCH 4: Tickets · Knowledge Base · Surveys · Announcements
+# BATCH 5: Purchase Requests · Purchase Orders · Payment Requests · Expense Requests · Suppliers · Delivery Notes · Quotations · Received Vouchers · Completion Certificates
+# BATCH 6: Staff · HR Records · HR Payroll · Recruitment · Leaves · Timesheets · Goals · Todo
+# BATCH 7: Gatepass · Fixed Equipment · Materials Catalog · Vehicles · Cost Centers
+# BATCH 8: Tenders · Opportunities · Technical Inquiries · RFQ · Advance Leads
+# BATCH 9: Dashboard · Calendar · Reports · Settings · Roles · Permissions · API Management · Automation · Custom Fields · Filters · Mods · Backup · Documentation
+# BATCH 10: AI Gateway · AI Feature Management · Outlook365 · QuickBooks · Linkedin · DMS · KBI · SMS/OTP
+#
+# =============================================================================
+#,Batch,Round,Module,Operation,Category,HTTPMethod,APIEndpoint,WEBUI_Method,WEBUI_Available,API_Available,Mobile_Available,Tested,HTTP_Code,Success,Iterations,Gap_Severity,Fields,Notes
+
+# ===== BATCH 1 — ROUND 1 — Tasks Pilot (Sweep + Test) ===================
+#,Batch,Round,Module,Operation,Category,HTTPMethod,APIEndpoint,WEBUI_Method,WEBUI_Available,API_Available,Mobile_Available,Tested,HTTP_Code,Success,Iterations,Gap_Severity,Fields,Notes
+1,1,1,tasks,List All Tasks,LIST,GET,/api/tasks?limit=&offset=,index,YES,YES,YES,YES,200,YES,1,NONE,id,name
+2,1,1,tasks,Get Single Task,DETAIL,GET,/api/tasks/{id},get_task_data,YES,YES,YES,YES,200,YES,1,NONE,All tbltasks columns + custom_fields + _actions,Single task with all fields and computed _actions
+3,1,1,tasks,Search Tasks,SEARCH,GET,/api/tasks/search/{key},ajax_search_assign_task_to_timer,YES,YES,YES,YES,200,YES,1,NONE,name,description
+4,1,1,tasks,Create Task,CREATE,POST,/api/tasks,data_post (form),YES,YES,YES,YES,200,YES,1,NONE,name,startdate
+5,1,1,tasks,Update Task (Partial),UPDATE,PUT,/api/tasks/{id},data_put / task_single_inline_update,YES,YES,YES,YES,200,YES,1,NONE,name,description
+6,1,1,tasks,Delete Task,DELETE,DELETE,/api/tasks/{id},delete_task,YES,YES,YES,YES,200,YES,1,NONE,(all cascade),Permission: staff_can('delete'
+7,1,1,tasks,Mark Complete,STATUS,PUT,/api/tasks/{id}/mark_complete,mark_as(5),YES,YES,YES,YES,200,YES,1,NONE,status,datefinished
+8,1,1,tasks,Reopen Task,STATUS,PUT,/api/tasks/{id}/reopen,unmark_complete,YES,YES,YES,YES,200,YES,1,NONE,status,datefinished
+9,1,1,tasks,Change Status,STATUS,PUT,/api/tasks/{id} + status field,mark_as,YES,YES,YES,YES,200,YES,1,NONE,status,Via data_put partial update. Alert picker in mobile.
+10,1,1,tasks,Change Priority,UPDATE,PUT,/api/tasks/{id} + priority field,change_priority,YES,YES,YES,YES,200,YES,1,NONE,priority,Via data_put partial update. Alert picker in mobile.
+11,1,1,tasks,Change Milestone,UPDATE,PUT,/api/tasks/{id} + milestone field,change_milestone,YES,YES,YES,YES,200,YES,1,NONE,milestone,Via data_put partial update.
+12,1,1,tasks,Update Description,UPDATE,PUT,/api/tasks/{id} + description field,update_task_description,YES,YES,YES,YES,200,YES,1,NONE,description,Via data_put. Rich text passed unfiltered.
+13,1,1,tasks,Update Tags,UPDATE,PUT,/api/tasks/{id} + tags field,update_tags,YES,YES,YES,YES,200,YES,1,NONE,tags,Via data_put → handle_tags_save.
+14,1,1,tasks,Gantt Date Update,UPDATE,PUT,/api/tasks/{id} + startdate/duedate,gantt_date_update,YES,YES,YES,YES,200,YES,1,NONE,startdate,duedate
+15,1,1,tasks,Inline Update,UPDATE,PUT,/api/tasks/{id} + any whitelist field,task_single_inline_update,YES,YES,YES,YES,200,YES,1,NONE,any whitelisted column,Any whitelisted field via data_put.
+16,1,1,tasks,Make Public,UPDATE,PUT,/api/tasks/{id} + is_public=1,make_public,YES,YES,YES,YES,200,YES,1,NONE,is_public,Via data_put.
+17,1,1,tasks,Set Complete Type,UPDATE,PUT,/api/tasks/{id} + complete_type,set_complete_type,YES,YES,YES,YES,200,YES,1,NONE,complete_type,Via data_put. Values: duration
+18,1,1,tasks,Copy Task,DUPLICATE,POST,/api/tasks/{id}/copy,copy,YES,YES,YES,YES,201,YES,3,NONE,copy_task_assignees,copy_task_followers
+19,1,1,tasks,List Assignees,SUB,GET,/api/tasks/assignments/{id},(embedded in task view),YES,YES,YES,YES,200,YES,1,NONE,id,taskid
+20,1,1,tasks,Add Assignee,SUB,POST,/api/tasks/assignments,add_task_assignees,YES,YES,YES,PENDING,200,YES,1,NONE,task_id,staff_id
+21,1,1,tasks,Remove Assignee,SUB,DELETE,/api/tasks/assignments/{id},remove_assignee,YES,YES,YES,PENDING,200,YES,1,NONE,(assignment_id),Long-press remove in mobile. Permission: can_manage_task_members.
+22,1,1,tasks,List Followers,SUB,GET,/api/tasks/followers/{id},(embedded in task view),YES,YES,YES,YES,200,YES,1,NONE,id,taskid
+23,1,1,tasks,Add Follower,SUB,POST,/api/tasks/followers,add_task_followers,YES,YES,YES,PENDING,200,YES,1,NONE,task_id,staff_id
+24,1,1,tasks,Remove Follower,SUB,DELETE,/api/tasks/followers/{id},remove_follower,YES,YES,YES,PENDING,200,YES,1,NONE,(follower_id),Long-press remove in mobile. Permission: can_manage_task_members.
+25,1,1,tasks,List Checklist Items,SUB,GET,/api/tasks/checklist/{id},init_checklist_items,YES,YES,YES,YES,200,YES,1,NONE,id,taskid
+26,1,1,tasks,Add Checklist Item,SUB,POST,/api/tasks/checklist,add_checklist_item,YES,YES,YES,PENDING,200,YES,1,NONE,task_id,description
+27,1,1,tasks,Update Checklist Item,SUB,PUT,/api/tasks/checklist/{id},update_checklist_item,YES,YES,YES,YES,200,YES,1,NONE,description,finished
+28,1,1,tasks,Delete Checklist Item,SUB,DELETE,/api/tasks/checklist/{id},delete_checklist_item,YES,YES,YES,YES,200,YES,1,NONE,(checklist_id),Permission: staff_can delete OR own item.
+29,1,1,tasks,Toggle Checklist (alias),SUB,PUT,/api/tasks/checklist/item/{id},checkbox_action,YES,YES,YES,YES,200,YES,1,NONE,finished,Alias for checklist_put. Used by mobile toggle.
+30,1,1,tasks,Delete Checklist (alias),SUB,DELETE,/api/tasks/checklist/item/{id},(same as above),YES,YES,YES,YES,200,YES,1,NONE,(id),Alias for checklist_delete.
+31,1,1,tasks,List Comments,SUB,GET,/api/tasks/comments/{id},(embedded in task view),YES,YES,YES,YES,200,YES,1,NONE,id,taskid
+32,1,1,tasks,Add Comment,SUB,POST,/api/tasks/comments,add_task_comment,YES,YES,YES,YES,200,YES,1,NONE,task_id,content
+33,1,1,tasks,Edit Comment,SUB,PUT,/api/tasks/comments/{id},edit_comment,YES,YES,YES,YES,200,YES,2,NONE,content,NEW endpoint. Permission: own comment OR staff_can edit.
+34,1,1,tasks,Delete Comment,SUB,DELETE,/api/tasks/comments/{id},remove_comment,YES,YES,YES,YES,200,YES,2,NONE,(comment_id),Permission: own comment OR staff_can edit.
+35,1,1,tasks,List Reminders,SUB,GET,/api/tasks/{id}/reminders,add_reminder (form),YES,YES,YES,YES,200,YES,2,NONE,task_id,✅ FIXED: _remap override. Returns reminder list.
+36,1,1,tasks,Add Reminder,SUB,POST,/api/tasks/{id}/reminders,add_reminder,YES,YES,YES,YES,201,YES,2,NONE,date,staff
+37,1,1,tasks,Delete Reminder,SUB,DELETE,/api/tasks/reminders/{id},delete_reminder,YES,YES,YES,YES,200,YES,2,NONE,(reminder_id),✅ FIXED: Permission: own reminder OR staff_can edit.
+38,1,1,tasks,List Timesheets,SUB,GET,/api/tasks/{id}/timesheets,(embedded in project),YES,YES,YES,YES,200,YES,2,NONE,task_id,✅ FIXED: _remap override. Returns timesheet list with staff names.
+39,1,1,tasks,Delete Timesheet,SUB,DELETE,/api/tasks/timesheets/{id},delete_timesheet,YES,YES,YES,YES,200,YES,3,NONE,(timesheet_id),✅ FIXED: Permission: own OR staff_can edit.
+40,1,1,tasks,Log Time,SUB,POST,/api/tasks/{id}/log_time,log_time,YES,YES,YES,YES,201,YES,2,NONE,start_time,end_time
+41,1,1,tasks,Start Timer,TIMER,POST,/api/tasks/{id}/timer/start,timer_tracking,YES,YES,YES,YES,200,YES,1,NONE,task_id,note
+42,1,1,tasks,Stop Timer,TIMER,POST,/api/tasks/{id}/timer/stop,timer_tracking,YES,YES,YES,YES,200,YES,1,NONE,task_id,timer_id
+43,1,1,tasks,Kanban Board View,VIEW,GET,/api/tasks?limit=500,kanban,YES,YES,YES,YES,200,YES,1,NONE,status,Client-side grouping by status (useTasksByStatus hook).
+44,1,1,tasks,Kanban Load More,PAGINATION,GET,/api/tasks?limit=&offset=,tasks_kanban_load_more,YES,YES,YES,YES,200,YES,1,NONE,limit,offset
+45,1,1,tasks,Update Kanban Order,REORDER,PUT,/api/tasks/{id} + kanban_order,update_order,YES,YES,YES,YES,200,YES,1,NONE,kanban_order,Via data_put. kanban_order in whitelist.
+46,1,1,tasks,Filter by Project,FILTER,GET,/api/tasks?project=,get_billable_tasks_by_project,YES,YES,YES,YES,200,YES,1,NONE,project,rel_type
+47,1,1,tasks,Filter by Customer,FILTER,GET,/api/tasks?rel_type=customer&rel_id=,get_billable_tasks_by_customer_id,YES,YES,YES,YES,200,YES,1,NONE,rel_type,rel_id
+48,1,1,tasks,Filter by Status,FILTER,GET,/api/tasks?status=,table filters,YES,YES,YES,YES,200,YES,1,NONE,status,Single or comma-separated statuses.
+49,1,1,tasks,Filter by Assigned,FILTER,GET,/api/tasks?assigned=,ajax_search_assign_task_to_timer,YES,YES,YES,YES,200,YES,1,NONE,assigned,staff_id
+50,1,1,tasks,Filter by Priority,FILTER,GET,/api/tasks?priority=,table filters,YES,YES,YES,YES,200,YES,1,NONE,priority,Via data_get filter.
+51,1,1,tasks,Filter by Date Range,FILTER,GET,/api/tasks?start_from=&start_to=&due_from=&due_to=,table filters,YES,YES,YES,YES,200,YES,1,NONE,start_from,start_to
+52,1,1,tasks,Upload File,UPLOAD,POST,/api/files/upload_bytes,upload_file,YES,YES,YES,PENDING,200,YES,1,NONE,file, rel_type
+53,1,1,tasks,Delete File,DELETE,DELETE,/api/files/{id},remove_task_attachment,YES,YES,YES,PENDING,200,YES,1,NONE,(file_id),Via Files API.
+54,1,1,tasks,Init Relation Tasks,VIEW,GET,/api/tasks?rel_type=&rel_id=,init_relation_tasks,YES,YES,YES,YES,200,YES,1,NONE,rel_type,rel_id
+55,1,1,tasks,Billable Task Validation,VALIDATE,GET,/api/tasks/{id},get_billable_task_data,YES,YES,YES,YES,200,YES,1,NONE,billable,hourly_rate
+56,1,1,tasks,Task Table View,LIST,GET,/api/tasks?limit=&offset=,table,YES,YES,YES,YES,200,YES,1,NONE,all list fields,Same as list endpoint with pagination.
+57,1,1,tasks,My Tasks (Assigned),FILTER,GET,/api/tasks?assigned=,list_tasks,YES,YES,YES,YES,200,YES,1,NONE,assigned,useMyTasks hook with assigned filter.
+58,1,1,tasks,Tasks Due Today,DASHBOARD,GET,/api/tasks?limit=200 (client filter),dashboard widgets,YES,YES,YES,YES,200,YES,1,NONE,duedate,status
+59,1,1,tasks,Set Complete Type,STATUS,PUT,/api/tasks/{id} + complete_type,set_complete_type,YES,YES,YES,YES,200,YES,1,NONE,complete_type,Values: duration
+60,1,1,tasks,Delete Unfinished Timesheet,DELETE,DELETE,/api/tasks/timesheets/{id},delete_user_unfinished_timesheet,YES,YES,YES,PENDING,200,YES,2,NONE,(timesheet_id),Permission-gated.
+61,1,1,tasks,Bulk Action,BULK,N/A,bulk_action,YES,NO,NO,NO,N/A,NO,N/A,"multi-select,LOW,action,NOT IMPLEMENTED. Requires multi-select UI + bulk endpoint.
+62,1,1,tasks,Edit Reminder,UPDATE,N/A,edit_reminder,YES,NO,NO,NO,N/A,NO,N/A,"date,LOW,staff,NOT IMPLEMENTED. Low priority. Can add+delete only.
+63,1,1,tasks,Update Timesheet,UPDATE,N/A,update_timesheet,YES,NO,NO,NO,N/A,NO,N/A,"start_time,NONE,end_time,note
+64,1,1,tasks,Save Checklist Template,CREATE,N/A,save_checklist_item_template,YES,NO,NO,NO,N/A,NO,N/A,"template data",NONE,NOT IMPLEMENTED. Template system low priority.,
+65,1,1,tasks,Delete Checklist Template,DELETE,N/A,remove_checklist_item_template,YES,NO,NO,NO,N/A,NO,N/A,(template_id),NONE,NOT IMPLEMENTED. Low priority.,
+66,1,1,tasks,Task Tracking Stats,VIEW,N/A,task_tracking_stats,YES,NO,NO,NO,N/A,NO,N/A,"stats aggregation",NONE,NOT IMPLEMENTED. Dashboard-level feature.,
+67,1,1,tasks,Staff Started Timers,VALIDATE,N/A,get_staff_started_timers,YES,NO,NO,NO,N/A,NO,N/A,"staff,LOW,timer,NOT IMPLEMENTED. Global timer poll low priority.
+68,1,1,tasks,Add External Attachment,UPLOAD,N/A,add_external_attachment,YES,NO,NO,NO,N/A,NO,N/A,"URL,NONE,rel_type,rel_id
+69,1,1,tasks,Download Files (ZIP),DOWNLOAD,N/A,download_files,YES,NO,NO,NO,N/A,NO,N/A,"task_id,LOW,comment_id,NOT IMPLEMENTED. Server-side ZIP download web-only.
+70,1,1,tasks,Staff Mentions Lookup,VALIDATE,N/A,get_staff_names_for_mentions,YES,NO,NO,NO,N/A,NO,N/A,"taskid",NONE,NOT IMPLEMENTED. Staff list cached client-side already.,
+71,1,1,tasks,Save Checklist Assigned,UPDATE,N/A,save_checklist_assigned_staff,YES,NO,NO,NO,N/A,NO,N/A,"checklist_id,LOW,assigned,NOT IMPLEMENTED. Low priority.
+72,1,1,tasks,Switch Kanban View,PREFERENCE,N/A,switch_kanban,YES,NO,NO,NO,N/A,NO,N/A,"view preference",NONE,NOT NEEDED. Mobile uses local state (viewMode).,
+73,1,1,tasks,Detailed Overview Panel,VIEW,N/A,detailed_overview,YES,NO,NO,NO,N/A,NO,N/A,"HTML panel",NONE,NOT NEEDED. Mobile has custom detail layout.,
+
+# ===== BATCH 2 — ROUND 1 — CRM Sweep (7 modules, 128 ops) ===============
+#,Batch,Round,Module,Operation,Category,HTTPMethod,APIEndpoint,WEBUI_Method,WEBUI_Available,API_Available,Mobile_Available,Tested,HTTP_Code,Success,Iterations,Gap_Severity,Fields,Notes
+1,2,1,projects,List Projects,LIST,GET,/api/projects?limit=&offset=,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,name
+2,2,1,projects,Get Single Project,DETAIL,GET,/api/projects/{id},view,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_get single with custom data
+3,2,1,projects,Search Projects,SEARCH,GET,/api/projects/search/{key},(via index),YES,YES,YES,NO,N/A,PENDING,0,NONE,,description
+4,2,1,projects,Create Project,CREATE,POST,/api/projects,project,YES,YES,YES,NO,N/A,PENDING,0,NONE,,client_id
+5,2,1,projects,Update Project,UPDATE,PUT,/api/projects/{id},project,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put partial update
+6,2,1,projects,Delete Project,DELETE,DELETE,/api/projects/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
+7,2,1,projects,Project Count,VALIDATE,GET,/api/projects/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint exists
+8,2,1,projects,Mark Finished,STATUS,PUT,/api/projects/{id}/mark_finished,mark_as(finished),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_finished_put
+9,2,1,projects,Mark On Hold,STATUS,PUT,/api/projects/{id}/mark_on_hold,mark_as(on_hold),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_on_hold_put
+10,2,1,projects,Mark In Progress,STATUS,PUT,/api/projects/{id}/mark_in_progress,mark_as(in_progress),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_in_progress_put
+11,2,1,projects,Mark Cancelled,STATUS,PUT,/api/projects/{id}/mark_cancelled,mark_as(cancelled),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_cancelled_put
+12,2,1,projects,Project Table View,LIST,GET,/api/projects?limit=&offset=,table,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Same as list
+13,2,1,projects,List Milestones,SUB,GET,N/A,milestones,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+14,2,1,projects,Create Milestone,SUB,POST,N/A,milestone,YES,NO,NO,NO,N/A,PENDING,0,NONE,,project_id
+15,2,1,projects,Update Milestone,SUB,PUT,N/A,milestone,YES,NO,NO,NO,N/A,PENDING,0,NONE,,color
+16,2,1,projects,Delete Milestone,SUB,DELETE,N/A,delete_milestone,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+17,2,1,projects,Milestone Kanban,VIEW,GET,N/A,milestones_kanban,YES,NO,NO,NO,N/A,PENDING,0,NONE,,project_id
+18,2,1,projects,Milestone Reorder,REORDER,PUT,N/A,update_milestones_order,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+19,2,1,projects,Change Milestone Color,UPDATE,PUT,N/A,change_milestone_color,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+20,2,1,projects,List Members,SUB,GET,N/A,(embedded in view),YES,NO,NO,NO,N/A,PENDING,0,NONE,,firstname
+21,2,1,projects,Add/Edit Members,SUB,POST,N/A,add_edit_members,YES,NO,NO,NO,N/A,PENDING,0,NONE,,project_id
+22,2,1,projects,Remove Member,SUB,DELETE,N/A,remove_team_member,YES,NO,NO,NO,N/A,PENDING,0,NONE,,project_id)
+23,2,1,projects,List Discussions,SUB,GET,N/A,discussions,YES,NO,NO,NO,N/A,PENDING,0,NONE,,subject
+24,2,1,projects,Add Discussion,SUB,POST,N/A,discussion,YES,NO,NO,NO,N/A,PENDING,0,NONE,,description
+25,2,1,projects,List Files,SUB,GET,N/A,file,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+26,2,1,projects,Upload File,SUB,POST,/api/files/upload_bytes,upload_file,YES,YES,YES,NO,N/A,PENDING,0,NONE,,rel_type=project
+27,2,1,projects,Delete File,SUB,DELETE,/api/files/{id},remove_file,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Via Files API
+28,2,1,projects,Project Expenses,SUB,GET,N/A,expenses,YES,NO,NO,NO,N/A,PENDING,0,NONE,,amount
+29,2,1,projects,Timesheets,SUB,GET,N/A,timesheets,YES,NO,NO,NO,N/A,PENDING,0,NONE,,staff
+30,2,1,projects,Add Timesheet,SUB,POST,N/A,timesheet,YES,NO,NO,NO,N/A,PENDING,0,NONE,,staff_id
+31,2,1,projects,Gantt Data,VIEW,GET,N/A,gantt,YES,NO,NO,NO,N/A,PENDING,0,NONE,,dependencies
+32,2,1,projects,BoQ Management,SUB,GET,N/A,boq,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+33,2,1,projects,Copy Project,DUPLICATE,POST,N/A,copy,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+34,2,1,projects,Project Notes,SUB,GET,N/A,save_note,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+35,2,1,projects,Bulk Action Files,BULK,POST,N/A,bulk_action_files,YES,NO,NO,NO,N/A,PENDING,0,NONE,,action
+36,2,1,projects,Invoice Project,ACTION,POST,N/A,invoice_project,YES,NO,NO,NO,N/A,PENDING,0,NONE,,invoice_data
+37,2,1,projects,Pin Action,ACTION,POST,N/A,pin_action,YES,NO,NO,NO,N/A,PENDING,0,NONE,,action
+38,2,1,customers,List Customers,LIST,GET,/api/customers?limit=&offset=,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,company
+39,2,1,customers,Get Customer,DETAIL,GET,/api/customers/{id},client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_get single
+40,2,1,customers,Search Customers,SEARCH,GET,/api/customers/search/{key},(via table),YES,YES,YES,NO,N/A,PENDING,0,NONE,,vat
+41,2,1,customers,Create Customer,CREATE,POST,/api/customers,client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,vat
+42,2,1,customers,Update Customer,UPDATE,PUT,/api/customers/{id},client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put
+43,2,1,customers,Delete Customer,DELETE,DELETE,/api/customers/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
+44,2,1,customers,Customer Count,VALIDATE,GET,/api/customers/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint
+45,2,1,customers,List Contacts,SUB,GET,N/A,all_contacts,YES,NO,NO,NO,N/A,PENDING,0,NONE,,firstname
+46,2,1,customers,Create Contact,SUB,POST,/api/contacts,form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
+47,2,1,customers,Update Contact,SUB,PUT,/api/contacts/{id},form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Via Contacts API data_put
+48,2,1,customers,Delete Contact,SUB,DELETE,/api/contacts/{id},delete_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Via Contacts API data_delete
+49,2,1,customers,Customer Groups,SUB,GET,N/A,groups,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+50,2,1,customers,Create Group,SUB,POST,N/A,group,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+51,2,1,customers,Delete Group,SUB,DELETE,N/A,delete_group,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+52,2,1,customers,Mark Active,STATUS,PUT,N/A,mark_as_active,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: Can use data_put
+53,2,1,customers,Change Status,STATUS,PUT,N/A,change_client_status,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: Can use data_put
+54,2,1,customers,Assign Admins,SUB,POST,N/A,assign_admins,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+55,2,1,customers,Remove Admin,SUB,DELETE,N/A,delete_customer_admin,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+56,2,1,customers,Billing/Shipping,VALIDATE,GET,N/A,get_customer_billing_and_shipping_details,YES,NO,NO,NO,N/A,PENDING,0,NONE,,city
+57,2,1,customers,Upload File,SUB,POST,/api/files/upload_bytes,upload_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,rel_type=customer
+58,2,1,customers,Vault Entries,SUB,GET,N/A,vault_entry_create,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+59,2,1,customers,Import,IMPORT,POST,N/A,import,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+60,2,1,customers,Bulk Action,BULK,POST,N/A,bulk_action,YES,NO,NO,NO,N/A,PENDING,0,NONE,,action
+61,2,1,customers,Zip Documents,EXPORT,GET,N/A,zip_credit_notes,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+62,2,1,customers,Statement,EXPORT,GET,N/A,statement,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+63,2,1,leads,List Leads,LIST,GET,/api/leads?limit=&offset=,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,name
+64,2,1,leads,Get Lead,DETAIL,GET,/api/leads/{id},lead,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_get single
+65,2,1,leads,Search Leads,SEARCH,GET,/api/leads/search/{key},(via index),YES,YES,YES,NO,N/A,PENDING,0,NONE,,company
+66,2,1,leads,Create Lead,CREATE,POST,/api/leads,lead,YES,YES,YES,NO,N/A,PENDING,0,NONE,,company
+67,2,1,leads,Update Lead,UPDATE,PUT,/api/leads/{id},lead,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put
+68,2,1,leads,Delete Lead,DELETE,DELETE,/api/leads/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
+69,2,1,leads,Lead Count,VALIDATE,GET,/api/leads/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint
+70,2,1,leads,Change Status,STATUS,PUT,/api/leads/{id}/status,update_lead_status,YES,YES,YES,NO,N/A,PENDING,0,NONE,,status_put
+71,2,1,leads,Kanban Board,VIEW,GET,N/A,kanban,YES,NO,NO,NO,N/A,PENDING,0,NONE,,lead data
+72,2,1,leads,Kanban Load More,PAGINATION,GET,N/A,leads_kanban_load_more,YES,NO,NO,NO,N/A,PENDING,0,NONE,,status
+73,2,1,leads,Mark as Lost,STATUS,PUT,N/A,mark_as_lost,YES,NO,NO,NO,N/A,PENDING,0,NONE,,date_lost
+74,2,1,leads,Mark as Junk,STATUS,PUT,N/A,mark_as_junk,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: Can use data_put
+75,2,1,leads,Convert to Customer,ACTION,POST,N/A,convert_to_customer,YES,NO,NO,NO,N/A,PENDING,0,NONE,,customer_data
+76,2,1,leads,Add Note,SUB,POST,N/A,add_note,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+77,2,1,leads,Delete Note,SUB,DELETE,N/A,delete_note,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+78,2,1,leads,List Attachments,SUB,GET,N/A,(embedded),YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+79,2,1,leads,Upload Attachment,SUB,POST,/api/files/upload_bytes,add_lead_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,rel_type=lead
+80,2,1,leads,Delete Attachment,SUB,DELETE,/api/files/{id},delete_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Via Files API
+81,2,1,leads,Lead Sources,SUB,GET,N/A,sources,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+82,2,1,leads,Lead Statuses,SUB,GET,N/A,statuses,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+83,2,1,leads,Import,IMPORT,POST,N/A,import,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+84,2,1,leads,Bulk Action,BULK,POST,N/A,bulk_action,YES,NO,NO,NO,N/A,PENDING,0,NONE,,action
+85,2,1,leads,Email Integration,ACTION,POST,N/A,email_integration,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+86,2,1,contracts,List Contracts,LIST,GET,/api/contracts?limit=&offset=,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,subject
+87,2,1,contracts,Get Contract,DETAIL,GET,/api/contracts/{id},contract,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_get single
+88,2,1,contracts,Create Contract,CREATE,POST,/api/contracts,contract,YES,YES,YES,NO,N/A,PENDING,0,NONE,,client
+89,2,1,contracts,Update Contract,UPDATE,PUT,N/A,contract,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No data_put endpoint
+90,2,1,contracts,Delete Contract,DELETE,DELETE,/api/contracts/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
+91,2,1,contracts,Sign Contract,ACTION,POST,/api/contracts/{id}/sign,mark_as_signed,YES,YES,YES,NO,N/A,PENDING,0,NONE,,sign_post
+92,2,1,contracts,Unsign Contract,ACTION,POST,N/A,unmark_as_signed,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+93,2,1,contracts,Send to Email,ACTION,POST,/api/contracts/{id}/send,send_to_email,YES,YES,YES,NO,N/A,PENDING,0,NONE,,message
+94,2,1,contracts,Renew Contract,ACTION,POST,/api/contracts/{id}/renew,renew,YES,YES,YES,NO,N/A,PENDING,0,NONE,,new_end
+95,2,1,contracts,Copy Contract,DUPLICATE,POST,N/A,copy,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+96,2,1,contracts,List Comments,SUB,GET,N/A,get_comments,YES,NO,NO,NO,N/A,PENDING,0,NONE,,content
+97,2,1,contracts,Add Comment,SUB,POST,N/A,add_comment,YES,NO,NO,NO,N/A,PENDING,0,NONE,,contract_id
+98,2,1,contracts,Edit Comment,SUB,PUT,N/A,edit_comment,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+99,2,1,contracts,Delete Comment,SUB,DELETE,N/A,remove_comment,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+100,2,1,contracts,Contract Notes,SUB,GET,N/A,get_notes,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+101,2,1,contracts,Add Note,SUB,POST,N/A,add_note,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+102,2,1,contracts,List Attachments,SUB,GET,N/A,(embedded),YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+103,2,1,contracts,Upload Attachment,SUB,POST,N/A,add_contract_attachment,YES,NO,NO,NO,N/A,PENDING,0,NONE,,contract_id
+104,2,1,contracts,Contract Types,SUB,GET,N/A,types,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
+105,2,1,contracts,Create/Update Type,SUB,POST,N/A,type,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+106,2,1,contracts,Pdf Generation,EXPORT,GET,N/A,pdf,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+107,2,1,milestones,List Milestones,LIST,GET,/api/milestones?project_id=,milestones,YES,YES,YES,NO,N/A,PENDING,0,NONE,,name
+108,2,1,milestones,Get Milestone,DETAIL,GET,/api/milestones/{id},milestone,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_get single
+109,2,1,milestones,Search Milestones,SEARCH,GET,/api/milestones/search/{key},(via project),YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_search_get
+110,2,1,milestones,Create Milestone,CREATE,POST,/api/milestones,milestone,YES,YES,YES,NO,N/A,PENDING,0,NONE,,project_id
+111,2,1,milestones,Update Milestone,UPDATE,PUT,/api/milestones/{id},milestone,YES,YES,YES,NO,N/A,PENDING,0,NONE,,color
+112,2,1,milestones,Delete Milestone,DELETE,DELETE,/api/milestones/{id},delete_milestone,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
+113,2,1,milestones,Reorder Milestones,REORDER,PUT,N/A,update_milestones_order,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+114,2,1,milestones,Change Color,UPDATE,PUT,N/A,change_milestone_color,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: Can use data_put
+115,2,1,milestones,Kanban View,VIEW,GET,N/A,milestones_kanban,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+116,2,1,business_partners,List Partners,LIST,GET,/api/business_partners_api,YES,YES,YES,NO,PENDING,N/A,"id,0,NONE,,type
+117,2,1,business_partners,Get Partner,DETAIL,GET,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"all fields",0,NONE,,
+118,2,1,business_partners,Create Partner,CREATE,POST,/api/business_partners_api,YES,YES,YES,NO,PENDING,N/A,"name,0,NONE,,category
+119,2,1,business_partners,Update Partner,UPDATE,PUT,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"all fields",0,NONE,,
+120,2,1,business_partners,Delete Partner,DELETE,DELETE,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"(id)",0,NONE,,
+121,2,1,business_partners,Partner Groups,SUB,GET,/api/business_partners_api/groups,YES,YES,NO,NO,PENDING,N/A,"group data",0,NONE,,
+122,2,1,business_partners,Partner Activity,SUB,GET,/api/business_partners_api/activity/{id},YES,YES,NO,NO,PENDING,N/A,"activity log",0,NONE,,
+123,2,1,contacts,List Contacts,LIST,GET,/api/contacts?customer_id=,all_contacts,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
+124,2,1,contacts,Get Contact,DETAIL,GET,/api/contacts/{id},form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,data_get single
+125,2,1,contacts,Create Contact,CREATE,POST,/api/contacts,form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
+126,2,1,contacts,Update Contact,UPDATE,PUT,/api/contacts/{id},form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,data_put
+127,2,1,contacts,Delete Contact,DELETE,DELETE,/api/contacts/{id},delete_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,data_delete
+128,2,1,contacts,Change Status,STATUS,PUT,N/A,change_contact_status,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
+
+# ===== BATCH 9 — ROUND 1 — Reports Sweep =================================
+#,Batch,Round,Module,Operation,Category,HTTPMethod,APIEndpoint,WEBUI_Method,WEBUI_Available,API_Available,Mobile_Available,Tested,HTTP_Code,Success,Iterations,Gap_Severity,Fields,Notes
+1,9,1,reports,List All Reports,LIST,GET,/api/reports_api/data,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.*+projects.name+clients.company+staff.name,Mobile: useReportsList with project_id/search/status/date_from/date_to filters
+2,9,1,reports,List Reports with Project Filter,FILTER,GET,/api/reports_api/data?project_id=,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.project_id,Mobile: project picker passes project_id to filters
+3,9,1,reports,List Reports with Search,FILTER,GET,/api/reports_api/data?search=,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.report_code+projects.name+scope_description,Mobile: search TextInput updates filters.search
+4,9,1,reports,List Reports with Status Filter,FILTER,GET,/api/reports_api/data?status=,table (AJAX),YES,YES,NO,NO,,PENDING,0,NONE,prizm_report.status,Mobile: no status filter in UI yet
+5,9,1,reports,List Reports with Date Range,FILTER,GET,/api/reports_api/data?date_from=&date_to=,table (AJAX),YES,YES,NO,NO,,PENDING,0,NONE,prizm_report.report_date,Mobile: not exposed in UI
+6,9,1,reports,Get Single Report,READ,GET,/api/reports_api/data/{id},update_report (view),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report+prizm_report_details+prizm_report_images,Mobile: useReportDetail(id)
+7,9,1,reports,Get Report Projects Dropdown,LIST,GET,/api/reports_api/projects,index (loads projects),YES,YES,YES,NO,,PENDING,0,NONE,projects.id+projects.name+clients.company,Mobile: useReportProjects() for project picker
+8,9,1,reports,Create Report,CREATE,POST,/api/reports_api/data,add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report+prizm_report_details (work_done+next_activities),Mobile: useCreateReport() 6-step wizard
+9,9,1,reports,Update Report,UPDATE,PUT,/api/reports_api/data/{id},update_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report+prizm_report_details (replace),Mobile: useUpdateReport() 6-step wizard pre-populated
+10,9,1,reports,Delete Report,DELETE,DELETE,/api/reports_api/data/{id},delete_report (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.deleteDate,Mobile: useDeleteReport() with Alert confirmation. Soft delete.
+11,9,1,reports,Upload Report Images,UPLOAD,POST,/api/reports_api/images/{report_id},upload_image (file),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_images,Mobile: useUploadReportImages() base64 upload
+12,9,1,reports,Delete Report Image,DELETE,DELETE,/api/reports_api/images/{image_id},—,NO,YES,YES,NO,,PENDING,0,NONE,prizm_report_images,Mobile: useDeleteReportImage(). No web UI equivalent.
+13,9,1,reports,View Report Images / Photo Gallery,READ,GET,/api/reports_api/data/{id} (images array),—,NO,YES,YES,NO,,PENDING,0,NONE,prizm_report_images,Mobile: DetailScreen photo gallery + lightbox
+14,9,1,reports,View Work Done Table,READ,GET,/api/reports_api/data/{id} (details),report_pdf (PDF),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details (type=done),Mobile: DetailScreen SectionCard work done rows
+15,9,1,reports,View Next Activities Table,READ,GET,/api/reports_api/data/{id} (details),report_pdf (PDF),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details (type=next),Mobile: DetailScreen SectionCard next activities rows
+16,9,1,reports,Add Work Done Items,SUB,POST,/api/reports_api/data (work_done array),add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details,Mobile: CreateScreen Step 2 multi-row form
+17,9,1,reports,Add Next Activity Items,SUB,POST,/api/reports_api/data (next_activities array),add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details,Mobile: CreateScreen Step 3 multi-row form
+18,9,1,reports,Edit Work Done Items,SUB,PUT,/api/reports_api/data/{id} (work_done array),update_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details (replace),Mobile: EditScreen Step 2 pre-populated
+19,9,1,reports,Edit Next Activity Items,SUB,PUT,/api/reports_api/data/{id} (next_activities array),update_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report_details (replace),Mobile: EditScreen Step 3 pre-populated
+20,9,1,reports,Input Scope Description,CREATE,POST,/api/reports_api/data,add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.scope_description,Mobile: Step 1 multiline TextInput
+21,9,1,reports,Input Outstanding Issues,CREATE,POST,/api/reports_api/data,add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.outstanding_issues,Mobile: Step 4 multiline TextInput
+22,9,1,reports,Input Suggestions,CREATE,POST,/api/reports_api/data,add_report,YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.suggestions,Mobile: Step 4 multiline TextInput
+23,9,1,reports,Take Photo from Camera,UPLOAD,POST,/api/reports_api/images/{report_id},upload_image,NO,YES,YES,NO,,PENDING,0,NONE,prizm_report_images,Mobile: expo-image-picker camera mode
+24,9,1,reports,Pick Photo from Gallery,UPLOAD,POST,/api/reports_api/images/{report_id},upload_image,NO,YES,YES,NO,,PENDING,0,NONE,prizm_report_images,Mobile: expo-image-picker gallery mode
+25,9,1,reports,Photo Description Input,UPDATE,PUT,not available in API,update_image_description,NO,NO,NO,NO,,PENDING,0,NONE,prizm_report_images.work_image_descriptions,Mobile: photo description field. API lacks update-image-description endpoint
+26,9,1,reports,Delete Existing Image (Web),DELETE,N/A,N/A,delete_image (file+DB),YES,NO,NO,NO,,PENDING,0,NONE,prizm_report_images,Web: delete_image handles file unlink+DB. Mobile: separate endpoint
+27,9,1,reports,Report PDF Generation,EXPORT,GET,N/A,report_pdf($id),YES,NO,NO,NO,,PENDING,0,NONE,prizm_report+details+images,Web: PDF export. No API/mobile equivalent
+28,9,1,reports,Duplicate Report Check,VALIDATE,POST,N/A (AJAX),check_report_today,YES,NO,NO,NO,,PENDING,0,NONE,prizm_report.project_id+created_by+report_date,Web: AJAX duplicate check. No API/mobile equivalent
+29,9,1,reports,Load Milestones for Project,READ,GET,N/A,load_milestones($project_id),YES,NO,NO,NO,,PENDING,0,NONE,milestones,Web: AJAX dropdown. No API/mobile equivalent
+30,9,1,reports,Load Tasks for Milestone,READ,GET,N/A,load_tasks($milestone_id,$project_id),YES,NO,NO,NO,,PENDING,NONE,0,tasks
+31,9,1,reports,Projects Cashflow List,READ,GET,N/A,projects_cashflow,NO,NO,NO,NO,,PENDING,0,NONE,projects,Web: separate cashflow feature. Not relevant to mobile DPR
+32,9,1,reports,Pull-to-Refresh List,READ,GET,/api/reports_api/data,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report,Mobile: RefreshControl on FlatList
+33,9,1,reports,View Creator Name (Resolved),READ,GET,/api/reports_api/data,update_report (view),YES,YES,YES,NO,,PENDING,0,NONE,staff.firstname+staff.lastname,API resolves creator_name in JOIN. Mobile displays it
+34,9,1,reports,View Client Name (Resolved),READ,GET,/api/reports_api/data,report_pdf (PDF),YES,YES,YES,NO,,PENDING,0,NONE,clients.company,API resolves client_name in JOIN. Mobile displays it
+35,9,1,reports,KeyboardAvoidingView Handling (Create),SUB,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: Platform-aware KeyboardAvoidingView on CreateScreen
+36,9,1,reports,KeyboardAvoidingView Handling (Edit),SUB,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: Platform-aware KeyboardAvoidingView on EditScreen
+37,9,1,reports,RTL/Arabic Text Support,SUB,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: rtlTextStyle on all user-content Text/TextInput components
+38,9,1,reports,Permissions Check (View),VALIDATE,N/A,N/A,__construct (staff_cant view),YES,NO,YES,NO,,PENDING,0,NONE,N/A,Mobile: usePermissions() canEdit/canDelete on prizm_reports
+39,9,1,reports,Permissions Check (Create),VALIDATE,N/A,N/A,add_report (has_permission create),YES,NO,YES,NO,,PENDING,0,NONE,N/A,Mobile: canCreatePerm in ReportListScreen
+40,9,1,reports,Permissions Check (Edit),VALIDATE,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: canEdit in ReportDetailScreen controls edit button
+41,9,1,reports,Permissions Check (Delete),VALIDATE,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: canDelete in ReportDetailScreen controls delete button
+42,9,1,reports,Status Badge Display (Active/Draft/Approved),READ,GET,/api/reports_api/data,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.status,Mobile: STATUS_MAP for 1=Active
+43,9,1,reports,Report Code Display (PED-XXXX-R-YYYYMMDD),READ,GET,/api/reports_api/data,table (AJAX),YES,YES,YES,NO,,PENDING,0,NONE,prizm_report.report_code,Auto-generated by model: PED-{project_number}-R-{date}{staff_id}
+44,9,1,reports,Error/Empty State Handling,SUB,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: loading spinner
+45,9,1,reports,Toast Notification (Success/Error),SUB,N/A,N/A,N/A,N/A,N/A,YES,NO,,PENDING,0,NONE,N/A,Mobile: Toast.show on create/update/delete success and error

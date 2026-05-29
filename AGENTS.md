@@ -115,3 +115,24 @@ identified. Don't repeat.
 - DON'T treat HTTP 403 as session-expired. Only 401 is unauthenticated;
   403 is "authenticated but lacks permission for this specific action"
   and should NOT trigger sign-out. (See `lib/api.ts::isInvalidTokenResponse`.)
+
+## Session-End QC Report Protocol
+
+After every coding session that modifies API endpoints, mobile screens, or
+database schemas — or when the user requests "run QC":
+
+1. Populate `docs/qc/QC-REPORT-TEMPLATE.md` with actual session data:
+   - Report header: date, time, agent, model, workspace, session ID, turns
+   - Test results: all endpoints verified with HTTP codes
+   - Acceptance criteria: pass/fail percentages per severity
+   - Code changes: files modified, commits with SHAs
+   - Deployment status
+2. Save filled report per Asmaa naming grammar:
+   `PE-QAQC-QC-RPT-{YYNNN}-R{NN}__{session-id}.md`
+3. Store in canonical location:
+   `C:\Users\osama\.claude-brain\_audits\qc-reports\`
+4. Update `_INDEX.md` with the new report entry
+5. Reference the report in `SESSION-HANDOFF.md`
+
+Template and policy at `docs/QA-QC-POLICY-AND-PLAN.md` §11.0.
+Brand identity by Hawiya v0.1. Naming by Asmaa v1.2.

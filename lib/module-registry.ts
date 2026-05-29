@@ -498,11 +498,11 @@ export const MODULES: ModuleDefinition[] = [
     idKey: "userid",
     icon: "business-outline",
     color: "#0284C7",
-    titleFields: ["company", "name"],
-    subtitleFields: ["phonenumber", "city", "vat"],
-    searchFields: ["company", "phonenumber", "city", "vat"],
+    titleFields: ["company"],
+    subtitleFields: ["name", "phonenumber", "email", "city", "state", "country", "vat", "active", "website", "datecreated"],
+    searchFields: ["company", "name", "phonenumber", "email", "city", "state", "vat", "website"],
     defaultSort: { field: "company", direction: "asc" },
-    filterableFields: ["active", "country"],
+    filterableFields: ["active", "country", "city", "state", "phonenumber", "website", "vat", "datecreated"],
     statusField: "active",
     statusOptions: [
       { label: "Active", value: "1", color: "#16A34A" },
@@ -514,9 +514,12 @@ export const MODULES: ModuleDefinition[] = [
     },
     fields: [
       { key: "company", label: "Company", section: "Customer", required: true },
-      { key: "vat", label: "VAT", section: "Customer" },
+      { key: "name", label: "Contact Name", section: "Customer" },
+      { key: "email", label: "Email", section: "Customer", type: "email" },
       { key: "phonenumber", label: "Phone", section: "Customer", type: "phone" },
+      { key: "vat", label: "VAT", section: "Customer" },
       { key: "website", label: "Website", section: "Customer", type: "url" },
+      { key: "datecreated", label: "Date Created", section: "Customer", type: "date", readOnly: true },
       { key: "default_currency", label: "Default Currency", section: "Customer", type: "number", relation: "currency", hideIfZero: true },
       { key: "default_language", label: "Default Language", section: "Customer" },
       { key: "active", label: "Active", section: "Customer", type: "select", options: statusOptions },
@@ -2183,7 +2186,7 @@ export function moduleSubtitle(module: ModuleDefinition, row: any): string {
       seen.add(normalized);
       return true;
     })
-    .slice(0, 3)
+    .slice(0, 6)
     .join(" • ");
 }
 

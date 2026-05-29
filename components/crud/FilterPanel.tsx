@@ -86,7 +86,7 @@ function ruleLabel(module: ModuleDefinition, rule: FilterRule): string {
 
 const PRESETS_KEY_PREFIX = "perfix_filter_presets_";
 
-type PresetEntry = { name: string; group: FilterGroup };
+type PresetEntry = { id: string; name: string; group: FilterGroup };
 
 function fieldDefaultOperator(
   module: ModuleDefinition,
@@ -140,12 +140,65 @@ export const FilterPanel = memo(function FilterPanel({
 
   const savePreset = useCallback(async () => {
     if (!presetName.trim()) return;
-    const next = [...presets, { name: presetName.trim(), group: { ...draft } }];
+    const next = [...presets, { id: Date.now().toString(36), name: presetName.trim(), group: { ...draft } }];
     setPresets(next);
     await AsyncStorage.setItem(storageKey, JSON.stringify(next));
     setPresetName("");
     setShowPresetInput(false);
   }, [presetName, draft, presets, storageKey]);
+
+  const renamePreset = useCallback(
+    async (index: number) => {
+      const preset = presets[index];
+      if (!preset) return;
+      setPresetName(preset.name);
+      // Save the index so we know we're renaming, not creating
+      setRenamingIndex(index);
+      setShowPresetInput(true);
+    },
+    [presets],
+  );
+
+  const [renamingIndex, setRenamingIndex] = useState<number | null>(null);
+
+  const finishRename = useCallback(async () => {
+    if (!presetName.trim() || renamingIndex === null) return;
+    const next = presets.map((p, i) =>
+      i === renamingIndex ? { ...p, name: presetName.trim() } : p,
+    );
+    setPresets(next);
+    await AsyncStorage.setItem(storageKey, JSON.stringify(next));
+    setPresetName("");
+    setShowPresetInput(false);
+    setRenamingIndex(null);
+  }, [presetName, renamingIndex, presets, storageKey]);
+
+  const setDefaultPreset = useCallback(
+    async (index: number) => {
+      const preset = presets[index];
+      if (!preset) return;
+      await AsyncStorage.setItem(`${storageKey}_default`, JSON.stringify(preset.group));
+      // Visual feedback: mark as default
+    },
+    [presets, storageKey],
+  );
+
+  const loadDefaultPreset = useCallback(async () => {
+    try {
+      const raw = await AsyncStorage.getItem(`${storageKey}_default`);
+      if (raw) {
+        const group = JSON.parse(raw) as FilterGroup;
+        setDraft({ ...group, rules: [...group.rules] });
+      }
+    } catch {}
+  }, [storageKey]);
+
+  // Load default preset when panel opens
+  useEffect(() => {
+    if (visible && filterGroup.rules.length === 0) {
+      loadDefaultPreset();
+    }
+  }, [visible]);
 
   const deletePreset = useCallback(
     async (index: number) => {
@@ -401,7 +454,7 @@ export const FilterPanel = memo(function FilterPanel({
                 Saved presets
               </Text>
               {presets.map((preset, i) => (
-                <View key={i} className="flex-row items-center mb-2">
+                <View key={preset.id || i} className="flex-row items-center mb-2">
                   <TouchableOpacity
                     onPress={() =>
                       setDraft({
@@ -414,15 +467,29 @@ export const FilterPanel = memo(function FilterPanel({
                   >
                     <Ionicons name="bookmark-outline" size={16} color="#64748B" />
                     <Text className="text-foreground ml-2 flex-1">{preset.name}</Text>
-                    <Text className="text-xs text-muted">
+                    <Text className="text-xs text-muted mr-1">
                       {activeFilterCount(preset.group)} rule
                       {activeFilterCount(preset.group) !== 1 ? "s" : ""}
                     </Text>
                   </TouchableOpacity>
                   <TouchableOpacity
+                    onPress={() => renamePreset(i)}
+                    hitSlop={10}
+                    className="p-2"
+                  >
+                    <Ionicons name="pencil-outline" size={16} color="#64748B" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => setDefaultPreset(i)}
+                    hitSlop={10}
+                    className="p-2"
+                  >
+                    <Ionicons name="star-outline" size={16} color="#F59E0B" />
+                  </TouchableOpacity>
+                  <TouchableOpacity
                     onPress={() => deletePreset(i)}
                     hitSlop={10}
-                    className="ml-2 p-2"
+                    className="p-2"
                   >
                     <Ionicons name="trash-outline" size={16} color="#DC2626" />
                   </TouchableOpacity>
@@ -437,18 +504,25 @@ export const FilterPanel = memo(function FilterPanel({
               <TextInput
                 value={presetName}
                 onChangeText={setPresetName}
-                placeholder="Preset name…"
+                placeholder={renamingIndex !== null ? "Rename preset…" : "Preset name…"}
                 placeholderTextColor="#94A3B8"
                 className="flex-1 bg-white rounded-xl px-4 py-3 text-foreground"
                 autoFocus
-                onSubmitEditing={savePreset}
+                onSubmitEditing={renamingIndex !== null ? finishRename : savePreset}
               />
               <TouchableOpacity
-                onPress={savePreset}
+                onPress={renamingIndex !== null ? finishRename : savePreset}
                 className="ml-2 bg-primary rounded-xl px-4 py-3"
                 activeOpacity={0.75}
               >
-                <Text className="text-white font-medium">Save</Text>
+                <Text className="text-white font-medium">{renamingIndex !== null ? "Rename" : "Save"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() => { setShowPresetInput(false); setRenamingIndex(null); setPresetName(""); }}
+                className="ml-2 p-3"
+                hitSlop={8}
+              >
+                <Ionicons name="close" size={20} color="#94A3B8" />
               </TouchableOpacity>
             </View>
           ) : draftCount > 0 ? (

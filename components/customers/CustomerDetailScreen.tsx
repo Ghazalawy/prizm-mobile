@@ -16,6 +16,7 @@ import {
   useCustomerDetail,
   useCustomerContacts,
   useCreateCustomerContact,
+  useDeleteCustomerContact,
   useCustomerInvoices,
   useCustomerEstimates,
   useCustomerProjects,
@@ -357,6 +358,7 @@ function InfoRow({ label, value }: { label: string; value: any }) {
 function ContactsTab({ customerId }: { customerId: string }) {
   const { data, isLoading, refetch } = useCustomerContacts(customerId);
   const createContact = useCreateCustomerContact();
+  const deleteContact = useDeleteCustomerContact();
   const [showForm, setShowForm] = useState(false);
   const [firstname, setFirstname] = useState("");
   const [lastname, setLastname] = useState("");
@@ -390,6 +392,24 @@ function ContactsTab({ customerId }: { customerId: string }) {
         onError: (e: Error) => Alert.alert("Failed", e.message),
       }
     );
+  };
+
+  const handleDelete = (contactId: number, name: string) => {
+    Alert.alert("Delete contact", `Remove ${name}?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: () =>
+          deleteContact.mutate(
+            { id: contactId, customerId },
+            {
+              onSuccess: () => refetch(),
+              onError: (e: Error) => Alert.alert("Failed", e.message),
+            }
+          ),
+      },
+    ]);
   };
 
   if (isLoading) return <LoadingState />;
@@ -483,6 +503,17 @@ function ContactsTab({ customerId }: { customerId: string }) {
                 className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center"
               >
                 <Ionicons name="mail-outline" size={15} color="#2563EB" />
+              </TouchableOpacity>
+              <TouchableOpacity
+                onPress={() =>
+                  handleDelete(
+                    contact.id,
+                    `${contact.firstname} ${contact.lastname || ""}`.trim() || contact.email
+                  )
+                }
+                className="w-8 h-8 rounded-full bg-red-50 items-center justify-center"
+              >
+                <Ionicons name="trash-outline" size={15} color="#DC2626" />
               </TouchableOpacity>
             </View>
           </View>

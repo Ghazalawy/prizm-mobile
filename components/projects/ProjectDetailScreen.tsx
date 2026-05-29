@@ -11,8 +11,8 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useCallback, useMemo, useState } from "react";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { deleteEntity } from "@/lib/api";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { deleteEntity, listEntities, normalizeList } from "@/lib/api";
 import {
   useProjectDetail,
   useProjectTasks,
@@ -23,6 +23,8 @@ import {
   useProjectNotes,
   useProjectActivity,
   useProjectMembers,
+  useAddProjectMembers,
+  useRemoveProjectMember,
   useProjectDiscussions,
   useAddProjectDiscussion,
   type ProjectMilestone,
@@ -224,7 +226,7 @@ export function ProjectDetailScreen({ id }: Props) {
             ) : null}
             {tab === "tasks" ? <TasksPanel tasks={taskItems} projectId={id} /> : null}
             {tab === "milestones" ? <MilestonesPanel milestones={milestoneItems} /> : null}
-            {tab === "members" ? <MembersPanel data={members} /> : null}
+            {tab === "members" ? <MembersPanel projectId={id} data={members} /> : null}
             {tab === "discussions" ? (
               <DiscussionsPanel
                 data={discussions}
@@ -665,29 +667,137 @@ function tabLabel(k: TabKey): string {
   }
 }
 
-function MembersPanel({ data }: { data: ReturnType<typeof useProjectMembers> }) {
+function MembersPanel({
+  projectId,
+  data,
+}: {
+  projectId: string;
+  data: ReturnType<typeof useProjectMembers>;
+}) {
+  const [showPicker, setShowPicker] = useState(false);
+  const addMembers = useAddProjectMembers();
+  const removeMember = useRemoveProjectMember();
+  const staff = useQuery({
+    queryKey: ["lookup", "staff"],
+    queryFn: () => listEntities("staffs", { limit: 500 }),
+    staleTime: 5 * 60 * 1000,
+  });
   const items = data.data?.items ?? [];
+  const memberIds = useMemo(
+    () => new Set(items.map((m: any) => String(m.staff_id ?? m.staffid ?? m.id))),
+    [items]
+  );
+  const availableStaff = useMemo(
+    () =>
+      normalizeList(staff.data).items.filter((s: any) => {
+        const sid = String(s.staffid ?? s.id);
+        return sid && !memberIds.has(sid);
+      }),
+    [staff.data, memberIds]
+  );
+
+  const handleAdd = (staffId: number) => {
+    addMembers.mutate(
+      { projectId, members: [staffId] },
+      {
+        onSuccess: () => {
+          setShowPicker(false);
+          data.refetch();
+          Toast.show({ type: "success", text1: "Member added" });
+        },
+        onError: (e: Error) => Toast.show({ type: "error", text1: "Failed", text2: e.message }),
+      }
+    );
+  };
+
+  const handleRemove = (staffId: number, name: string) => {
+    Alert.alert("Remove member", `Remove ${name} from this project?`, [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Remove",
+        style: "destructive",
+        onPress: () =>
+          removeMember.mutate(
+            { projectId, staffId },
+            {
+              onSuccess: () => {
+                data.refetch();
+                Toast.show({ type: "success", text1: "Member removed" });
+              },
+              onError: (e: Error) => Toast.show({ type: "error", text1: "Failed", text2: e.message }),
+            }
+          ),
+      },
+    ]);
+  };
+
   if (data.isLoading && !data.data) {
     return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
   }
-  if (items.length === 0) {
-    return <Text className="text-sm text-muted text-center py-6 px-4">No team members assigned.</Text>;
-  }
+
   return (
     <View className="px-4 py-3">
-      {items.map((m: any, idx: number) => (
-        <View key={m.staff_id || m.id || idx} className="flex-row items-center py-2.5 border-b border-slate-100">
-          <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
-            <Ionicons name="person" size={16} color={ACCENT} />
-          </View>
-          <View className="flex-1">
-            <Text className="text-sm font-medium text-foreground">
-              {m.firstname ? `${m.firstname} ${m.lastname || ""}`.trim() : `Staff #${m.staff_id || m.id}`}
-            </Text>
-            {m.email ? <Text className="text-xs text-muted">{m.email}</Text> : null}
-          </View>
+      <View className="flex-row justify-end mb-2">
+        <TouchableOpacity
+          onPress={() => setShowPicker((v) => !v)}
+          className="px-3 py-1.5 rounded-lg"
+          style={{ backgroundColor: ACCENT }}
+        >
+          <Text className="text-white text-xs font-semibold">{showPicker ? "Cancel" : "Add Member"}</Text>
+        </TouchableOpacity>
+      </View>
+      {showPicker ? (
+        <View className="mb-3 bg-slate-50 rounded-xl p-2 max-h-48">
+          {staff.isLoading ? (
+            <ActivityIndicator color={ACCENT} className="py-4" />
+          ) : availableStaff.length === 0 ? (
+            <Text className="text-xs text-muted text-center py-3">No staff available to add.</Text>
+          ) : (
+            availableStaff.slice(0, 30).map((s: any) => {
+              const sid = Number(s.staffid ?? s.id);
+              const name = `${s.firstname || ""} ${s.lastname || ""}`.trim() || `Staff #${sid}`;
+              return (
+                <TouchableOpacity
+                  key={sid}
+                  onPress={() => handleAdd(sid)}
+                  disabled={addMembers.isPending}
+                  className="flex-row items-center py-2 border-b border-slate-100"
+                >
+                  <Ionicons name="person-add-outline" size={16} color={ACCENT} />
+                  <Text className="text-sm text-foreground ml-2 flex-1">{name}</Text>
+                </TouchableOpacity>
+              );
+            })
+          )}
         </View>
-      ))}
+      ) : null}
+      {items.length === 0 ? (
+        <Text className="text-sm text-muted text-center py-6 px-4">No team members assigned.</Text>
+      ) : (
+        items.map((m: any, idx: number) => {
+          const staffId = Number(m.staff_id ?? m.staffid ?? m.id);
+          const name = m.firstname ? `${m.firstname} ${m.lastname || ""}`.trim() : `Staff #${staffId}`;
+          return (
+            <View key={staffId || idx} className="flex-row items-center py-2.5 border-b border-slate-100">
+              <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
+                <Ionicons name="person" size={16} color={ACCENT} />
+              </View>
+              <View className="flex-1">
+                <Text className="text-sm font-medium text-foreground">{name}</Text>
+                {m.email ? <Text className="text-xs text-muted">{m.email}</Text> : null}
+              </View>
+              {staffId ? (
+                <TouchableOpacity
+                  onPress={() => handleRemove(staffId, name)}
+                  className="w-8 h-8 rounded-full bg-red-50 items-center justify-center"
+                >
+                  <Ionicons name="close" size={16} color="#DC2626" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          );
+        })
+      )}
     </View>
   );
 }

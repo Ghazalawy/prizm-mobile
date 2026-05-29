@@ -370,13 +370,13 @@ function notificationToInboxItem(n: MyNotification): InboxItem {
   const title =
     n.from_fullname?.trim() ||
     n.fromcompany?.trim() ||
-    (Number(n.fromuserid ?? 0) > 0 ? `Staff #${n.fromuserid}` : "System");
+    (Number(n.fromuserid ?? 0) > 0 ? `Staff #${n.fromuserid}` : "Prizm automation");
 
   return {
     type: "notification",
     id: Number(n.id),
     title,
-    subtitle: n.description || n.description_key || "",
+    subtitle: n.description?.trim() || n.description_key || "",
     deeplink: n.link || undefined,
     priority: Number(n.isread_inline) === 0 ? "normal" : "low",
     triggered_at: toIsoish(n.date),

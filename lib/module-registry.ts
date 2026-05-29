@@ -12,6 +12,142 @@ export type FieldType =
   | "select"
   | "json";
 
+// ── Perfix Dynamic Filter System ────────────────────────────────────────
+// Mirrors the Web UI app-filters / App_table rule-based filter builder.
+//
+// Each filter rule has a type (which determines available operators) and a
+// value. Multiple rules are combined with AND/OR match_type inside a group.
+
+/** Rule type — maps to the Web UI's App_table_filter::$type taxonomy. */
+export type FilterRuleType =
+  | "TextRule"
+  | "NumberRule"
+  | "SelectRule"
+  | "MultiSelectRule"
+  | "CheckboxRule"
+  | "DateRule";
+
+/** Operators available per rule type (subset of Web UI's operator_sql map). */
+export type FilterOperator =
+  | "equal"
+  | "not_equal"
+  | "contains"
+  | "not_contains"
+  | "begins_with"
+  | "not_begins_with"
+  | "ends_with"
+  | "not_ends_with"
+  | "in"
+  | "not_in"
+  | "between"
+  | "not_between"
+  | "less"
+  | "less_or_equal"
+  | "greater"
+  | "greater_or_equal"
+  | "is_empty"
+  | "is_not_empty"
+  | "dynamic";
+
+/** A single filter rule — field + operator + value. */
+export type FilterRule = {
+  /** Field key (column name). */
+  id: string;
+  /** Rule type; determines operator palette and value coercion. */
+  type: FilterRuleType;
+  /** Operator for this rule (defaults to first in the operator list). */
+  operator: FilterOperator;
+  /** Raw value(s). String for scalar, string[] for "in"/"not_in", "from..to" string for "between". */
+  value: string | string[];
+  /** Whether the value uses a dynamic date expression (e.g. "today", "this_week"). */
+  hasDynamicValue?: boolean;
+};
+
+/** A group of filter rules with AND/OR join. */
+export type FilterGroup = {
+  match_type: "and" | "or";
+  rules: FilterRule[];
+};
+
+/** Default operators for each rule type (matching Web UI's commonOperators). */
+export const FILTER_TYPE_OPERATORS: Record<FilterRuleType, FilterOperator[]> = {
+  TextRule: [
+    "equal", "not_equal",
+    "contains", "not_contains",
+    "begins_with", "not_begins_with",
+    "ends_with", "not_ends_with",
+    "is_empty", "is_not_empty",
+  ],
+  NumberRule: [
+    "equal", "not_equal",
+    "between", "not_between",
+    "less", "less_or_equal",
+    "greater", "greater_or_equal",
+    "is_empty", "is_not_empty",
+  ],
+  SelectRule: [
+    "equal", "not_equal",
+  ],
+  MultiSelectRule: [
+    "in", "not_in",
+  ],
+  CheckboxRule: [
+    "in", "not_in",
+  ],
+  DateRule: [
+    "equal", "not_equal",
+    "between", "not_between",
+    "less", "less_or_equal",
+    "greater", "greater_or_equal",
+    "is_empty", "is_not_empty",
+    "dynamic",
+  ],
+};
+
+/** Human-readable operator labels. */
+export const FILTER_OPERATOR_LABELS: Record<FilterOperator, string> = {
+  equal: "equals",
+  not_equal: "not equals",
+  contains: "contains",
+  not_contains: "does not contain",
+  begins_with: "begins with",
+  not_begins_with: "does not begin with",
+  ends_with: "ends with",
+  not_ends_with: "does not end with",
+  in: "is any of",
+  not_in: "is none of",
+  between: "between",
+  not_between: "not between",
+  less: "less than",
+  less_or_equal: "less or equal",
+  greater: "greater than",
+  greater_or_equal: "greater or equal",
+  is_empty: "is empty",
+  is_not_empty: "is not empty",
+  dynamic: "is",
+};
+
+/**
+ * Infer the best FilterRuleType for a ModuleField based on its FieldType.
+ * This is the default used when a field doesn't explicitly declare filterRuleType.
+ */
+export function inferFilterRuleType(fieldType: FieldType | undefined): FilterRuleType {
+  switch (fieldType) {
+    case "number":
+    case "money":
+      return "NumberRule";
+    case "date":
+    case "datetime":
+      return "DateRule";
+    case "boolean":
+      return "CheckboxRule";
+    case "select":
+      return "SelectRule";
+    default:
+      return "TextRule";
+  }
+}
+
 export type RelationKind =
   | "customer"
   | "staff"
@@ -37,6 +173,10 @@ export type ModuleField = {
   defaultValue?: string | number | boolean;
   options?: Array<{ label: string; value: string | number }>;
   hideIfZero?: boolean;
+  /** Perfix filter rule type override (default: inferred from field.type). */
+  filterRuleType?: FilterRuleType;
+  /** Perfix filter operator allowlist (omit = use FILTER_TYPE_OPERATORS default). */
+  filterOperators?: FilterOperator[];
 };
 
 /**
@@ -153,6 +293,21 @@ export type ModuleDefinition = {
   statusField?: string;
   /** Status options with optional color for StatusBadge rendering. */
   statusOptions?: StatusOption[];
+  /**
+   * Perfix filter rule definitions — maps field keys to explicit filter rule
+   * types and operator allowlists. When set, this overrides auto-inference
+   * from field.type. Used to match Web UI App_table::rules() definitions.
+   *
+   * Example:
+   *   filterRules: {
+   *     status: { ruleType: "SelectRule", operators: ["equal", "not_equal"] },
+   *     dateadded: { ruleType: "DateRule" },
+   *   }
+   */
+  filterRules?: Record<string, {
+    ruleType?: FilterRuleType;
+    operators?: FilterOperator[];
+  }>;
 };
 
 const statusOptions = [
@@ -353,6 +508,10 @@ export const MODULES: ModuleDefinition[] = [
       { label: "Active", value: "1", color: "#16A34A" },
       { label: "Inactive", value: "0", color: "#DC2626" },
     ],
+    filterRules: {
+      active: { ruleType: "MultiSelectRule" },
+      country: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "company", label: "Company", section: "Customer", required: true },
       { key: "vat", label: "VAT", section: "Customer" },
@@ -428,6 +587,11 @@ export const MODULES: ModuleDefinition[] = [
     defaultSort: { field: "dateadded", direction: "desc" },
     filterableFields: ["status", "source", "assigned"],
     statusField: "status",
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      source: { operators: ["equal", "not_equal"] },
+      assigned: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "name", label: "Lead Name", section: "Lead", required: true },
       { key: "source", label: "Source", section: "Lead", type: "number", relation: "lead_source", required: true },
@@ -475,6 +639,11 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "clientid", "billing_type"],
     statusField: "status",
     statusOptions: projectStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      clientid: { operators: ["equal", "not_equal"] },
+      billing_type: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "name", label: "Project Name", section: "Project", required: true },
       { key: "rel_type", label: "Related Type", section: "Project", type: "select", defaultValue: "customer", options: [{ label: "Customer", value: "customer" }, { label: "Lead", value: "lead" }, { label: "Internal", value: "internal" }] },
@@ -534,6 +703,11 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "priority", "billable", "rel_type"],
     statusField: "status",
     statusOptions: taskStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      priority: { ruleType: "MultiSelectRule" },
+      billable: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "name", label: "Task Name", section: "Task", required: true },
       { key: "startdate", label: "Start Date", section: "Dates", type: "date", required: true },
@@ -653,6 +827,10 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "date", "duedate", "total", "clientid"],
     statusField: "status",
     statusOptions: invoiceStatusOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      clientid: { operators: ["equal", "not_equal"] },
+    },
     fields: moneyDocFields,
     tabs: [
       { key: "payments", title: "Payments", moduleKey: "payments", childField: "invoiceid", parentField: "id", createDefaults: { invoiceid: "{id}" } },
@@ -692,6 +870,10 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "date", "total", "clientid"],
     statusField: "status",
     statusOptions: estimateStatusOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      clientid: { operators: ["equal", "not_equal"] },
+    },
     fields: moneyDocFields,
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "estimate" } },
@@ -841,6 +1023,10 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["contract_type", "datestart", "dateend", "client"],
     statusField: "contract_type",
     statusOptions: contractStatusOptions,
+    filterRules: {
+      contract_type: { ruleType: "MultiSelectRule" },
+      client: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "subject", label: "Subject", section: "Contract", required: true },
       { key: "client", label: "Customer", section: "Contract", type: "number", relation: "customer", required: true },
@@ -886,6 +1072,12 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "priority", "department", "userid"],
     statusField: "status",
     statusOptions: ticketStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+      priority: { ruleType: "MultiSelectRule" },
+      department: { operators: ["equal", "not_equal"] },
+      userid: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "subject", label: "Subject", section: "Ticket", required: true },
       { key: "userid", label: "Customer", section: "Relation", type: "number", relation: "customer" },
@@ -1057,6 +1249,9 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "closing_date", "source"],
     statusField: "status",
     statusOptions: tenderStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+    },
     fields: [
       { key: "title", label: "Title", section: "Tender", required: true },
       { key: "tender_number", label: "Tender Number", section: "Tender" },
@@ -1173,6 +1368,11 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["stage", "status", "customer_id", "value"],
     statusField: "stage",
     statusOptions: opportunityStageFilterOptions,
+    filterRules: {
+      stage: { ruleType: "MultiSelectRule" },
+      status: { ruleType: "MultiSelectRule" },
+      customer_id: { operators: ["equal", "not_equal"] },
+    },
     fields: [
       { key: "name", label: "Name", section: "Opportunity", required: true },
       { key: "customer_id", label: "Customer", section: "Relation", type: "number", relation: "customer" },
@@ -1313,6 +1513,9 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "date"],
     statusField: "status",
     statusOptions: purchaseStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+    },
     fields: [
       { key: "title", label: "Request Title", section: "Request", required: true },
       { key: "vendor_id", label: "Vendor ID", section: "Request", type: "number" },
@@ -1358,6 +1561,9 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "requested_date", "total"],
     statusField: "status",
     statusOptions: purchaseStatusFilterOptions,
+    filterRules: {
+      status: { ruleType: "MultiSelectRule" },
+    },
     fields: [
       { key: "title", label: "Order Title", section: "Order", required: true },
       { key: "supplier_id", label: "Supplier ID", section: "Order", type: "number" },
@@ -2055,4 +2261,148 @@ export function resolveTemplateValue(value: string | number, row: any, fallbackI
     const next = row?.[key];
     return next === undefined || next === null ? "" : String(next);
   });
+}
+
+// ── Perfix Filter Helpers ────────────────────────────────────────────────
+
+/**
+ * Return the fields that should appear in the Perfix filter panel for a module.
+ * Uses filterableFields if defined, otherwise the first 8 fields + status field.
+ */
+export function getFilterFields(module: ModuleDefinition): ModuleField[] {
+  if (module.filterableFields?.length) {
+    return module.filterableFields
+      .map((key) => module.fields.find((f) => f.key === key))
+      .filter((f): f is ModuleField => !!f);
+  }
+  // Default: first 8 fields + ensure status field is included
+  const fields = module.fields.slice(0, 8);
+  if (module.statusField && !fields.some((f) => f.key === module.statusField)) {
+    const sf = module.fields.find((f) => f.key === module.statusField);
+    if (sf) fields.unshift(sf);
+  }
+  return fields;
+}
+
+/**
+ * Return the effective FilterRuleType for a field, checking module-level
+ * filterRules override first, then field-level filterRuleType, then inferring
+ * from field.type.
+ */
+export function getFieldFilterRuleType(
+  module: ModuleDefinition,
+  field: ModuleField,
+): FilterRuleType {
+  // Module-level override takes highest priority
+  if (module.filterRules?.[field.key]?.ruleType) {
+    return module.filterRules[field.key].ruleType!;
+  }
+  // Field-level override
+  if (field.filterRuleType) return field.filterRuleType;
+  // Infer from data type
+  return inferFilterRuleType(field.type);
+}
+
+/**
+ * Return the allowed filter operators for a field, checking module-level
+ * filterRules override first, then field-level filterOperators, then the
+ * default operators for its FilterRuleType.
+ */
+export function getFieldFilterOperators(
+  module: ModuleDefinition,
+  field: ModuleField,
+): FilterOperator[] {
+  // Module-level override
+  if (module.filterRules?.[field.key]?.operators) {
+    return module.filterRules[field.key].operators!;
+  }
+  // Field-level override
+  if (field.filterOperators) return field.filterOperators;
+  // Default operators for the rule type
+  const ruleType = getFieldFilterRuleType(module, field);
+  return FILTER_TYPE_OPERATORS[ruleType] ?? [];
+}
+
+/**
+ * Apply a single filter rule against a row value. Returns true if the row
+ * matches the rule.
+ */
+export function evaluateFilterRule(
+  rule: FilterRule,
+  rowValue: any,
+): boolean {
+  const rawValue = rowValue;
+  const rowStr = rawValue === null || rawValue === undefined ? "" : String(rawValue);
+  const ruleValue = rule.value;
+
+  // is_empty / is_not_empty don't need a comparison value
+  if (rule.operator === "is_empty") return rowStr === "" || rowStr === "0" || rowStr === "0.00";
+  if (rule.operator === "is_not_empty") return !(rowStr === "" || rowStr === "0" || rowStr === "0.00");
+
+  // For "in" / "not_in", value must be an array
+  if (rule.operator === "in" || rule.operator === "not_in") {
+    const values = Array.isArray(ruleValue) ? ruleValue : String(ruleValue).split(",");
+    const match = values.map(String).includes(rowStr);
+    return rule.operator === "in" ? match : !match;
+  }
+
+  // Scalar comparison — normalize to string
+  const compareVal = Array.isArray(ruleValue) ? String(ruleValue[0] ?? "") : String(ruleValue ?? "");
+
+  switch (rule.operator) {
+    case "equal":
+      return rowStr === compareVal;
+
+    case "not_equal":
+      return rowStr !== compareVal;
+
+    case "contains":
+      return rowStr.toLowerCase().includes(compareVal.toLowerCase());
+
+    case "not_contains":
+      return !rowStr.toLowerCase().includes(compareVal.toLowerCase());
+
+    case "begins_with":
+      return rowStr.toLowerCase().startsWith(compareVal.toLowerCase());
+
+    case "not_begins_with":
+      return !rowStr.toLowerCase().startsWith(compareVal.toLowerCase());
+
+    case "ends_with":
+      return rowStr.toLowerCase().endsWith(compareVal.toLowerCase());
+
+    case "not_ends_with":
+      return !rowStr.toLowerCase().endsWith(compareVal.toLowerCase());
+
+    case "between":
+    case "not_between": {
+      const [from, to] = compareVal.split("..").map((s) => s.trim());
+      const numRow = parseFloat(rowStr);
+      const numFrom = parseFloat(from);
+      const numTo = parseFloat(to);
+      // Try numeric comparison first
+      if (!isNaN(numRow) && !isNaN(numFrom) && !isNaN(numTo)) {
+        const inRange = numRow >= numFrom && numRow <= numTo;
+        return rule.operator === "between" ? inRange : !inRange;
+      }
+      // String comparison fallback
+      const inRangeStr = rowStr >= from && rowStr <= to;
+      return rule.operator === "between" ? inRangeStr : !inRangeStr;
+    }
+
+    case "less":
+      return parseFloat(rowStr) < parseFloat(compareVal);
+
+    case "less_or_equal":
+      return parseFloat(rowStr) <= parseFloat(compareVal);
+
+    case "greater":
+      return parseFloat(rowStr) > parseFloat(compareVal);
+
+    case "greater_or_equal":
+      return parseFloat(rowStr) >= parseFloat(compareVal);
+
+    default:
+      return true;
+  }
 }

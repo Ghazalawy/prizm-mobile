@@ -21,10 +21,13 @@ import {
   moduleSubtitle,
   moduleTitle,
   ModuleDefinition,
+  evaluateFilterRule,
+  FILTER_OPERATOR_LABELS,
+  type FilterGroup,
 } from "@/lib/module-registry";
 import { usePermissions } from "@/lib/permission-context";
 import { StatusBadge } from "./StatusBadge";
-import { FilterPanel, activeFilterCount, type FilterValues } from "./FilterPanel";
+import { FilterPanel, activeFilterCount } from "./FilterPanel";
 import { SortPicker, type SortState } from "./SortPicker";
 
 type CrudListScreenProps = {
@@ -39,24 +42,21 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   const module = getModule(moduleKey);
   const [search, setSearch] = useState("");
   const [refreshing, setRefreshing] = useState(false);
-  const [filters, setFilters] = useState<FilterValues>({});
+  const [filterGroup, setFilterGroup] = useState<FilterGroup>({ match_type: "and", rules: [] });
   const [sort, setSort] = useState<SortState | undefined>(module?.defaultSort);
   const [filterVisible, setFilterVisible] = useState(false);
   const [sortVisible, setSortVisible] = useState(false);
   const permissions = usePermissions();
   const flatListRef = useRef<FlatList>(null);
 
-  const filterParams = useMemo(() => buildApiFilterParams(filters), [filters]);
-
   const q = useInfiniteQuery({
-    queryKey: ["crud", moduleKey, "list", { search, filters: filterParams, sort }],
+    queryKey: ["crud", moduleKey, "list", { search, filterGroup, sort }],
     queryFn: ({ pageParam = 0 }) => {
       if (!module) return Promise.resolve({ data: [], total: 0 });
       const params: ListParams = {
         search: search.trim() || undefined,
         limit: PAGE_SIZE,
         offset: pageParam as number,
-        ...filterParams,
       };
       if (sort) {
         params.sort = sort.field;
@@ -93,7 +93,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
     }
 
     const unique = uniqueRowsById(module, allItems);
-    const filtered = clientSideFilter(module, unique, search, filterParams);
+    const filtered = clientSideFilter(module, unique, search, filterGroup);
     const sorted = clientSideSort(module, filtered, sort);
 
     return {
@@ -101,9 +101,9 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
       totalCount: hasTotal ? serverTotal : sorted.length,
       hasServerTotal: hasTotal,
     };
-  }, [module, q.data, search, sort, filterParams]);
+  }, [module, q.data, search, sort, filterGroup]);
 
-  const filterCount = activeFilterCount(filters);
+  const filterCount = activeFilterCount(filterGroup);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -118,12 +118,11 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   }, [q]);
 
   const removeFilter = useCallback(
-    (key: string) => {
-      setFilters((prev) => {
-        const next = { ...prev };
-        delete next[key];
-        return next;
-      });
+    (ruleIndex: number) => {
+      setFilterGroup((prev) => ({
+        ...prev,
+        rules: prev.rules.filter((_, i) => i !== ruleIndex),
+      }));
     },
     [],
   );
@@ -224,35 +223,75 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
           >
             <TouchableOpacity
               onPress={() => {
-                setFilters((prev) => {
-                  const next = { ...prev };
-                  delete next[module.statusField!];
-                  return next;
-                });
+                setFilterGroup((prev) => ({
+                  ...prev,
+                  rules: prev.rules.filter((r) => r.id !== module.statusField),
+                }));
               }}
               className="px-3 py-1.5 rounded-full mr-2"
               style={{
-                backgroundColor: !filters[module.statusField] ? module.color : "#F1F5F9",
+                backgroundColor: !filterGroup.rules.some((r) => r.id === module.statusField)
+                  ? module.color
+                  : "#F1F5F9",
               }}
             >
               <Text
                 className="text-xs font-semibold"
-                style={{ color: !filters[module.statusField] ? "#FFFFFF" : "#64748B" }}
+                style={{
+                  color: !filterGroup.rules.some((r) => r.id === module.statusField)
+                    ? "#FFFFFF"
+                    : "#64748B",
+                }}
               >
                 All
               </Text>
             </TouchableOpacity>
             {module.statusOptions.map((opt) => {
-              const active = String(filters[module.statusField!]) === String(opt.value);
+              const statusRule = filterGroup.rules.find((r) => r.id === module.statusField);
+              const selectedVals = Array.isArray(statusRule?.value)
+                ? statusRule.value
+                : statusRule?.value
+                  ? [statusRule.value]
+                  : [];
+              const active = selectedVals.includes(String(opt.value));
               const chipColor = opt.color || module.color;
               return (
                 <TouchableOpacity
                   key={String(opt.value)}
                   onPress={() => {
-                    setFilters((prev) => ({
-                      ...prev,
-                      [module.statusField!]: active ? undefined : String(opt.value),
-                    }));
+                    setFilterGroup((prev) => {
+                      const existingRule = prev.rules.find(
+                        (r) => r.id === module.statusField,
+                      );
+                      const currentVals: string[] = Array.isArray(existingRule?.value)
+                        ? existingRule.value
+                        : existingRule?.value
+                          ? [existingRule.value]
+                          : [];
+                      const nextVals = active
+                        ? currentVals.filter((v) => v !== String(opt.value))
+                        : [...currentVals, String(opt.value)];
+
+                      const otherRules = prev.rules.filter(
+                        (r) => r.id !== module.statusField,
+                      );
+
+                      if (nextVals.length === 0) {
+                        return { ...prev, rules: otherRules };
+                      }
+                      return {
+                        ...prev,
+                        rules: [
+                          {
+                            id: module.statusField!,
+                            type: "MultiSelectRule",
+                            operator: "in",
+                            value: nextVals,
+                          },
+                          ...otherRules,
+                        ],
+                      };
+                    });
                   }}
                   className="px-3 py-1.5 rounded-full mr-2"
                   style={{ backgroundColor: active ? chipColor : "#F1F5F9" }}
@@ -270,16 +309,15 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
         ) : null}
 
         {/* Active filter chips (non-status) */}
-        {filterCount > 0 ? (
+        {filterGroup.rules.filter((r) => r.id !== module.statusField).length > 0 ? (
           <View className="flex-row flex-wrap mt-2">
-            {Object.entries(filters).map(([key, value]) => {
-              if (!value || (Array.isArray(value) && value.length === 0)) return null;
-              if (key === module.statusField) return null;
-              const label = chipLabel(module, key, value);
+            {filterGroup.rules.map((rule, i) => {
+              if (rule.id === module.statusField) return null;
+              const label = chipLabel(module, rule);
               return (
                 <TouchableOpacity
-                  key={key}
-                  onPress={() => removeFilter(key)}
+                  key={`${rule.id}-${i}`}
+                  onPress={() => removeFilter(i)}
                   className="flex-row items-center bg-primary/10 rounded-full px-3 py-1 mr-1.5 mb-1.5"
                   activeOpacity={0.7}
                 >
@@ -323,7 +361,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
           {hasActiveFilters ? (
             <TouchableOpacity
               onPress={() => {
-                setFilters({});
+                setFilterGroup({ match_type: "and", rules: [] });
                 setSearch("");
               }}
               className="mt-3 bg-gray-100 px-5 py-2 rounded-lg"
@@ -370,8 +408,8 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
         module={module}
         visible={filterVisible}
         onClose={() => setFilterVisible(false)}
-        filters={filters}
-        onApply={setFilters}
+        filterGroup={filterGroup}
+        onApply={setFilterGroup}
       />
 
       {/* Sort picker modal */}
@@ -443,21 +481,23 @@ function clientSideFilter(
   module: ModuleDefinition | undefined,
   rows: any[],
   search: string,
-  filters?: Record<string, string>,
+  filterGroup?: FilterGroup,
 ): any[] {
   if (!module) return [];
   let result = rows;
 
-  // Apply field filters (status, priority, etc.)
-  if (filters) {
-    for (const [key, value] of Object.entries(filters)) {
-      if (!value) continue;
-      const values = value.split(",");
-      result = result.filter((row) => {
-        const rowVal = String(row?.[key] ?? "");
-        return values.includes(rowVal);
+  // Apply Perfix filter rules
+  if (filterGroup?.rules.length) {
+    const { rules, match_type } = filterGroup;
+    result = result.filter((row) => {
+      const outcomes = rules.map((rule) => {
+        const rowValue = row?.[rule.id];
+        return evaluateFilterRule(rule, rowValue);
       });
-    }
+
+      if (match_type === "and") return outcomes.every(Boolean);
+      return outcomes.some(Boolean);
+    });
   }
 
   // Apply text search
@@ -495,56 +535,39 @@ function clientSideSort(
   });
 }
 
-function buildApiFilterParams(filters: FilterValues): Record<string, string> {
-  const params: Record<string, string> = {};
-  for (const [key, value] of Object.entries(filters)) {
-    if (value === undefined) continue;
-    if (Array.isArray(value)) {
-      if (value.length === 1) {
-        params[key] = value[0];
-      } else if (value.length > 1) {
-        params[key] = value.join(",");
-      }
-    } else if (value !== "") {
-      params[key] = value;
-    }
-  }
-  return params;
-}
+function chipLabel(module: ModuleDefinition, rule: FilterGroup["rules"][0]): string {
+  const field = module.fields.find((f) => f.key === rule.id);
+  const label = field?.label || rule.id;
+  const opLabel = FILTER_OPERATOR_LABELS[rule.operator] || rule.operator;
 
-function chipLabel(module: ModuleDefinition, key: string, value: string | string[] | undefined): string {
-  if (!value) return key;
-  const field = module.fields.find((f) => f.key === key);
-  const label = field?.label || humanize(key);
-
-  if (Array.isArray(value)) {
-    if (module.statusField === key && module.statusOptions?.length) {
-      const labels = value
-        .map((v) => module.statusOptions!.find((o) => String(o.value) === v)?.label || v)
-        .join(", ");
-      return `${label}: ${labels}`;
-    }
-    if (field?.options?.length) {
-      const labels = value
-        .map((v) => field.options!.find((o) => String(o.value) === v)?.label || v)
-        .join(", ");
-      return `${label}: ${labels}`;
-    }
-    return `${label}: ${value.join(", ")}`;
+  if (rule.operator === "is_empty" || rule.operator === "is_not_empty") {
+    return `${label} ${opLabel}`;
   }
 
-  if (value.includes("..")) {
-    const [from, to] = value.split("..").map((s) => s.trim());
-    if (from && to) return `${label}: ${from} – ${to}`;
-    if (from) return `${label}: ≥ ${from}`;
-    if (to) return `${label}: ≤ ${to}`;
+  const v = Array.isArray(rule.value)
+    ? rule.value
+        .map((val) => {
+          if (field?.options?.length) {
+            const opt = field.options.find((o) => String(o.value) === val);
+            return opt?.label || val;
+          }
+          if (rule.id === module.statusField && module.statusOptions?.length) {
+            const opt = module.statusOptions.find((o) => String(o.value) === val);
+            return opt?.label || val;
+          }
+          return val;
+        })
+        .join(", ")
+    : String(rule.value ?? "");
+
+  const valDisplay = Array.isArray(rule.value) ? rule.value.join(", ") : String(rule.value ?? "");
+
+  if (rule.operator === "between" || rule.operator === "not_between") {
+    const [from, to] = valDisplay.split("..").map((s) => s.trim());
+    if (from && to) return `${label} ${opLabel} ${from}–${to}`;
   }
 
-  if (key === "billable" || field?.type === "boolean") {
-    return `${label}: ${value === "1" ? "Yes" : "No"}`;
-  }
-
-  return `${label}: ${value}`;
+  return `${label} ${opLabel} ${valDisplay}`;
 }
 
 function humanize(key: string): string {

@@ -97,18 +97,18 @@
 58,1,1,tasks,Set Complete Type,STATUS,PUT,/api/tasks/{id} + complete_type,set_complete_type,YES,YES,YES,YES,200,YES,1,NONE,complete_type,Values: duration
 59,1,1,tasks,Delete Unfinished Timesheet,DELETE,DELETE,/api/tasks/timesheets/{id},delete_user_unfinished_timesheet,YES,YES,YES,PENDING,200,YES,2,NONE,(timesheet_id),Permission-gated.
 60,1,1,tasks,Bulk Action,BULK,N/A,bulk_action,YES,NO,NO,NO,N/A,NO,N/A,"multi-select,LOW,action,NOT IMPLEMENTED. Requires multi-select UI + bulk endpoint.
-61,1,1,tasks,Edit Reminder,UPDATE,N/A,edit_reminder,YES,NO,NO,NO,N/A,NO,N/A,"date,LOW,staff,NOT IMPLEMENTED. Low priority. Can add+delete only.
+61,1,1,tasks,Edit Reminder,UPDATE,N/A,edit_reminder,YES,NO,NO,NO,N/A,NO,N/A,date",LOW,staff,NOT IMPLEMENTED. Low priority. Can add+delete only.
 62,1,1,tasks,Update Timesheet,UPDATE,N/A,update_timesheet,YES,NO,NO,NO,N/A,NO,N/A,"start_time,NONE,end_time,note
-63,1,1,tasks,Save Checklist Template,CREATE,N/A,save_checklist_item_template,YES,NO,NO,NO,N/A,NO,N/A,"template data",NONE,NOT IMPLEMENTED. Template system low priority.,
+63,1,1,tasks,Save Checklist Template,CREATE,N/A,save_checklist_item_template,YES,NO,NO,NO,N/A,NO,N/A,template data""",NONE,NOT IMPLEMENTED. Template system low priority.,
 64,1,1,tasks,Delete Checklist Template,DELETE,N/A,remove_checklist_item_template,YES,NO,NO,NO,N/A,NO,N/A,(template_id),NONE,NOT IMPLEMENTED. Low priority.,
-65,1,1,tasks,Task Tracking Stats,VIEW,N/A,task_tracking_stats,YES,NO,NO,NO,N/A,NO,N/A,"stats aggregation",NONE,NOT IMPLEMENTED. Dashboard-level feature.,
+65,1,1,tasks,Task Tracking Stats,VIEW,N/A,task_tracking_stats,YES,NO,NO,NO,N/A,NO,N/A,stats aggregation,NONE,NOT IMPLEMENTED. Dashboard-level feature.,
 66,1,1,tasks,Staff Started Timers,VALIDATE,N/A,get_staff_started_timers,YES,NO,NO,NO,N/A,NO,N/A,"staff,LOW,timer,NOT IMPLEMENTED. Global timer poll low priority.
-67,1,1,tasks,Add External Attachment,UPLOAD,N/A,add_external_attachment,YES,NO,NO,NO,N/A,NO,N/A,"URL,NONE,rel_type,rel_id
+67,1,1,tasks,Add External Attachment,UPLOAD,N/A,add_external_attachment,YES,NO,NO,NO,N/A,NO,N/A,URL",NONE,rel_type,rel_id
 68,1,1,tasks,Download Files (ZIP),DOWNLOAD,N/A,download_files,YES,NO,NO,NO,N/A,NO,N/A,"task_id,LOW,comment_id,NOT IMPLEMENTED. Server-side ZIP download web-only.
-69,1,1,tasks,Staff Mentions Lookup,VALIDATE,N/A,get_staff_names_for_mentions,YES,NO,NO,NO,N/A,NO,N/A,"taskid",NONE,NOT IMPLEMENTED. Staff list cached client-side already.,
+69,1,1,tasks,Staff Mentions Lookup,VALIDATE,N/A,get_staff_names_for_mentions,YES,NO,NO,NO,N/A,NO,N/A,taskid""",NONE,NOT IMPLEMENTED. Staff list cached client-side already.,
 70,1,1,tasks,Save Checklist Assigned,UPDATE,N/A,save_checklist_assigned_staff,YES,NO,NO,NO,N/A,NO,N/A,"checklist_id,LOW,assigned,NOT IMPLEMENTED. Low priority.
-71,1,1,tasks,Switch Kanban View,PREFERENCE,N/A,switch_kanban,YES,NO,NO,NO,N/A,NO,N/A,"view preference",NONE,NOT NEEDED. Mobile uses local state (viewMode).,
-72,1,1,tasks,Detailed Overview Panel,VIEW,N/A,detailed_overview,YES,NO,NO,NO,N/A,NO,N/A,"HTML panel",NONE,NOT NEEDED. Mobile has custom detail layout.,
+71,1,1,tasks,Switch Kanban View,PREFERENCE,N/A,switch_kanban,YES,NO,NO,NO,N/A,NO,N/A,view preference""",NONE,NOT NEEDED. Mobile uses local state (viewMode).,
+72,1,1,tasks,Detailed Overview Panel,VIEW,N/A,detailed_overview,YES,NO,NO,NO,N/A,NO,N/A,HTML panel,NONE,NOT NEEDED. Mobile has custom detail layout.,
 828,1,1,tasks,index (Tasks),LIST,GET,/api/tasks,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 829,1,1,tasks,list_tasks (Tasks),ACTION,POST,/api/tasks,list_tasks,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 830,1,1,tasks,table (Tasks),LIST,GET,/api/tasks,table,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
@@ -203,7 +203,7 @@
 76,2,1,projects,Create Project,CREATE,POST,/api/projects,project,YES,YES,YES,NO,N/A,PENDING,0,NONE,,client_id
 77,2,1,projects,Update Project,UPDATE,PUT,/api/projects/{id},project,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put partial update
 78,2,1,projects,Delete Project,DELETE,DELETE,/api/projects/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
-79,2,1,projects,Project Count,VALIDATE,GET,/api/projects/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint exists
+79,2,1,projects,Project Count,VALIDATE,GET,/api/projects/count,count_get,YES,YES,NO,YES,200,YES,1,NONE,,Count endpoint exists
 80,2,1,projects,Mark Finished,STATUS,PUT,/api/projects/{id}/mark_finished,mark_as(finished),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_finished_put
 81,2,1,projects,Mark On Hold,STATUS,PUT,/api/projects/{id}/mark_on_hold,mark_as(on_hold),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_on_hold_put
 82,2,1,projects,Mark In Progress,STATUS,PUT,/api/projects/{id}/mark_in_progress,mark_as(in_progress),YES,YES,YES,NO,N/A,PENDING,0,NONE,,mark_in_progress_put
@@ -240,11 +240,11 @@
 113,2,1,customers,Create Customer,CREATE,POST,/api/customers,client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,vat
 114,2,1,customers,Update Customer,UPDATE,PUT,/api/customers/{id},client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put
 115,2,1,customers,Delete Customer,DELETE,DELETE,/api/customers/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
-116,2,1,customers,Customer Count,VALIDATE,GET,/api/customers/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint
+116,2,1,customers,Customer Count,VALIDATE,GET,/api/customers/count,count_get,YES,YES,NO,YES,200,YES,1,NONE,,Count endpoint
 117,2,1,customers,List Contacts,SUB,GET,N/A,all_contacts,YES,NO,NO,NO,N/A,PENDING,0,NONE,,firstname
-118,2,1,customers,Create Contact,SUB,POST,/api/contacts,form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
-119,2,1,customers,Update Contact,SUB,PUT,/api/contacts/{id},form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Via Contacts API data_put
-120,2,1,customers,Delete Contact,SUB,DELETE,/api/contacts/{id},delete_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Via Contacts API data_delete
+118,2,1,customers,Create Contact,SUB,POST,/api/contacts,form_contact,YES,YES,NO,YES,200,YES,1,NONE,,firstname
+119,2,1,customers,Update Contact,SUB,PUT,/api/contacts/{id},form_contact,YES,YES,NO,YES,200,YES,1,NONE,,Via Contacts API data_put
+120,2,1,customers,Delete Contact,SUB,DELETE,/api/contacts/{id},delete_contact,YES,YES,NO,YES,200,YES,1,NONE,,Via Contacts API data_delete
 121,2,1,customers,Customer Groups,SUB,GET,N/A,groups,YES,NO,NO,NO,N/A,PENDING,0,NONE,,name
 122,2,1,customers,Create Group,SUB,POST,N/A,group,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
 123,2,1,customers,Delete Group,SUB,DELETE,N/A,delete_group,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
@@ -265,8 +265,8 @@
 138,2,1,leads,Create Lead,CREATE,POST,/api/leads,lead,YES,YES,YES,NO,N/A,PENDING,0,NONE,,company
 139,2,1,leads,Update Lead,UPDATE,PUT,/api/leads/{id},lead,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_put
 140,2,1,leads,Delete Lead,DELETE,DELETE,/api/leads/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,data_delete
-141,2,1,leads,Lead Count,VALIDATE,GET,/api/leads/count,count_get,YES,YES,NO,NO,N/A,PENDING,0,NONE,,Count endpoint
-142,2,1,leads,Change Status,STATUS,PUT,/api/leads/{id}/status,update_lead_status,YES,YES,YES,NO,N/A,PENDING,0,NONE,,status_put
+141,2,1,leads,Lead Count,VALIDATE,GET,/api/leads/count,count_get,YES,YES,NO,YES,200,YES,1,NONE,,Count endpoint
+142,2,1,leads,Change Status,STATUS,PUT,/api/leads/{id}/status,update_lead_status,YES,YES,YES,YES,200,YES,1,NONE,,status_put
 143,2,1,leads,Kanban Board,VIEW,GET,N/A,kanban,YES,NO,NO,NO,N/A,PENDING,0,NONE,,lead data
 144,2,1,leads,Kanban Load More,PAGINATION,GET,N/A,leads_kanban_load_more,YES,NO,NO,NO,N/A,PENDING,0,NONE,,status
 145,2,1,leads,Mark as Lost,STATUS,PUT,N/A,mark_as_lost,YES,NO,NO,NO,N/A,PENDING,0,NONE,,date_lost
@@ -313,12 +313,12 @@
 186,2,1,milestones,Change Color,UPDATE,PUT,N/A,change_milestone_color,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: Can use data_put
 187,2,1,milestones,Kanban View,VIEW,GET,N/A,milestones_kanban,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
 188,2,1,business_partners,List Partners,LIST,GET,/api/business_partners_api,YES,YES,YES,NO,PENDING,N/A,"id,0,NONE,,type
-189,2,1,business_partners,Get Partner,DETAIL,GET,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"all fields",0,NONE,,
+189,2,1,business_partners,Get Partner,DETAIL,GET,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,all fields""",0,NONE,,
 190,2,1,business_partners,Create Partner,CREATE,POST,/api/business_partners_api,YES,YES,YES,NO,PENDING,N/A,"name,0,NONE,,category
-191,2,1,business_partners,Update Partner,UPDATE,PUT,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"all fields",0,NONE,,
-192,2,1,business_partners,Delete Partner,DELETE,DELETE,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,"(id)",0,NONE,,
-193,2,1,business_partners,Partner Groups,SUB,GET,/api/business_partners_api/groups,YES,YES,NO,NO,PENDING,N/A,"group data",0,NONE,,
-194,2,1,business_partners,Partner Activity,SUB,GET,/api/business_partners_api/activity/{id},YES,YES,NO,NO,PENDING,N/A,"activity log",0,NONE,,
+191,2,1,business_partners,Update Partner,UPDATE,PUT,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,all fields""",0,NONE,,
+192,2,1,business_partners,Delete Partner,DELETE,DELETE,/api/business_partners_api/{id},YES,YES,YES,NO,PENDING,N/A,(id),0,NONE,,
+193,2,1,business_partners,Partner Groups,SUB,GET,/api/business_partners_api/groups,YES,YES,NO,NO,PENDING,N/A,group data,0,NONE,,
+194,2,1,business_partners,Partner Activity,SUB,GET,/api/business_partners_api/activity/{id},YES,YES,NO,NO,PENDING,N/A,activity log,0,NONE,,
 195,2,1,contacts,List Contacts,LIST,GET,/api/contacts?customer_id=,all_contacts,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
 196,2,1,contacts,Get Contact,DETAIL,GET,/api/contacts/{id},form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,data_get single
 197,2,1,contacts,Create Contact,CREATE,POST,/api/contacts,form_contact,YES,YES,NO,NO,N/A,PENDING,0,NONE,,firstname
@@ -327,38 +327,38 @@
 200,2,1,contacts,Change Status,STATUS,PUT,N/A,change_contact_status,YES,NO,NO,NO,N/A,PENDING,0,HIGH,,GAP: No endpoint
 279,2,1,customers,index (Clients),LIST,GET,/api/customers,index,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 280,2,1,customers,table (Clients),LIST,GET,/api/customers,table,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-281,2,1,customers,all_contacts (Clients),LIST,GET,/api/customers,all_contacts,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+281,2,1,customers,all_contacts (Clients),LIST,GET,/api/customers,all_contacts,YES,YES,YES,YES,200,YES,1,NONE,,
 282,2,1,customers,client (Clients),CREATE,POST,/api/POST customers,client,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Create/Edit customer
 283,2,1,customers,export (Clients),EXPORT,GET,/api/customers,export,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 284,2,1,customers,check_duplicate_customer_name (Clients),ACTION,POST,/api/customers,check_duplicate_customer_name,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 285,2,1,customers,save_longitude_and_latitude (Clients),ACTION,POST,/api/customers,save_longitude_and_latitude,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-286,2,1,customers,form_contact (Clients),ACTION,GET,/api/POST contacts,form_contact,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,Create/Edit contact
+286,2,1,customers,form_contact (Clients),ACTION,GET,/api/POST contacts,form_contact,YES,YES,NO,YES,200,YES,1,MEDIUM,,Create/Edit contact
 287,2,1,customers,confirm_registration (Clients),ACTION,POST,/api/POST customers/{id}/confirm,confirm_registration,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Confirm registration
 288,2,1,customers,update_file_share_visibility (Clients),ACTION,POST,/api/PUT files/{id}/visibility,update_file_share_visibility,YES,YES,YES,NO,N/A,PENDING,0,NONE,,File share visibility
-289,2,1,customers,delete_contact_profile_image (Clients),DELETE,DELETE,/api/customers,delete_contact_profile_image,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+289,2,1,customers,delete_contact_profile_image (Clients),DELETE,DELETE,/api/customers,delete_contact_profile_image,YES,YES,YES,YES,200,YES,1,NONE,,
 290,2,1,customers,mark_as_active (Clients),ACTION,POST,/api/PUT customers/{id}/mark_active,mark_as_active,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,Activate customer
 291,2,1,customers,consents (Clients),READ,GET,/api/customers,consents,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 292,2,1,customers,update_all_proposal_emails_linked_to_customer (Clients),ACTION,POST,/api/customers,update_all_proposal_emails_linked_to_customer,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-293,2,1,customers,assign_admins (Clients),ACTION,POST,/api/POST customers/{id}/admins,assign_admins,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Assign admin
-294,2,1,customers,delete_customer_admin (Clients),DELETE,DELETE,/api/DELETE customers/{id}/admins/{staff_id},delete_customer_admin,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Remove admin
-295,2,1,customers,delete_contact (Clients),DELETE,DELETE,/api/DELETE contacts/{id},delete_contact,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Delete contact
-296,2,1,customers,contacts (Clients),READ,GET,/api/customers,contacts,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+293,2,1,customers,assign_admins (Clients),ACTION,POST,/api/POST customers/{id}/admins,assign_admins,YES,YES,YES,YES,200,YES,1,NONE,,Assign admin
+294,2,1,customers,delete_customer_admin (Clients),DELETE,DELETE,/api/DELETE customers/{id}/admins/{staff_id},delete_customer_admin,YES,YES,YES,YES,200,YES,1,NONE,,Remove admin
+295,2,1,customers,delete_contact (Clients),DELETE,DELETE,/api/DELETE contacts/{id},delete_contact,YES,YES,YES,YES,200,YES,1,NONE,,Delete contact
+296,2,1,customers,contacts (Clients),READ,GET,/api/customers,contacts,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 297,2,1,customers,upload_attachment (Clients),UPLOAD,POST,/api/POST files/upload_bytes,upload_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Upload attachment
 298,2,1,customers,add_external_attachment (Clients),UPLOAD,POST,/api/POST files/external,add_external_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Add external attachment
 299,2,1,customers,delete_attachment (Clients),DELETE,DELETE,/api/DELETE files/{id},delete_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Delete attachment
 300,2,1,customers,delete (Clients),DELETE,DELETE,/api/DELETE customers/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Delete customer
 301,2,1,customers,login_as_client (Clients),ACTION,POST,/api/customers,login_as_client,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-302,2,1,customers,get_customer_billing_and_shipping_details (Clients),VALIDATE,GET,/api/GET customers/{id}/address,get_customer_billing_and_shipping_details,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Billing/shipping
-303,2,1,customers,change_contact_status (Clients),ACTION,POST,/api/PUT contacts/{id}/status,change_contact_status,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,Change contact status
+302,2,1,customers,get_customer_billing_and_shipping_details (Clients),VALIDATE,GET,/api/GET customers/{id}/address,get_customer_billing_and_shipping_details,YES,YES,YES,YES,200,YES,1,NONE,,Billing/shipping
+303,2,1,customers,change_contact_status (Clients),ACTION,POST,/api/PUT contacts/{id}/status,change_contact_status,YES,YES,NO,YES,200,YES,1,MEDIUM,,Change contact status
 304,2,1,customers,change_client_status (Clients),ACTION,POST,/api/PUT customers/{id}/status,change_client_status,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,Change customer status
 305,2,1,customers,zip_credit_notes (Clients),EXPORT,GET,/api/GET customers/{id}/credit_notes/zip,zip_credit_notes,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Download credit notes zip
 306,2,1,customers,zip_invoices (Clients),EXPORT,GET,/api/GET customers/{id}/invoices/zip,zip_invoices,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Download invoices zip
 307,2,1,customers,zip_estimates (Clients),EXPORT,GET,/api/GET customers/{id}/estimates/zip,zip_estimates,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Download estimates zip
 308,2,1,customers,zip_payments (Clients),EXPORT,GET,/api/GET customers/{id}/payments/zip,zip_payments,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Download payments zip
 309,2,1,customers,import (Clients),BULK,GET,/api/customers,import,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-310,2,1,customers,groups (Clients),ACTION,POST,/api/customers,groups,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-311,2,1,customers,group (Clients),ACTION,POST,/api/customers,group,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-312,2,1,customers,delete_group (Clients),DELETE,DELETE,/api/customers,delete_group,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+310,2,1,customers,groups (Clients),ACTION,POST,/api/customers,groups,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+311,2,1,customers,group (Clients),ACTION,POST,/api/customers,group,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+312,2,1,customers,delete_group (Clients),DELETE,DELETE,/api/customers,delete_group,YES,YES,YES,YES,200,YES,1,NONE,,
 313,2,1,customers,bulk_action (Clients),BULK,GET,/api/customers,bulk_action,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 314,2,1,customers,vault_entry_create (Clients),ACTION,POST,/api/customers,vault_entry_create,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 315,2,1,customers,vault_entry_update (Clients),ACTION,POST,/api/customers,vault_entry_update,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
@@ -376,21 +376,21 @@
 329,2,1,contracts,unmark_as_signed (Contracts),ACTION,POST,/api/contracts,unmark_as_signed,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 330,2,1,contracts,pdf (Contracts),ACTION,POST,/api/contracts,pdf,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 331,2,1,contracts,send_to_email (Contracts),ACTION,POST,/api/contracts,send_to_email,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-332,2,1,contracts,add_note (Contracts),ACTION,POST,/api/contracts,add_note,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-333,2,1,contracts,get_notes (Contracts),VALIDATE,GET,/api/contracts,get_notes,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+332,2,1,contracts,add_note (Contracts),ACTION,POST,/api/contracts,add_note,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+333,2,1,contracts,get_notes (Contracts),VALIDATE,GET,/api/contracts,get_notes,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 334,2,1,contracts,clear_signature (Contracts),ACTION,POST,/api/contracts,clear_signature,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 335,2,1,contracts,save_contract_data (Contracts),ACTION,POST,/api/contracts,save_contract_data,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-336,2,1,contracts,add_comment (Contracts),ACTION,POST,/api/contracts,add_comment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-337,2,1,contracts,edit_comment (Contracts),ACTION,POST,/api/contracts,edit_comment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-338,2,1,contracts,get_comments (Contracts),VALIDATE,GET,/api/contracts,get_comments,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-339,2,1,contracts,remove_comment (Contracts),ACTION,POST,/api/contracts,remove_comment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+336,2,1,contracts,add_comment (Contracts),ACTION,POST,/api/contracts,add_comment,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+337,2,1,contracts,edit_comment (Contracts),ACTION,POST,/api/contracts,edit_comment,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+338,2,1,contracts,get_comments (Contracts),VALIDATE,GET,/api/contracts,get_comments,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+339,2,1,contracts,remove_comment (Contracts),ACTION,POST,/api/contracts,remove_comment,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 340,2,1,contracts,renew (Contracts),ACTION,POST,/api/contracts,renew,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 341,2,1,contracts,delete_renewal (Contracts),DELETE,DELETE,/api/contracts,delete_renewal,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 342,2,1,contracts,copy (Contracts),ACTION,POST,/api/contracts,copy,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 343,2,1,contracts,delete (Contracts),DELETE,DELETE,/api/contracts,delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-344,2,1,contracts,type (Contracts),ACTION,POST,/api/contracts,type,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-345,2,1,contracts,types (Contracts),ACTION,POST,/api/contracts,types,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-346,2,1,contracts,delete_contract_type (Contracts),DELETE,DELETE,/api/contracts,delete_contract_type,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+344,2,1,contracts,type (Contracts),ACTION,POST,/api/contracts,type,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+345,2,1,contracts,types (Contracts),ACTION,POST,/api/contracts,types,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+346,2,1,contracts,delete_contract_type (Contracts),DELETE,DELETE,/api/contracts,delete_contract_type,YES,YES,YES,YES,200,YES,1,NONE,,
 347,2,1,contracts,add_contract_attachment (Contracts),UPLOAD,POST,/api/contracts,add_contract_attachment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 348,2,1,contracts,add_external_attachment (Contracts),UPLOAD,POST,/api/contracts,add_external_attachment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 349,2,1,contracts,delete_contract_attachment (Contracts),DELETE,DELETE,/api/contracts,delete_contract_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
@@ -409,28 +409,28 @@
 562,2,1,leads,add_activity (Leads),ACTION,POST,/api/leads,add_activity,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 563,2,1,leads,get_convert_data (Leads),VALIDATE,GET,/api/leads,get_convert_data,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 564,2,1,leads,convert_to_customer (Leads),ACTION,POST,/api/leads,convert_to_customer,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-565,2,1,leads,update_lead_status (Leads),ACTION,POST,/api/leads,update_lead_status,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-566,2,1,leads,update_status_order (Leads),ACTION,POST,/api/leads,update_status_order,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+565,2,1,leads,update_lead_status (Leads),ACTION,POST,/api/leads,update_lead_status,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+566,2,1,leads,update_status_order (Leads),ACTION,POST,/api/leads,update_status_order,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 567,2,1,leads,add_lead_attachment (Leads),UPLOAD,POST,/api/leads,add_lead_attachment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 568,2,1,leads,add_external_attachment (Leads),UPLOAD,POST,/api/leads,add_external_attachment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 569,2,1,leads,delete_attachment (Leads),DELETE,DELETE,/api/leads,delete_attachment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-570,2,1,leads,delete_note (Leads),DELETE,DELETE,/api/leads,delete_note,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+570,2,1,leads,delete_note (Leads),DELETE,DELETE,/api/leads,delete_note,YES,YES,YES,YES,200,YES,1,NONE,,
 571,2,1,leads,update_all_proposal_emails_linked_to_lead (Leads),ACTION,POST,/api/leads,update_all_proposal_emails_linked_to_lead,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 572,2,1,leads,save_form_data (Leads),ACTION,POST,/api/leads,save_form_data,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 573,2,1,leads,form (Leads),ACTION,POST,/api/leads,form,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 574,2,1,leads,forms (Leads),ACTION,POST,/api/leads,forms,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 575,2,1,leads,delete_form (Leads),DELETE,DELETE,/api/leads,delete_form,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-576,2,1,leads,sources (Leads),ACTION,POST,/api/leads,sources,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-577,2,1,leads,source (Leads),ACTION,POST,/api/leads,source,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-578,2,1,leads,delete_source (Leads),DELETE,DELETE,/api/leads,delete_source,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-579,2,1,leads,statuses (Leads),ACTION,POST,/api/leads,statuses,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-580,2,1,leads,status (Leads),ACTION,POST,/api/leads,status,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-581,2,1,leads,delete_status (Leads),DELETE,DELETE,/api/leads,delete_status,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-582,2,1,leads,add_note (Leads),ACTION,POST,/api/leads,add_note,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+576,2,1,leads,sources (Leads),ACTION,POST,/api/leads,sources,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+577,2,1,leads,source (Leads),ACTION,POST,/api/leads,source,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+578,2,1,leads,delete_source (Leads),DELETE,DELETE,/api/leads,delete_source,YES,YES,YES,YES,200,YES,1,NONE,,
+579,2,1,leads,statuses (Leads),ACTION,POST,/api/leads,statuses,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+580,2,1,leads,status (Leads),ACTION,POST,/api/leads,status,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+581,2,1,leads,delete_status (Leads),DELETE,DELETE,/api/leads,delete_status,YES,YES,YES,YES,200,YES,1,NONE,,
+582,2,1,leads,add_note (Leads),ACTION,POST,/api/leads,add_note,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 583,2,1,leads,email_integration_folders (Leads),ACTION,POST,/api/leads,email_integration_folders,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 584,2,1,leads,test_email_integration (Leads),ACTION,POST,/api/leads,test_email_integration,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 585,2,1,leads,email_integration (Leads),ACTION,POST,/api/leads,email_integration,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-586,2,1,leads,change_status_color (Leads),ACTION,POST,/api/leads,change_status_color,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+586,2,1,leads,change_status_color (Leads),ACTION,POST,/api/leads,change_status_color,YES,YES,YES,YES,200,YES,1,NONE,,
 587,2,1,leads,import (Leads),BULK,GET,/api/leads,import,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 588,2,1,leads,validate_unique_field (Leads),ACTION,POST,/api/leads,validate_unique_field,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 589,2,1,leads,bulk_action (Leads),BULK,GET,/api/leads,bulk_action,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
@@ -453,18 +453,18 @@
 691,2,1,projects,update_task_milestone (Projects),ACTION,POST,/api/projects,update_task_milestone,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 692,2,1,projects,update_milestones_order (Projects),ACTION,POST,/api/projects,update_milestones_order,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 693,2,1,projects,pin_action (Projects),ACTION,POST,/api/projects,pin_action,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-694,2,1,projects,add_edit_members (Projects),ACTION,POST,/api/projects,add_edit_members,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-695,2,1,projects,discussions (Projects),ACTION,POST,/api/projects,discussions,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-696,2,1,projects,discussion (Projects),ACTION,POST,/api/projects,discussion,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-697,2,1,projects,get_discussion_comments (Projects),VALIDATE,GET,/api/projects,get_discussion_comments,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-698,2,1,projects,add_discussion_comment (Projects),ACTION,POST,/api/projects,add_discussion_comment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-699,2,1,projects,update_discussion_comment (Projects),ACTION,POST,/api/projects,update_discussion_comment,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-700,2,1,projects,delete_discussion_comment (Projects),DELETE,DELETE,/api/projects,delete_discussion_comment,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
-701,2,1,projects,delete_discussion (Projects),DELETE,DELETE,/api/projects,delete_discussion,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
+694,2,1,projects,add_edit_members (Projects),ACTION,POST,/api/projects,add_edit_members,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+695,2,1,projects,discussions (Projects),ACTION,POST,/api/projects,discussions,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+696,2,1,projects,discussion (Projects),ACTION,POST,/api/projects,discussion,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+697,2,1,projects,get_discussion_comments (Projects),VALIDATE,GET,/api/projects,get_discussion_comments,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+698,2,1,projects,add_discussion_comment (Projects),ACTION,POST,/api/projects,add_discussion_comment,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+699,2,1,projects,update_discussion_comment (Projects),ACTION,POST,/api/projects,update_discussion_comment,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+700,2,1,projects,delete_discussion_comment (Projects),DELETE,DELETE,/api/projects,delete_discussion_comment,YES,YES,YES,YES,200,YES,1,NONE,,
+701,2,1,projects,delete_discussion (Projects),DELETE,DELETE,/api/projects,delete_discussion,YES,YES,YES,YES,200,YES,1,NONE,,
 702,2,1,projects,change_milestone_color (Projects),ACTION,POST,/api/projects,change_milestone_color,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 703,2,1,projects,upload_file (Projects),UPLOAD,POST,/api/POST files/upload_bytes,upload_file,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Upload file
 704,2,1,projects,change_file_visibility (Projects),ACTION,POST,/api/projects,change_file_visibility,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-705,2,1,projects,change_activity_visibility (Projects),ACTION,POST,/api/projects,change_activity_visibility,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+705,2,1,projects,change_activity_visibility (Projects),ACTION,POST,/api/projects,change_activity_visibility,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 706,2,1,projects,remove_file (Projects),ACTION,POST,/api/projects,remove_file,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 707,2,1,projects,milestones_kanban (Projects),ACTION,POST,/api/projects,milestones_kanban,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 708,2,1,projects,milestones_kanban_load_more (Projects),ACTION,POST,/api/projects,milestones_kanban_load_more,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
@@ -478,8 +478,8 @@
 716,2,1,projects,timesheets (Projects),ACTION,POST,/api/projects,timesheets,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 717,2,1,projects,timesheet (Projects),ACTION,POST,/api/projects,timesheet,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 718,2,1,projects,timesheet_task_assignees (Projects),ACTION,POST,/api/projects,timesheet_task_assignees,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-719,2,1,projects,remove_team_member (Projects),ACTION,POST,/api/projects,remove_team_member,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-720,2,1,projects,save_note (Projects),ACTION,POST,/api/projects,save_note,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+719,2,1,projects,remove_team_member (Projects),ACTION,POST,/api/projects,remove_team_member,YES,YES,NO,YES,200,YES,1,MEDIUM,,
+720,2,1,projects,save_note (Projects),ACTION,POST,/api/projects,save_note,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 721,2,1,projects,delete (Projects),DELETE,DELETE,/api/DELETE projects/{id},delete,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Delete project
 722,2,1,projects,copy (Projects),ACTION,POST,/api/POST projects/{id}/copy,copy,YES,YES,YES,NO,N/A,PENDING,0,NONE,,Copy project
 723,2,1,projects,mass_stop_timers (Projects),ACTION,POST,/api/projects,mass_stop_timers,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
@@ -504,18 +504,18 @@
 1286,2,1,contracts,data_post (Contracts),ACTION,POST,/api/contracts,data_post,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1287,2,1,contracts,validate_contract_number (Contracts),ACTION,POST,/api/contracts,validate_contract_number,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1308,2,1,customers,data_get (Customers),ACTION,POST,/api/customers,data_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-1309,2,1,customers,count_get (Customers),ACTION,POST,/api/customers,count_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+1309,2,1,customers,count_get (Customers),ACTION,POST,/api/customers,count_get,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 1310,2,1,customers,data_search_get (Customers),ACTION,POST,/api/customers,data_search_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1311,2,1,customers,data_post (Customers),ACTION,POST,/api/customers,data_post,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1312,2,1,customers,data_delete (Customers),ACTION,POST,/api/customers,data_delete,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1313,2,1,customers,data_put (Customers),ACTION,POST,/api/customers,data_put,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1473,2,1,leads,data_get (Leads),ACTION,POST,/api/leads,data_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-1474,2,1,leads,count_get (Leads),ACTION,POST,/api/leads,count_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+1474,2,1,leads,count_get (Leads),ACTION,POST,/api/leads,count_get,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 1475,2,1,leads,data_search_get (Leads),ACTION,POST,/api/leads,data_search_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1476,2,1,leads,data_post (Leads),ACTION,POST,/api/leads,data_post,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1477,2,1,leads,data_delete (Leads),ACTION,POST,/api/leads,data_delete,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1478,2,1,leads,data_put (Leads),ACTION,POST,/api/leads,data_put,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-1479,2,1,leads,status_put (Leads),ACTION,POST,/api/leads,status_put,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+1479,2,1,leads,status_put (Leads),ACTION,POST,/api/leads,status_put,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 1533,2,1,milestones,data_get (Milestones),ACTION,POST,/api/milestones,data_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1534,2,1,milestones,data_search_get (Milestones),ACTION,POST,/api/milestones,data_search_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1535,2,1,milestones,data_post (Milestones),ACTION,POST,/api/milestones,data_post,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
@@ -526,7 +526,7 @@
 1611,2,1,projects,mark_in_progress_put (Projects),ACTION,POST,/api/projects,mark_in_progress_put,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 1612,2,1,projects,mark_cancelled_put (Projects),ACTION,POST,/api/projects,mark_cancelled_put,YES,YES,YES,NO,N/A,PENDING,0,NONE,,
 1613,2,1,projects,data_get (Projects),ACTION,POST,/api/projects,data_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
-1614,2,1,projects,count_get (Projects),ACTION,POST,/api/projects,count_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
+1614,2,1,projects,count_get (Projects),ACTION,POST,/api/projects,count_get,YES,YES,NO,YES,200,YES,1,MEDIUM,,
 1615,2,1,projects,data_search_get (Projects),ACTION,POST,/api/projects,data_search_get,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1616,2,1,projects,data_post (Projects),ACTION,POST,/api/projects,data_post,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,
 1617,2,1,projects,data_delete (Projects),ACTION,POST,/api/projects,data_delete,YES,YES,NO,NO,N/A,PENDING,0,MEDIUM,,

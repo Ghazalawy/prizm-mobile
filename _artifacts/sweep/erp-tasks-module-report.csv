@@ -1,0 +1,94 @@
+Operation,Category,BeforeStatus,AfterStatus,HTTPMethod,APIEndpoint,Implementations,BuiltVia,Iterations,Notes
+tasks/index,LIST,YES,DONE,GET,/api/tasks,Already working pre-pilot,Existing REST,,No changes needed
+tasks/table,LIST,YES,DONE,GET,/api/tasks?limit=&offset=,Already working pre-pilot,Existing REST,,No changes needed
+tasks/list_tasks,LIST,GAP,DONE,GET,/api/tasks?limit=200,Covered by data_get list endpoint,Existing REST API,1,data_get already returns paginated list with filters
+tasks/kanban,VIEW,GAP,DONE,GET,/api/tasks?limit=500,Board view groups tasks by status client-side,Existing REST + tasks queries (useTasksByStatus),1,Client-side grouping in mobile; no dedicated kanban API needed
+tasks/ajax_search_assign_task_to_timer,SEARCH,GAP,DONE,GET,/api/tasks?search=&assigned=,Covered by data_get with search+assigned params,Existing REST API,1,Search and assignee filter already supported
+tasks/tasks_kanban_load_more,PAGINATION,GAP,DONE,GET,/api/tasks?limit=&offset=,Pagination via limit/offset params,Existing REST API,1,Offset-based pagination in data_get
+tasks/update_order,REORDER,GAP,DONE,PUT,/api/tasks/{id},{kanban_order: N},Covered by data_put (kanban_order in whitelist),Existing REST API,1,kanban_order column in data_put whitelist
+tasks/switch_kanban,PREFERENCE,GAP,RETAINED_GAP, , ,Session-only preference,N/A,1,Mobile uses local state (viewMode) - not a server concern
+tasks/get_billable_tasks_by_project,FILTER,GAP,DONE,GET,/api/tasks?project=&billable=1,data_get supports project filter,Existing REST API,1,project filter param already in data_get
+tasks/get_billable_tasks_by_customer_id,FILTER,GAP,DONE,GET,/api/tasks?rel_type=customer&rel_id=,Filtered by rel_type+rel_id params,Existing REST API,1,rel_type/rel_id filters in data_get
+tasks/update_task_description,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{description: text},Covered by data_put partial update,Existing REST API,1,description in data_put whitelist
+tasks/detailed_overview,VIEW,GAP,RETAINED_GAP, , ,Server-rendered HTML panel,Not needed for mobile,1,Mobile has custom detail layout
+tasks/init_relation_tasks,VIEW,GAP,DONE,GET,/api/tasks?rel_type=&rel_id=,Filtered list by relation,Existing REST API,1,rel_type/rel_id filters cover this
+tasks/task,CREATE/EDIT,GAP,DONE,"POST,PUT",/api/tasks + /api/tasks/{id},data_post (create) + data_put (edit),Existing REST API + CrudFormScreen,1,Full CRUD via generic CrudFormScreen
+tasks/set_complete_type,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{complete_type: value},Covered by data_put,Existing REST API,1,complete_type in data_put whitelist
+tasks/copy,DUPLICATE,YES,DONE,POST,/api/tasks/{id}/copy,New REST endpoint + useCopyTask mutation,New API endpoint (this batch),2,Added copy_post method; mobile: handleCopy with confirmation
+tasks/get_billable_task_data,VALIDATE,GAP,DONE,GET,/api/tasks/{id},Covered by data_get single,Existing REST API,1,Single task GET returns billable/hourly_rate
+tasks/get_task_data,VALIDATE,GAP,DONE,GET,/api/tasks/{id},Covered by data_get single,Existing REST API,1,Same as above
+tasks/add_reminder,CREATE,GAP,DONE,POST,/api/tasks/{id}/reminders,New REST endpoint + useAddReminder,New API endpoint (this batch),2,Added reminders_post; mobile has useAddReminder hook
+tasks/edit_reminder,UPDATE,GAP,RETAINED_GAP, , ,No REST endpoint yet (low priority),Not added in pilot,,Can be added in next batch
+tasks/delete_reminder,DELETE,YES,DONE,DELETE,/api/tasks/reminders/{id},New REST endpoint + useDeleteReminder,New API endpoint (this batch),2,Added reminders_delete; mobile has useDeleteReminder hook
+tasks/get_staff_started_timers,VALIDATE,GAP,RETAINED_GAP, , ,Global timer poll,Not added in pilot,,Low priority for pilot
+tasks/save_checklist_item_template,CREATE,GAP,RETAINED_GAP, , ,Template system,Not added in pilot,,Low priority for pilot
+tasks/remove_checklist_item_template,DELETE,GAP,RETAINED_GAP, , ,Template system,Not added in pilot,,Low priority for pilot
+tasks/init_checklist_items,LIST,GAP,DONE,GET,/api/tasks/checklist/{id},Checklist items for a task,Existing REST API,1,checklist_get already exists
+tasks/task_tracking_stats,VIEW,GAP,RETAINED_GAP, , ,Stats aggregation,Not added in pilot,,Dashboard-level feature
+tasks/checkbox_action,TOGGLE,GAP,DONE,PUT,/api/tasks/checklist/{id},{finished: 0|1},Toggle checklist item,Existing REST API,1,checklist_put handles finished toggle
+tasks/add_checklist_item,CREATE,YES,DONE,POST,/api/tasks/checklist,Already working pre-pilot,Existing REST API,,Checklist add works in TaskDetailScreen
+tasks/update_checklist_order,REORDER,GAP,DONE,PUT,/api/tasks/checklist/{id},{list_order: N},Covered by checklist_put,Existing REST API,1,list_order field in checklist_put
+tasks/delete_checklist_item,DELETE,YES,DONE,DELETE,/api/tasks/checklist/{id},Already working pre-pilot,Existing REST API,,Checklist delete works in TaskDetailScreen
+tasks/update_checklist_item,UPDATE,GAP,DONE,PUT,/api/tasks/checklist/{id},{description: text},Covered by checklist_put,Existing REST API,1,description update in checklist_put
+tasks/make_public,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{is_public: 1},Covered by data_put,Existing REST API,1,is_public in data_put whitelist
+tasks/add_external_attachment,UPLOAD,GAP,RETAINED_GAP, , ,URL-based attachment via admin AJAX,Not added in pilot,,Files upload_bytes handles file uploads
+tasks/add_task_comment,CREATE,GAP,DONE,POST,/api/tasks/comments,Already working via comments_post,Existing REST API,1,Comments add works in TaskDetailScreen
+tasks/download_files,DOWNLOAD,GAP,RETAINED_GAP, , ,Server-side ZIP download,Not added in pilot,,File preview works; download is web-only
+tasks/add_task_followers,CREATE,GAP,DONE,POST,/api/tasks/followers,New InteractivePeopleBlock + followers_post,Existing REST API (this batch UI),2,UI: InteractivePeopleBlock with add button
+tasks/add_task_assignees,CREATE,GAP,DONE,POST,/api/tasks/assignments,New InteractivePeopleBlock + assignments_post,Existing REST API (this batch UI),2,UI: InteractivePeopleBlock with add button
+tasks/edit_comment,UPDATE,GAP,DONE,PUT,/api/tasks/comments/{id},New REST endpoint + comments_put + edit UI,New API endpoint (this batch),3,Added comments_put; mobile: edit+delete buttons per comment
+tasks/remove_comment,DELETE,GAP,DONE,DELETE,/api/tasks/comments/{id},comments_delete + UI delete button,Existing REST API (this batch UI),2,UI: delete button per comment in CommentsPanel
+tasks/remove_assignee,DELETE,YES,DONE,DELETE,/api/tasks/assignments/{id},InteractivePeopleBlock long-press remove,Existing REST API (this batch UI),2,UI: long-press on avatar to remove
+tasks/remove_follower,DELETE,YES,DONE,DELETE,/api/tasks/followers/{id},InteractivePeopleBlock long-press remove,Existing REST API (this batch UI),2,UI: long-press on avatar to remove
+tasks/unmark_complete,STATUS,YES,DONE,PUT,/api/tasks/{id}/reopen,Already working pre-pilot,Existing REST API,,Reopen action in TaskDetailScreen
+tasks/mark_as,STATUS,GAP,DONE,PUT,/api/tasks/{id},{status: N},Status change via Alert picker + data_put,Existing REST API (this batch UI),3,UI: Status quick-action button with Alert picker
+tasks/change_priority,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{priority: N},Priority change via Alert picker + data_put,Existing REST API (this batch UI),3,UI: Priority quick-action button with Alert picker
+tasks/change_milestone,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{milestone: N},Covered by data_put,Existing REST API,1,milestone in data_put whitelist
+tasks/task_single_inline_update,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{field: value},Covered by data_put partial update,Existing REST API,1,Any whitelisted field updatable
+tasks/delete_task,DELETE,YES,DONE,DELETE,/api/tasks/{id},Already working pre-pilot,Existing REST API,,Delete works in TaskDetailScreen header
+tasks/remove_task_attachment,DELETE,GAP,DONE,DELETE,/api/files/{id},Files delete endpoint,Existing Files API,1,FilesTab handles file deletion
+tasks/upload_file,UPLOAD,YES,DONE,POST,/api/files/upload_bytes,Already working pre-pilot,Existing Files API,,File upload via FilesTab
+tasks/timer_tracking,TIMER,YES,DONE,"POST","/api/tasks/{id}/timer/{start|stop}",Already working pre-pilot,Existing REST API,,Start/Stop timer in TaskDetailScreen
+tasks/delete_user_unfinished_timesheet,DELETE,YES,DONE,DELETE,/api/tasks/timesheets/{id},New REST endpoint,New API endpoint (this batch),2,Added timesheets_delete
+tasks/delete_timesheet,DELETE,YES,DONE,DELETE,/api/tasks/timesheets/{id},Timesheet delete in TimesheetPanel,New API endpoint (this batch),3,UI: TimesheetPanel with per-entry delete
+tasks/update_timesheet,UPDATE,GAP,RETAINED_GAP, , ,Timesheet edit not exposed,Not added in pilot,,Can be added in next batch
+tasks/log_time,CREATE,GAP,DONE,POST,/api/tasks/{id}/log_time,New REST endpoint + useLogTime hook,New API endpoint (this batch),2,Added log_time_post with start/end/note
+tasks/update_tags,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{tags: csv},Tags tap-to-remove + add button + data_put,Existing REST API (this batch UI),3,UI: Editable tags in detail screen
+tasks/bulk_action,BULK,GAP,RETAINED_GAP, , ,Complex multi-select action,Not added in pilot,,Requires multi-select UI pattern
+tasks/gantt_date_update,UPDATE,GAP,DONE,PUT,/api/tasks/{id},{startdate/duedate},Covered by data_put date fields,Existing REST API,1,startdate/duedate in data_put whitelist
+tasks/get_task_by_id,VALIDATE,GAP,DONE,GET,/api/tasks/{id},Covered by data_get single,Existing REST API,1,Single task GET
+tasks/get_staff_names_for_mentions,VALIDATE,GAP,RETAINED_GAP, , ,Staff name lookup,Not added in pilot,,Staff list already cached client-side
+tasks/save_checklist_assigned_staff,UPDATE,GAP,RETAINED_GAP, , ,Checklist assignee,Not added in pilot,,Low priority
+tasks/AddTaskLog,AUDIT,GAP,DONE, , ,Server-side activity log now records all mobile actions,Existing via mobile_audit,1,mobile_audit calls added to all API endpoints
+tasks/timer_start_post,TIMER,YES,DONE,POST,/api/tasks/{id}/timer/start,Already working pre-pilot,Existing REST API,,Timer start in TaskDetailScreen
+tasks/timer_stop_post,TIMER,YES,DONE,POST,/api/tasks/{id}/timer/stop,Already working pre-pilot,Existing REST API,,Timer stop in TaskDetailScreen
+tasks/mark_complete_put,STATUS,YES,DONE,PUT,/api/tasks/{id}/mark_complete,Already working pre-pilot,Existing REST API,,Complete action in TaskDetailScreen
+tasks/reopen_put,STATUS,YES,DONE,PUT,/api/tasks/{id}/reopen,Already working pre-pilot,Existing REST API,,Reopen action in TaskDetailScreen
+tasks/data_get,LIST,GAP,DONE,GET,/api/tasks and /api/tasks/{id},Core list+detail endpoint,Existing REST API,1,Live on production; confirmed working
+tasks/data_search_get,SEARCH,GAP,DONE,GET,/api/tasks/search/{key},Delegates to data_get with search filter,Existing REST API,1,Search integrated with list
+tasks/data_post,CREATE,GAP,DONE,POST,/api/tasks,Core create endpoint,Existing REST API,1,Used by CrudFormScreen
+tasks/data_put,UPDATE,GAP,DONE,PUT,/api/tasks/{id},Core partial update endpoint,Existing REST API,1,Used for status/priority/tags/any field
+tasks/data_delete,DELETE,GAP,DONE,DELETE,/api/tasks/{id},Core delete endpoint,Existing REST API,1,Used by TaskDetailScreen handleDelete
+tasks/assignments_get,LIST,GAP,DONE,GET,/api/tasks/assignments/{id},List task assignees,Existing REST API,1,Used in TaskDetailScreen for avatar display
+tasks/assignments_post,CREATE,GAP,DONE,POST,/api/tasks/assignments,Add assignee via InteractivePeopleBlock,Existing REST API (this batch UI),2,UI add button calls assignments_post
+tasks/assignments_delete,DELETE,GAP,DONE,DELETE,/api/tasks/assignments/{id},Remove assignee via long-press,Existing REST API (this batch UI),2,UI long-press calls assignments_delete
+tasks/followers_get,LIST,GAP,DONE,GET,/api/tasks/followers/{id},List task followers,Existing REST API,1,Used in TaskDetailScreen for avatar display
+tasks/followers_post,CREATE,GAP,DONE,POST,/api/tasks/followers,Add follower via InteractivePeopleBlock,Existing REST API (this batch UI),2,UI add button calls followers_post
+tasks/followers_delete,DELETE,GAP,DONE,DELETE,/api/tasks/followers/{id},Remove follower via long-press,Existing REST API (this batch UI),2,UI long-press calls followers_delete
+tasks/checklist_get,LIST,GAP,DONE,GET,/api/tasks/checklist/{id},List checklist items,Existing REST API,1,Used in ChecklistPanel
+tasks/checklist_post,CREATE,GAP,DONE,POST,/api/tasks/checklist,Add checklist item,Existing REST API,1,Used in ChecklistPanel add
+tasks/checklist_put,UPDATE,GAP,DONE,PUT,/api/tasks/checklist/{id},Update checklist item,Existing REST API,1,Used in ChecklistPanel toggle/rename/reorder
+tasks/checklist_delete,DELETE,GAP,DONE,DELETE,/api/tasks/checklist/{id},Delete checklist item,Existing REST API,1,Used in ChecklistPanel delete
+tasks/checklist_item_put,UPDATE,GAP,DONE,PUT,/api/tasks/checklist/item/{id},Alias for checklist_put,Existing REST API,1,Used for inline edit in ChecklistPanel
+tasks/checklist_item_delete,DELETE,GAP,DONE,DELETE,/api/tasks/checklist/item/{id},Alias for checklist_delete,Existing REST API,1,Used in ChecklistPanel delete
+tasks/comments_get,LIST,GAP,DONE,GET,/api/tasks/comments/{id},List task comments,Existing REST API,1,Used in CommentsPanel
+tasks/comments_post,CREATE,GAP,DONE,POST,/api/tasks/comments,Add task comment,Existing REST API,1,Used in CommentsPanel composer
+tasks/comments_delete,DELETE,GAP,DONE,DELETE,/api/tasks/comments/{id},Delete task comment (this batch: UI),Existing REST API (this batch UI),2,Delete button added to CommentsPanel
+tasks/comments_put,EDIT,NEW,DONE,PUT,/api/tasks/comments/{id},Edit comment content,New API endpoint (this batch),2,New endpoint + edit button UI
+tasks/reminders_get,LIST,NEW,DONE,GET,/api/tasks/{id}/reminders,List reminders for a task,New API endpoint (this batch),2,New endpoint + useTaskReminders hook
+tasks/reminders_post,CREATE,NEW,DONE,POST,/api/tasks/{id}/reminders,Add reminder to task,New API endpoint (this batch),2,New endpoint + useAddReminder hook
+tasks/reminders_delete,DELETE,NEW,DONE,DELETE,/api/tasks/reminders/{id},Delete reminder,New API endpoint (this batch),2,New endpoint + useDeleteReminder hook
+tasks/timesheets_get,LIST,NEW,DONE,GET,/api/tasks/{id}/timesheets,List timesheet entries for a task,New API endpoint (this batch),2,New endpoint + useTaskTimesheets hook
+tasks/timesheets_delete,DELETE,NEW,DONE,DELETE,/api/tasks/timesheets/{id},Delete timesheet entry,New API endpoint (this batch),3,New endpoint + TimesheetPanel delete UI
+tasks/log_time_post,CREATE,NEW,DONE,POST,/api/tasks/{id}/log_time,Log time manually,New API endpoint (this batch),2,New endpoint + useLogTime hook
+tasks/copy_post,DUPLICATE,NEW,DONE,POST,/api/tasks/{id}/copy,Copy task with assignees/followers/checklist/files,New API endpoint (this batch),2,New endpoint + useCopyTask + handleCopy UI

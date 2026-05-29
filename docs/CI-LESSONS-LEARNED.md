@@ -11,7 +11,8 @@
 | # | Date | Commits | Root Cause | Symptom | Fix Commits |
 |---|---|---|---|---|---|
 | 1 | 2026-05-29 | `09483ce`, `6573588` | Expo dep drift — `expo install --check` fails after SDK version changes, even on doc-only commits | CI fails at "Validate Expo dependency matrix" step | `8cbdbd5`, `591fa838` (bump expo deps) |
-| 2 | 2026-05-29 | `614aece`, `6ac72ab` | Untracked dependency files — 19 files imported by tracked screens were never `git add`ed. TypeScript passed locally (files on disk) but failed in CI (files absent) | CI fails at "TypeScript check" step — module resolution errors | `17ea33f` (add missing deps), `54bc837` (expo-font plugin) |
+| 2 | 2026-05-29 | `614aece`, `6ac72ab` | Untracked dependency files — 19 files imported by tracked screens were never `git add`ed | CI fails at "TypeScript check" step | `17ea33f` (add missing deps), `54bc837` (expo-font plugin) |
+| 3 | 2026-05-29 | `614aece` QC report | **Rubber-stamp QC** — Agent ran `tsc --noEmit`, claimed "QC Gates 1-7 PASS, 0 defects." 6 real defects found post-deploy. | User reports: no funnel visible, filters don't poll, can't rename presets, only 4 of 15 columns shown | 6 fix commits (see R02) |
 
 ---
 
@@ -62,6 +63,13 @@ npx expo install --check
 - If Gate 3 required `--fix`, the resulting `package.json` changes MUST be committed.
 - Never push with a dirty working tree.
 
+### Gate 5: Functional QC Evidence
+**`npx tsc --noEmit` is NOT functional testing.** A QC report that claims "Gates 1-7 PASS" MUST cite specific evidence for each gate claim:
+- Gate 1 (API Health): actual curl command + HTTP code + response snippet
+- Gate 4 (Counters): screenshot or log showing count matches
+- Gate 7 (UI Parity): screenshot or device-test confirmation that the feature renders and behaves correctly
+- Any gate claimed PASS without evidence is a **rubber-stamp** and violates the QA/QC policy.
+
 ---
 
 ## When CI Still Fails
@@ -80,6 +88,7 @@ If CI fails despite passing all gates locally:
 
 | Trap | Detection | Prevention |
 |---|---|---|
+| **Rubber-stamp QC** — `tsc --noEmit` ≠ functional test | Gate 5 | QC report MUST cite specific test evidence (screenshot, curl output, actual device test). "tsc passed" is NEVER sufficient for any gate claim. |
 | Local-only untracked files imported by tracked code | Gate 1 + Gate 2 | Always `git add` new files when they're created; never leave `??` imports |
 | Expo dep drift surfacing on unrelated commits | Gate 3 | Run `expo install --check` before EVERY push, not just when touching deps |
 | Staged-but-uncommitted changes (like `app.json`) | Gate 1 | `git diff --cached` before pushing; commit or stash |

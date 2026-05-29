@@ -8,8 +8,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { useEffect, useState } from "react";
 import * as SecureStore from "expo-secure-store";
-import { BUILD_SHA, BUILD_VERSION, RELEASE_NOTES } from "@/lib/build-info";
+import { BUILD_SHA, BUILD_VERSION } from "@/lib/build-info";
 import { useAuth } from "@/lib/auth-context";
+import changelog from "@/CHANGELOG.json";
 
 /**
  * "What's new" modal shown once after each app update.
@@ -37,7 +38,9 @@ export function WhatsNewModal() {
     if (!isAuthenticated) return;
     (async () => {
       if (!BUILD_SHA || BUILD_SHA === "dev") return;
-      if (!RELEASE_NOTES.title && RELEASE_NOTES.highlights.length === 0) return;
+      // Read top release from CHANGELOG.json directly — same source as Settings
+      const top = changelog?.releases?.[0];
+      if (!top?.title && !top?.highlights?.length) return;
 
       const seen = await SecureStore.getItemAsync(SEEN_KEY);
       if (seen !== BUILD_SHA) setOpen(true);
@@ -50,6 +53,10 @@ export function WhatsNewModal() {
   };
 
   if (!open) return null;
+
+  const top = changelog?.releases?.[0];
+  const title = top?.title || "App updated";
+  const highlights: string[] = top?.highlights || [];
 
   return (
     <Modal
@@ -67,17 +74,17 @@ export function WhatsNewModal() {
                 <Ionicons name="sparkles" size={20} color="#FFFFFF" />
               </View>
               <Text className="text-white/80 text-xs uppercase tracking-wide ml-2">
-                What&apos;s new in v{BUILD_VERSION}
+                What&apos;s new in v{top?.version || BUILD_VERSION}
               </Text>
             </View>
             <Text className="text-white text-xl font-bold" numberOfLines={3}>
-              {RELEASE_NOTES.title || "App updated"}
+              {title}
             </Text>
           </View>
 
           {/* Body */}
           <ScrollView className="px-5 py-4 max-h-96">
-            {RELEASE_NOTES.highlights.map((line, i) => (
+            {highlights.map((line, i) => (
               <View key={i} className="flex-row mb-3">
                 <View className="w-1.5 h-1.5 rounded-full bg-primary mt-2 mr-3" />
                 <Text className="text-foreground flex-1 leading-relaxed" selectable>

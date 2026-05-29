@@ -9,10 +9,11 @@
 ## Failure Register
 
 | # | Date | Commits | Root Cause | Symptom | Fix Commits |
-|---|---|---|---|---|---|
-| 1 | 2026-05-29 | `09483ce`, `6573588` | Expo dep drift — `expo install --check` fails after SDK version changes, even on doc-only commits | CI fails at "Validate Expo dependency matrix" step | `8cbdbd5`, `591fa838` (bump expo deps) |
-| 2 | 2026-05-29 | `614aece`, `6ac72ab` | Untracked dependency files — 19 files imported by tracked screens were never `git add`ed | CI fails at "TypeScript check" step | `17ea33f` (add missing deps), `54bc837` (expo-font plugin) |
-| 3 | 2026-05-29 | `614aece` QC report | **Rubber-stamp QC** — Agent ran `tsc --noEmit`, claimed "QC Gates 1-7 PASS, 0 defects." 6 real defects found post-deploy. | User reports: no funnel visible, filters don't poll, can't rename presets, only 4 of 15 columns shown | 6 fix commits (see R02) |
+|---|---|---|---|---|
+| 1 | 2026-05-29 | `09483ce`, `6573588` | Expo dep drift | CI fails at "Validate Expo dependency matrix" | `8cbdbd5`, `591fa838` |
+| 2 | 2026-05-29 | `614aece`, `6ac72ab` | Untracked dependency files | CI fails at "TypeScript check" | `17ea33f`, `54bc837` |
+| 3 | 2026-05-29 | `614aece` QC report | **Rubber-stamp QC** — `tsc --noEmit` ≠ functional test | 6 defects found post-deploy | 6 fix commits |
+| 4 | 2026-05-29 | — | **Version desync** — `app.json: 1.8.0`, `package.json: 1.8.2`, `versionCode` not bumped | APK shows wrong version; WhatsNew modal shows stale release notes | `app.json` synced to 1.8.2, versionCode 18→19, WhatsNewModal now reads CHANGELOG.json directly |
 
 ---
 
@@ -64,11 +65,19 @@ npx expo install --check
 - Never push with a dirty working tree.
 
 ### Gate 5: Functional QC Evidence
-**`npx tsc --noEmit` is NOT functional testing.** A QC report that claims "Gates 1-7 PASS" MUST cite specific evidence for each gate claim:
+**`npx tsc --noEmit` is NOT functional testing.** A QC report that claims "Gates 1-7 PASS" MUST cite specific evidence:
 - Gate 1 (API Health): actual curl command + HTTP code + response snippet
 - Gate 4 (Counters): screenshot or log showing count matches
 - Gate 7 (UI Parity): screenshot or device-test confirmation that the feature renders and behaves correctly
 - Any gate claimed PASS without evidence is a **rubber-stamp** and violates the QA/QC policy.
+
+### Gate 6: Version Sync Across All Files
+The app version must be identical in all three files. Mismatch causes wrong APK version + stale "What's New" modal.
+- `package.json` → `"version"` field
+- `app.json` → `"expo.version"` field
+- `app.json` → `"expo.android.versionCode"` — increment +1 on every release
+- `CHANGELOG.json` → top entry `"version"` must match
+- Verify: `node -e "const p=require('./package.json'); const a=require('./app.json'); const c=require('./CHANGELOG.json'); console.assert(p.version===a.expo.version,'app.json mismatch!'); console.assert(p.version===c.releases[0].version,'CHANGELOG top entry mismatch!'); console.log('OK:',p.version)"`
 
 ---
 

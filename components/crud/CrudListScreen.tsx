@@ -21,7 +21,6 @@ import {
   moduleSubtitle,
   moduleTitle,
   ModuleDefinition,
-  evaluateFilterRule,
   FILTER_OPERATOR_LABELS,
   type FilterGroup,
 } from "@/lib/module-registry";
@@ -49,14 +48,17 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   const permissions = usePermissions();
   const flatListRef = useRef<FlatList>(null);
 
+  const filterParams = useMemo(() => filterGroupToParams(filterGroup), [filterGroup]);
+
   const q = useInfiniteQuery({
-    queryKey: ["crud", moduleKey, "list", { search, filterGroup, sort }],
+    queryKey: ["crud", moduleKey, "list", { search, filterParams, sort }],
     queryFn: ({ pageParam = 0 }) => {
       if (!module) return Promise.resolve({ data: [], total: 0 });
       const params: ListParams = {
         search: search.trim() || undefined,
         limit: PAGE_SIZE,
         offset: pageParam as number,
+        ...filterParams,
       };
       if (sort) {
         params.sort = sort.field;
@@ -93,15 +95,14 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
     }
 
     const unique = uniqueRowsById(module, allItems);
-    const filtered = clientSideFilter(module, unique, search, filterGroup);
-    const sorted = clientSideSort(module, filtered, sort);
+    const sorted = clientSideSort(module, unique, sort);
 
     return {
       rows: sorted,
       totalCount: hasTotal ? serverTotal : sorted.length,
       hasServerTotal: hasTotal,
     };
-  }, [module, q.data, search, sort, filterGroup]);
+  }, [module, q.data, search, sort]);
 
   const filterCount = activeFilterCount(filterGroup);
 
@@ -477,38 +478,44 @@ const ListSeparator = memo(function ListSeparator() {
 
 // --- Helpers ---
 
-function clientSideFilter(
-  module: ModuleDefinition | undefined,
-  rows: any[],
-  search: string,
-  filterGroup?: FilterGroup,
-): any[] {
-  if (!module) return [];
-  let result = rows;
+/**
+ * Convert FilterGroup rules to API query params for server-side filtering.
+ * Maps operators to query param formats the PHP API controller understands.
+ */
+function filterGroupToParams(group: FilterGroup): Record<string, string> {
+  const params: Record<string, string> = {};
+  for (const rule of group.rules) {
+    if (!rule.value && rule.operator !== "is_empty" && rule.operator !== "is_not_empty") continue;
+    if (rule.operator === "is_empty" || rule.operator === "is_not_empty") continue; // server doesn't support
 
-  // Apply Perfix filter rules
-  if (filterGroup?.rules.length) {
-    const { rules, match_type } = filterGroup;
-    result = result.filter((row) => {
-      const outcomes = rules.map((rule) => {
-        const rowValue = row?.[rule.id];
-        return evaluateFilterRule(rule, rowValue);
-      });
+    const v = Array.isArray(rule.value) ? rule.value.join(",") : String(rule.value);
 
-      if (match_type === "and") return outcomes.every(Boolean);
-      return outcomes.some(Boolean);
-    });
+    switch (rule.operator) {
+      case "equal":
+      case "in":
+        params[rule.id] = v;
+        break;
+      case "contains":
+      case "begins_with":
+      case "ends_with":
+        // Server-side LIKE: send the value as-is
+        params[rule.id] = v;
+        break;
+      case "between":
+      case "not_between":
+        params[rule.id] = v; // already "from..to" format
+        break;
+      case "less":
+      case "less_or_equal":
+      case "greater":
+      case "greater_or_equal":
+        // Numeric comparison: not supported via GET params, skip
+        break;
+      default:
+        params[rule.id] = v;
+    }
   }
-
-  // Apply text search
-  const needle = search.trim().toLowerCase();
-  if (!needle) return result;
-  const keys = Array.from(
-    new Set([...(module.searchFields || []), ...module.titleFields, ...(module.subtitleFields || [])]),
-  );
-  return result.filter((row) =>
-    keys.some((key) => String(row?.[key] ?? "").toLowerCase().includes(needle)),
-  );
+  return params;
 }
 
 function clientSideSort(

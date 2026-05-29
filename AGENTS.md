@@ -70,6 +70,23 @@ mysql ... -e "SHOW TABLES LIKE 'tbl%{hint}%'"
 sed -n '/buttonEnabled/,/echo.*button/p' modules/{module}/views/.../view.php
 ```
 
+### Trap caught May 2026
+
+Two doc-only commits (QC report templates) failed CI at `npx expo install --check`.
+The step exits non-zero when Expo SDK dep versions drift from the installed
+Expo version — even when `package.json` itself hasn't been touched by the
+commits. The check had actually been failing since a prior SDK release; it
+just surfaced on the next push.
+
+**Root cause:** `expo install --check` is a strict gate. Expo SDK updates
+bump expected peer versions. If you don't run `expo install --fix`
+periodically, the next CI run fails — regardless of what that commit contains.
+
+**Prevention:** After any `npm install` or `expo install`, run
+`npx expo install --check` locally before pushing. A scheduled weekly CI job
+that runs `--check` and opens an issue on drift would catch this before it
+blocks a real push.
+
 ### Trap caught Nov 2026
 
 Built mobile approve/reject hitting `tblprz_purchase_request_statusdetail`

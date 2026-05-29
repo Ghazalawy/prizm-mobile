@@ -5,7 +5,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -16,6 +15,13 @@ import { useLeadsList, useLeadSources, useLeadStatuses } from "@/lib/queries/lea
 import type { LeadListItem, LeadStatus } from "@/lib/queries/leads";
 import { rtlTextStyle } from "@/lib/rtl";
 import { colors } from "@/lib/theme";
+
+// ─── Perfix filter system ──────────────────────────────────────────────
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { LEADS_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { FilterSheet } from "@/components/ui/FilterSheet";
 
 type ViewMode = "list" | "pipeline";
 
@@ -32,14 +38,18 @@ const DEFAULT_STATUS_COLORS: Record<string, string> = {
 
 export function LeadListScreen() {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("");
-  const [sourceFilter, setSourceFilter] = useState<string>("");
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
+  // ─── Perfix filter state ──────────────────────────────────────────────
+  const filter = useFilterState(LEADS_FILTER_CONFIG.rules);
+
+  // ─── API queries ──────────────────────────────────────────────────────
+  const queryParams = filter.toQueryParams();
   const leadsQuery = useLeadsList({
-    search: search.trim() || undefined,
-    status: statusFilter || undefined,
-    source: sourceFilter || undefined,
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    status: queryParams.status ? String(queryParams.status) : undefined,
+    source: queryParams.source ? String(queryParams.source) : undefined,
+    assigned: queryParams.assigned ? String(queryParams.assigned) : undefined,
   });
   const sourcesQuery = useLeadSources();
   const statusesQuery = useLeadStatuses();
@@ -59,6 +69,32 @@ export function LeadListScreen() {
     for (const s of sources) m.set(String(s.id), s.name);
     return m;
   }, [sources]);
+
+  // Inject runtime options into filter config for status/source
+  const ruleDefsWithOptions = useMemo(() => {
+    return LEADS_FILTER_CONFIG.rules.map((def) => {
+      if (def.id === "status") {
+        return {
+          ...def,
+          options: statuses.map((s) => ({
+            value: String(s.id),
+            label: s.name,
+            subtext: s.isdefault === 1 ? "Default" : undefined,
+          })),
+        };
+      }
+      if (def.id === "source") {
+        return {
+          ...def,
+          options: sources.map((s) => ({
+            value: String(s.id),
+            label: s.name,
+          })),
+        };
+      }
+      return def;
+    });
+  }, [statuses, sources]);
 
   const onRefresh = useCallback(async () => {
     await Promise.all([leadsQuery.refetch(), sourcesQuery.refetch(), statusesQuery.refetch()]);
@@ -99,43 +135,39 @@ export function LeadListScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search */}
-        <View className="flex-row items-center bg-slate-100 rounded-lg px-3 py-2 mb-2">
-          <Ionicons name="search" size={16} color="#94A3B8" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search leads..."
-            placeholderTextColor="#94A3B8"
-            className="flex-1 ml-2 text-sm text-foreground"
-            returnKeyType="search"
-          />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")}>
-              <Ionicons name="close-circle" size={16} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
+        {/* FilterBar replaces inline search + filter */}
+        <FilterBar
+          search={filter.search}
+          onSearchChange={filter.setSearch}
+          searchPlaceholder="Search leads..."
+          activeFilterCount={filter.activeFilterCount}
+          onFilterPress={() => setShowFilterSheet(true)}
+          onClearAll={filter.clearAll}
+        />
 
-        {/* Filter chips */}
-        {viewMode === "list" ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6 }}>
+        {/* Quick filter chips — status shortcuts */}
+        {viewMode === "list" && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingTop: 8 }}
+          >
             <FilterChip
               label="All Status"
-              active={!statusFilter}
-              onPress={() => setStatusFilter("")}
+              active={!filter.quickFilters["status"]}
+              onPress={() => filter.setQuickFilter("status", "")}
             />
             {statuses.map((s) => (
               <FilterChip
                 key={s.id}
                 label={s.name}
-                active={statusFilter === String(s.id)}
-                onPress={() => setStatusFilter(statusFilter === String(s.id) ? "" : String(s.id))}
+                active={filter.quickFilters["status"] === String(s.id)}
+                onPress={() => filter.setQuickFilter("status", String(s.id))}
                 color={s.color || DEFAULT_STATUS_COLORS[String(s.id)]}
               />
             ))}
           </ScrollView>
-        ) : null}
+        )}
       </View>
 
       {/* Content */}
@@ -160,6 +192,19 @@ export function LeadListScreen() {
           onRefresh={onRefresh}
         />
       )}
+
+      {/* Filter sheet modal */}
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={ruleDefsWithOptions}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
     </View>
   );
 }
@@ -204,96 +249,7 @@ function LeadListView({
   );
 }
 
-function LeadCard({
-  item,
-  statusMap,
-  sourceMap,
-}: {
-  item: LeadListItem;
-  statusMap: Map<string, LeadStatus>;
-  sourceMap: Map<string, string>;
-}) {
-  const status = statusMap.get(String(item.status));
-  const statusColor = status?.color || DEFAULT_STATUS_COLORS[String(item.status)] || "#64748B";
-  const sourceName = sourceMap.get(String(item.source)) || item.source_name;
-
-  return (
-    <TouchableOpacity
-      onPress={() => router.push(`/(tabs)/leads/${item.id}` as any)}
-      activeOpacity={0.7}
-      className="bg-white rounded-xl p-4 shadow-sm"
-      style={{ borderLeftWidth: 3, borderLeftColor: statusColor }}
-    >
-      <View className="flex-row items-start justify-between">
-        <View className="flex-1 mr-2">
-          <Text className="text-base font-semibold text-foreground" style={rtlTextStyle(item.name)} numberOfLines={1}>
-            {item.name}
-          </Text>
-          {item.company ? (
-            <Text className="text-sm text-slate-600 mt-0.5" numberOfLines={1}>
-              {item.company}
-            </Text>
-          ) : null}
-        </View>
-        <View style={{ backgroundColor: statusColor + "20", paddingHorizontal: 8, paddingVertical: 3, borderRadius: 999 }}>
-          <Text style={{ color: statusColor, fontSize: 10, fontWeight: "700" }}>
-            {status?.name || `Status ${item.status}`}
-          </Text>
-        </View>
-      </View>
-
-      {/* Contact info */}
-      <View className="flex-row items-center mt-2 flex-wrap">
-        {item.email ? (
-          <View className="flex-row items-center mr-3">
-            <Ionicons name="mail-outline" size={12} color="#64748B" />
-            <Text className="text-xs text-slate-500 ml-1" numberOfLines={1}>{item.email}</Text>
-          </View>
-        ) : null}
-        {item.phonenumber ? (
-          <View className="flex-row items-center mr-3">
-            <Ionicons name="call-outline" size={12} color="#64748B" />
-            <Text className="text-xs text-slate-500 ml-1">{item.phonenumber}</Text>
-          </View>
-        ) : null}
-      </View>
-
-      {/* Footer: source + quick actions */}
-      <View className="flex-row items-center justify-between mt-2">
-        <View className="flex-row items-center">
-          {sourceName ? (
-            <View className="flex-row items-center bg-slate-100 rounded-full px-2 py-0.5">
-              <Ionicons name="git-branch-outline" size={10} color="#64748B" />
-              <Text className="text-[10px] text-slate-500 ml-1">{sourceName}</Text>
-            </View>
-          ) : null}
-        </View>
-        <View className="flex-row items-center">
-          {item.phonenumber ? (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${item.phonenumber}`)}
-              className="w-7 h-7 rounded-full bg-green-50 items-center justify-center mr-1"
-              hitSlop={6}
-            >
-              <Ionicons name="call" size={13} color="#16A34A" />
-            </TouchableOpacity>
-          ) : null}
-          {item.email ? (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`mailto:${item.email}`)}
-              className="w-7 h-7 rounded-full bg-blue-50 items-center justify-center"
-              hitSlop={6}
-            >
-              <Ionicons name="mail" size={13} color="#2563EB" />
-            </TouchableOpacity>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-// ─── Pipeline/Kanban View ────────────────────────────────────────────────
+// ─── Pipeline View ──────────────────────────────────────────────────────
 
 function LeadPipelineView({
   leads,
@@ -308,127 +264,127 @@ function LeadPipelineView({
   refreshing: boolean;
   onRefresh: () => void;
 }) {
-  const grouped = useMemo(() => {
-    const m = new Map<string, LeadListItem[]>();
-    for (const s of statuses) m.set(String(s.id), []);
-    for (const lead of leads) {
-      const key = String(lead.status);
-      const arr = m.get(key);
-      if (arr) arr.push(lead);
-      else m.set(key, [lead]);
-    }
-    return m;
+  const columns = useMemo(() => {
+    return statuses.map((s) => ({
+      status: s,
+      leads: leads.filter((l) => String(l.status) === String(s.id)),
+    }));
   }, [leads, statuses]);
-
-  const columns = statuses.length > 0
-    ? statuses
-    : Array.from(grouped.keys()).map((id) => ({ id: Number(id), name: `Status ${id}`, color: DEFAULT_STATUS_COLORS[id] || "#64748B" }));
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ padding: 12, paddingBottom: 32 }}
+      contentContainerStyle={{ padding: 12, gap: 12 }}
       refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.primary} />}
     >
-      {columns.map((col) => {
-        const colId = String(col.id);
-        const colLeads = grouped.get(colId) ?? [];
-        const colColor = col.color || DEFAULT_STATUS_COLORS[colId] || "#64748B";
-        return (
+      {columns.map((col) => (
+        <View key={col.status.id} style={{ width: 260 }}>
           <View
-            key={colId}
-            style={{ width: 260, marginRight: 12 }}
-            className="bg-slate-100 rounded-xl overflow-hidden"
+            style={{
+              backgroundColor: (col.status.color || DEFAULT_STATUS_COLORS[String(col.status.id)] || "#3B82F6") + "18",
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 8,
+            }}
           >
-            {/* Column header */}
-            <View
-              className="px-3 py-2.5 flex-row items-center justify-between"
-              style={{ backgroundColor: colColor + "15" }}
-            >
-              <View className="flex-row items-center flex-1">
-                <View style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: colColor }} />
-                <Text className="ml-2 text-sm font-bold text-foreground" numberOfLines={1}>
-                  {col.name}
-                </Text>
-              </View>
-              <View
-                style={{ backgroundColor: colColor + "30", paddingHorizontal: 6, paddingVertical: 2, borderRadius: 999 }}
-              >
-                <Text style={{ color: colColor, fontSize: 11, fontWeight: "700" }}>{colLeads.length}</Text>
-              </View>
-            </View>
-
-            {/* Column cards */}
-            <ScrollView style={{ maxHeight: 520 }} contentContainerStyle={{ padding: 8 }}>
-              {colLeads.length === 0 ? (
-                <Text className="text-xs text-slate-400 text-center py-4">No leads</Text>
-              ) : (
-                colLeads.map((lead) => (
-                  <TouchableOpacity
-                    key={lead.id}
-                    onPress={() => router.push(`/(tabs)/leads/${lead.id}` as any)}
-                    activeOpacity={0.7}
-                    className="bg-white rounded-lg p-3 mb-2 shadow-sm"
-                  >
-                    <Text className="text-sm font-semibold text-foreground" numberOfLines={1} style={rtlTextStyle(lead.name)}>
-                      {lead.name}
-                    </Text>
-                    {lead.company ? (
-                      <Text className="text-xs text-slate-500 mt-0.5" numberOfLines={1}>{lead.company}</Text>
-                    ) : null}
-                    {lead.email ? (
-                      <View className="flex-row items-center mt-1.5">
-                        <Ionicons name="mail-outline" size={10} color="#94A3B8" />
-                        <Text className="text-[10px] text-slate-400 ml-1" numberOfLines={1}>{lead.email}</Text>
-                      </View>
-                    ) : null}
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
+            <Text className="text-sm font-bold" style={{ color: col.status.color || DEFAULT_STATUS_COLORS[String(col.status.id)] }}>
+              {col.status.name} ({col.leads.length})
+            </Text>
           </View>
-        );
-      })}
+          <ScrollView contentContainerStyle={{ gap: 8, paddingBottom: 32 }}>
+            {col.leads.map((lead) => (
+              <LeadCard key={lead.id} item={lead} statusMap={statusMap} sourceMap={new Map()} compact />
+            ))}
+            {col.leads.length === 0 && (
+              <Text className="text-slate-400 text-xs text-center py-4">No leads</Text>
+            )}
+          </ScrollView>
+        </View>
+      ))}
     </ScrollView>
   );
 }
 
-// ─── Shared components ───────────────────────────────────────────────────
+// ─── Lead Card ──────────────────────────────────────────────────────────
 
-function FilterChip({
-  label,
-  active,
-  onPress,
-  color,
+function LeadCard({
+  item,
+  statusMap,
+  sourceMap,
+  compact = false,
 }: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-  color?: string;
+  item: LeadListItem;
+  statusMap: Map<string, LeadStatus>;
+  sourceMap: Map<string, string>;
+  compact?: boolean;
 }) {
+  const status = statusMap.get(String(item.status));
+  const sourceName = sourceMap.get(String(item.source)) ?? "";
+  const statusColor = status?.color || DEFAULT_STATUS_COLORS[String(item.status)] || "#64748B";
+
+  const handlePress = () => {
+    router.push(`/(tabs)/leads/${item.id}` as any);
+  };
+
   return (
     <TouchableOpacity
-      onPress={onPress}
+      onPress={handlePress}
       activeOpacity={0.7}
-      style={{
-        backgroundColor: active ? (color || colors.primary) + "20" : "#F1F5F9",
-        paddingHorizontal: 10,
-        paddingVertical: 5,
-        borderRadius: 999,
-        borderWidth: active ? 1 : 0,
-        borderColor: active ? (color || colors.primary) : "transparent",
-      }}
+      className="bg-white rounded-xl p-4 border border-slate-100"
     >
-      <Text
-        style={{
-          color: active ? (color || colors.primary) : "#64748B",
-          fontSize: 11,
-          fontWeight: "600",
-        }}
-      >
-        {label}
-      </Text>
+      <View className="flex-row justify-between items-start">
+        <View className="flex-1 mr-2">
+          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            {item.name}
+          </Text>
+          {item.company ? (
+            <Text className="text-sm text-slate-500 mt-0.5" numberOfLines={1}>
+              {item.company}
+            </Text>
+          ) : null}
+        </View>
+        {status && (
+          <View
+            style={{
+              backgroundColor: statusColor + "18",
+              paddingHorizontal: 8,
+              paddingVertical: 3,
+              borderRadius: 6,
+            }}
+          >
+            <Text style={{ color: statusColor, fontSize: 11, fontWeight: "600" }}>
+              {status.name}
+            </Text>
+          </View>
+        )}
+      </View>
+
+      {!compact && (
+        <View className="flex-row items-center mt-2 gap-3">
+          {item.email ? (
+            <View className="flex-row items-center">
+              <Ionicons name="mail-outline" size={12} color="#94A3B8" />
+              <Text className="text-xs text-slate-500 ml-1" numberOfLines={1}>
+                {item.email}
+              </Text>
+            </View>
+          ) : null}
+          {item.phonenumber ? (
+            <TouchableOpacity
+              onPress={() => Linking.openURL(`tel:${item.phonenumber}`)}
+              className="flex-row items-center"
+            >
+              <Ionicons name="call-outline" size={12} color="#3B82F6" />
+              <Text className="text-xs text-blue-600 ml-1">{item.phonenumber}</Text>
+            </TouchableOpacity>
+          ) : null}
+        </View>
+      )}
+
+      {!compact && sourceName ? (
+        <Text className="text-xs text-slate-400 mt-1.5">Source: {sourceName}</Text>
+      ) : null}
     </TouchableOpacity>
   );
 }

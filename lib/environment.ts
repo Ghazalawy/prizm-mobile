@@ -3,7 +3,7 @@ import { useState, useEffect, useSyncExternalStore, useCallback } from "react";
 
 // ── Types ────────────────────────────────────────────────────────────────
 
-export type EnvironmentKey = "production" | "development";
+export type EnvironmentKey = "production" | "development" | "local";
 
 export type Environment = {
   key: EnvironmentKey;
@@ -38,6 +38,15 @@ export const ENVIRONMENTS: Record<EnvironmentKey, Environment> = {
     authUrl: `${BASE}/MS_dev/mobile_auth.php`,
     uploadsBase: `${BASE}/MS_dev`,
     color: "#B45309",
+  },
+  local: {
+    key: "local",
+    label: "Local (WAMP)",
+    apiUrl: "http://10.0.2.2/prizm331/api",
+    adminUrl: "http://10.0.2.2/prizm331/admin",
+    authUrl: "http://10.0.2.2/prizm331/mobile_auth.php",
+    uploadsBase: "http://10.0.2.2/prizm331",
+    color: "#7C3AED",
   },
 };
 
@@ -76,7 +85,7 @@ export async function initEnvironment(): Promise<EnvironmentKey> {
   if (_initDone) return _current;
   try {
     const stored = await AsyncStorage.getItem(STORAGE_KEY);
-    if (stored === "development" || stored === "production") {
+    if (stored === "development" || stored === "production" || stored === "local") {
       _current = stored;
     }
   } catch {

@@ -4,7 +4,6 @@ import {
   RefreshControl,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -19,14 +18,16 @@ import {
 } from "@/lib/queries/opportunities";
 import { colors } from "@/lib/theme";
 
+// ─── Perfix filter system ──────────────────────────────────────────────
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { OPPORTUNITIES_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { FilterSheet } from "@/components/ui/FilterSheet";
+
 const ACCENT = "#E65100";
 
 type ViewMode = "list" | "pipeline";
-
-const STAGE_COLORS = [
-  "#0284C7", "#7C3AED", "#0891B2", "#059669", "#D97706",
-  "#DC2626", "#4F46E5", "#DB2777", "#0D9488", "#B45309",
-];
 
 function fmtCurrency(val: string | null): string {
   if (!val) return "—";
@@ -47,18 +48,21 @@ function getOppStatusBadge(status: string): { label: string; color: string; bg: 
 }
 
 export function OpportunityListScreen() {
-  const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [stageFilter, setStageFilter] = useState<string>("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
+  // ─── Perfix filter state ──────────────────────────────────────────────
+  const filter = useFilterState(OPPORTUNITIES_FILTER_CONFIG.rules);
+  const stages = useOpportunityStages();
+
+  // ─── API query ────────────────────────────────────────────────────────
+  const queryParams = filter.toQueryParams();
   const q = useOpportunitiesList({
-    search: search.trim() || undefined,
-    stage: stageFilter === "all" ? undefined : stageFilter,
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    stage: queryParams.stage ? String(queryParams.stage) : undefined,
     limit: 200,
   });
-
-  const stages = useOpportunityStages();
 
   const items = useMemo(() => {
     return (q.data?.items ?? []) as OpportunityListItem[];
@@ -112,54 +116,42 @@ export function OpportunityListScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search */}
-        <View className="flex-row items-center mt-3 bg-gray-100 rounded-xl px-3 py-2">
-          <Ionicons name="search-outline" size={18} color="#64748B" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search opportunities…"
-            placeholderTextColor="#94A3B8"
-            className="flex-1 ml-2 text-slate-900"
-            autoCorrect={false}
-            autoCapitalize="none"
+        {/* FilterBar */}
+        <View style={{ marginTop: 12 }}>
+          <FilterBar
+            search={filter.search}
+            onSearchChange={filter.setSearch}
+            searchPlaceholder="Search opportunities…"
+            activeFilterCount={filter.activeFilterCount}
+            onFilterPress={() => setShowFilterSheet(true)}
+            onClearAll={filter.clearAll}
           />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Stage filter chips */}
-        {stages.data && stages.data.length > 0 ? (
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingTop: 10, gap: 6 }}>
-            <TouchableOpacity
-              onPress={() => setStageFilter("all")}
-              className="rounded-full px-3 py-1.5"
-              style={{ backgroundColor: stageFilter === "all" ? ACCENT : "#F1F5F9" }}
-            >
-              <Text className="text-xs font-semibold" style={{ color: stageFilter === "all" ? "#FFF" : "#475569" }}>
-                All Stages
-              </Text>
-            </TouchableOpacity>
+        {stages.data && stages.data.length > 0 && (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingTop: 12 }}
+          >
+            <FilterChip
+              label="All Stages"
+              active={!filter.quickFilters["stage"]}
+              onPress={() => filter.setQuickFilter("stage", "")}
+              color={ACCENT}
+            />
             {stages.data.map((s: OpportunityStage) => (
-              <TouchableOpacity
+              <FilterChip
                 key={s.id}
-                onPress={() => setStageFilter(String(s.id))}
-                className="rounded-full px-3 py-1.5"
-                style={{ backgroundColor: stageFilter === String(s.id) ? ACCENT : "#F1F5F9" }}
-              >
-                <Text
-                  className="text-xs font-semibold"
-                  style={{ color: stageFilter === String(s.id) ? "#FFF" : "#475569" }}
-                >
-                  {s.stage_name}
-                </Text>
-              </TouchableOpacity>
+                label={s.stage_name}
+                active={filter.quickFilters["stage"] === String(s.id)}
+                onPress={() => filter.setQuickFilter("stage", String(s.id))}
+                color={ACCENT}
+              />
             ))}
           </ScrollView>
-        ) : null}
+        )}
       </View>
 
       {/* Content */}
@@ -184,140 +176,140 @@ export function OpportunityListScreen() {
           <Ionicons name="trending-up-outline" size={48} color="#94A3B8" />
           <Text className="text-slate-900 font-semibold mt-3">No opportunities found</Text>
         </View>
-      ) : viewMode === "list" ? (
+      ) : viewMode === "pipeline" ? (
+        <PipelineView items={items} stages={stages.data} refreshing={refreshing} onRefresh={onRefresh} />
+      ) : (
         <FlatList
           data={items}
           keyExtractor={(item) => String(item.opportunity_id)}
-          renderItem={({ item }) => <OpportunityCard item={item} stages={stages.data || []} />}
-          contentContainerStyle={{ padding: 12 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 32 }}
           ItemSeparatorComponent={() => <View className="h-2" />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
+          renderItem={({ item }) => {
+            const st = getOppStatusBadge(item.status || item.stage?.toString() || "");
+            return (
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
+                className="bg-white rounded-xl p-4 border border-gray-100"
+                activeOpacity={0.7}
+              >
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 mr-2">
+                    <Text className="text-base font-semibold text-slate-900" numberOfLines={2}>
+                      {item.opportunity_name || "Untitled"}
+                    </Text>
+                    <Text className="text-xs text-slate-400 mt-1">
+                      {item.opportunity_code}
+                      {item.company ? ` · ${item.company}` : ""}
+                    </Text>
+                  </View>
+                  <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: st.bg }}>
+                    <Text className="text-[10px] font-semibold" style={{ color: st.color }}>
+                      {st.label}
+                    </Text>
+                  </View>
+                </View>
+                <View className="flex-row items-center mt-2 gap-4">
+                  {item.estimated_price ? (
+                    <Text className="text-sm font-bold text-slate-800">
+                      {fmtCurrency(item.estimated_price)}
+                    </Text>
+                  ) : null}
+                  {item.start_date ? (
+                    <Text className="text-xs text-slate-400">
+                      {item.start_date} → {item.end_date || "—"}
+                    </Text>
+                  ) : null}
+                </View>
+              </TouchableOpacity>
+            );
+          }}
         />
-      ) : (
-        <PipelineView items={items} stages={stages.data || []} onRefresh={onRefresh} refreshing={refreshing} />
       )}
+
+      {/* Filter sheet modal */}
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={OPPORTUNITIES_FILTER_CONFIG.rules}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
     </View>
   );
 }
 
-// ─── List Card ───────────────────────────────────────────────────────────
-
-const OpportunityCard = memo(function OpportunityCard({
-  item,
-  stages,
-}: {
-  item: OpportunityListItem;
-  stages: OpportunityStage[];
-}) {
-  const name = item.opportunity_name || "Untitled";
-  const customer = item.company || "";
-  const value = fmtCurrency(item.estimated_price || item.client_price);
-  const status = getOppStatusBadge(item.status);
-  const stage = stages.find((s) => s.id === Number(item.stage));
-  const stageColor = stage ? STAGE_COLORS[(stage.id - 1) % STAGE_COLORS.length] : "#64748B";
-
-  return (
-    <TouchableOpacity
-      onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
-      activeOpacity={0.72}
-      className="bg-white rounded-xl p-4 shadow-sm"
-    >
-      <View className="flex-row items-start">
-        <View className="flex-1">
-          <View className="flex-row items-center">
-            <Text className="text-base font-semibold text-slate-900 flex-1" numberOfLines={1}>
-              {name}
-            </Text>
-            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: status.bg }}>
-              <Text className="text-[10px] font-bold" style={{ color: status.color }}>
-                {status.label}
-              </Text>
-            </View>
-          </View>
-
-          {customer ? (
-            <Text className="text-sm text-slate-600 mt-0.5" numberOfLines={1}>{customer}</Text>
-          ) : null}
-
-          <View className="flex-row items-center mt-2 gap-x-3">
-            <Text className="text-lg font-bold" style={{ color: ACCENT }}>
-              {value}
-            </Text>
-            {stage ? (
-              <View className="flex-row items-center">
-                <View className="w-2 h-2 rounded-full mr-1" style={{ backgroundColor: stageColor }} />
-                <Text className="text-xs text-slate-600">{stage.stage_name}</Text>
-              </View>
-            ) : null}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-});
-
-// ─── Pipeline (Kanban) View ──────────────────────────────────────────────
+// ─── Pipeline View ──────────────────────────────────────────────────────
 
 function PipelineView({
   items,
   stages,
-  onRefresh,
   refreshing,
+  onRefresh,
 }: {
   items: OpportunityListItem[];
-  stages: OpportunityStage[];
-  onRefresh: () => void;
+  stages: OpportunityStage[] | undefined;
   refreshing: boolean;
+  onRefresh: () => void;
 }) {
+  const stageList = stages ?? [];
   const columns = useMemo(() => {
-    return stages.map((stage, idx) => ({
-      stage,
-      color: STAGE_COLORS[idx % STAGE_COLORS.length],
-      items: items.filter((i) => Number(i.stage) === stage.id),
+    return stageList.map((s) => ({
+      stage: s,
+      items: items.filter(
+        (item) => String(item.stage) === String(s.id) || String(item.stage) === String(s.stage_level)
+      ),
     }));
-  }, [stages, items]);
+  }, [items, stageList]);
 
   return (
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
       contentContainerStyle={{ padding: 12, gap: 12 }}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
-      }
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
     >
-      {columns.map(({ stage, color, items: colItems }) => (
-        <View key={stage.id} className="w-64 bg-white rounded-xl overflow-hidden shadow-sm">
-          <View className="px-3 py-2.5 border-b border-slate-100" style={{ borderLeftWidth: 3, borderLeftColor: color }}>
-            <Text className="text-sm font-bold text-slate-800">{stage.stage_name}</Text>
-            <Text className="text-xs text-slate-500">{colItems.length} items</Text>
+      {columns.map((col) => (
+        <View key={col.stage.id} style={{ width: 260 }}>
+          <View
+            style={{
+              backgroundColor: ACCENT + "15",
+              borderRadius: 10,
+              padding: 12,
+              marginBottom: 8,
+            }}
+          >
+            <Text className="text-sm font-bold" style={{ color: ACCENT }}>
+              {col.stage.stage_name} ({col.items.length})
+            </Text>
           </View>
-          <ScrollView className="max-h-[500px]" contentContainerStyle={{ padding: 8, gap: 6 }}>
-            {colItems.length === 0 ? (
-              <Text className="text-xs text-slate-400 text-center py-4">No items</Text>
-            ) : (
-              colItems.map((item) => (
-                <TouchableOpacity
-                  key={item.opportunity_id}
-                  onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
-                  className="bg-slate-50 rounded-lg p-3"
-                  activeOpacity={0.7}
-                >
-                  <Text className="text-xs font-semibold text-slate-800" numberOfLines={2}>
-                    {item.opportunity_name}
+          <ScrollView contentContainerStyle={{ gap: 8, paddingBottom: 32 }}>
+            {col.items.map((item) => (
+              <TouchableOpacity
+                key={item.opportunity_id}
+                onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
+                className="bg-white rounded-lg p-3 shadow-sm"
+                activeOpacity={0.7}
+              >
+                <Text className="text-sm font-semibold text-slate-900" numberOfLines={2}>
+                  {item.opportunity_name || "Untitled"}
+                </Text>
+                {item.company ? (
+                  <Text className="text-xs text-slate-500 mt-0.5">{item.company}</Text>
+                ) : null}
+                {item.estimated_price ? (
+                  <Text className="text-xs font-bold text-slate-700 mt-1">
+                    {fmtCurrency(item.estimated_price)}
                   </Text>
-                  <Text className="text-lg font-bold mt-1" style={{ color: ACCENT }}>
-                    {fmtCurrency(item.estimated_price || item.client_price)}
-                  </Text>
-                  {item.company ? (
-                    <Text className="text-[10px] text-slate-500 mt-0.5" numberOfLines={1}>
-                      {item.company}
-                    </Text>
-                  ) : null}
-                </TouchableOpacity>
-              ))
+                ) : null}
+              </TouchableOpacity>
+            ))}
+            {col.items.length === 0 && (
+              <Text className="text-slate-400 text-xs text-center py-4">No opportunities</Text>
             )}
           </ScrollView>
         </View>

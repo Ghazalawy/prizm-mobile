@@ -5,7 +5,6 @@ import {
   RefreshControl,
   SectionList,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -15,31 +14,29 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { useCustomersList, useCustomerGroups } from "@/lib/queries/customers";
 import { colors } from "@/lib/theme";
 
+// ─── Perfix filter system ──────────────────────────────────────────────
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { CUSTOMERS_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { FilterSheet } from "@/components/ui/FilterSheet";
+
 const ACCENT = colors.primary;
 
-type StatusFilter = "all" | "1" | "0";
-type GroupFilter = "all" | string;
-
-const STATUS_CHIPS: Array<{ key: StatusFilter; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "1", label: "Active" },
-  { key: "0", label: "Inactive" },
-];
-
-const ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ#".split("");
-
 export function CustomerListScreen() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
-  const [groupFilter, setGroupFilter] = useState<GroupFilter>("all");
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
+  // ─── Perfix filter state ──────────────────────────────────────────────
+  const filter = useFilterState(CUSTOMERS_FILTER_CONFIG.rules);
   const groups = useCustomerGroups();
 
+  // ─── API query ────────────────────────────────────────────────────────
+  const queryParams = filter.toQueryParams();
   const q = useCustomersList({
-    search: search.trim() || undefined,
-    active: statusFilter === "all" ? undefined : statusFilter,
-    group: groupFilter === "all" ? undefined : groupFilter,
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    active: queryParams.active ? String(queryParams.active) : undefined,
+    group: queryParams.group_id ? String(queryParams.group_id) : undefined,
     limit: 500,
   });
 
@@ -89,47 +86,39 @@ export function CustomerListScreen() {
           </View>
         </View>
 
-        {/* Search */}
-        <View className="flex-row items-center mt-3 bg-gray-100 rounded-xl px-3 py-2">
-          <Ionicons name="search-outline" size={18} color="#64748B" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search company, phone, VAT, city…"
-            placeholderTextColor="#94A3B8"
-            className="flex-1 ml-2 text-slate-900"
-            autoCorrect={false}
-            autoCapitalize="none"
+        {/* FilterBar */}
+        <View style={{ marginTop: 12 }}>
+          <FilterBar
+            search={filter.search}
+            onSearchChange={filter.setSearch}
+            searchPlaceholder="Search company, phone, VAT, city…"
+            activeFilterCount={filter.activeFilterCount}
+            onFilterPress={() => setShowFilterSheet(true)}
+            onClearAll={filter.clearAll}
           />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
-        {/* Status filter chips */}
-        <View className="flex-row mt-3 gap-1.5">
-          {STATUS_CHIPS.map((chip) => (
-            <TouchableOpacity
-              key={chip.key}
-              onPress={() => setStatusFilter(chip.key)}
-              className="rounded-full px-3 py-1.5"
-              style={{
-                backgroundColor: statusFilter === chip.key ? ACCENT : "#F1F5F9",
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                className="text-xs font-semibold"
-                style={{ color: statusFilter === chip.key ? "#FFF" : "#475569" }}
-              >
-                {chip.label}
-              </Text>
-            </TouchableOpacity>
-          ))}
+        {/* Quick filter chips */}
+        <View style={{ flexDirection: "row", marginTop: 12, gap: 6 }}>
+          <FilterChip
+            label="All"
+            active={!filter.quickFilters["active"]}
+            onPress={() => filter.setQuickFilter("active", "")}
+          />
+          <FilterChip
+            label="Active"
+            active={filter.quickFilters["active"] === "1"}
+            onPress={() => filter.setQuickFilter("active", "1")}
+            color="#16A34A"
+          />
+          <FilterChip
+            label="Inactive"
+            active={filter.quickFilters["active"] === "0"}
+            onPress={() => filter.setQuickFilter("active", "0")}
+            color="#DC2626"
+          />
 
-          {/* Group filter */}
+          {/* Group filter chips */}
           {(groups.data?.length ?? 0) > 0 && (
             <FlatList
               data={groups.data!}
@@ -138,21 +127,12 @@ export function CustomerListScreen() {
               keyExtractor={(g) => String(g.id)}
               contentContainerStyle={{ gap: 6, paddingLeft: 4 }}
               renderItem={({ item: g }) => (
-                <TouchableOpacity
-                  onPress={() => setGroupFilter(groupFilter === String(g.id) ? "all" : String(g.id))}
-                  className="rounded-full px-3 py-1.5"
-                  style={{
-                    backgroundColor: groupFilter === String(g.id) ? "#0284C7" : "#F1F5F9",
-                  }}
-                  activeOpacity={0.7}
-                >
-                  <Text
-                    className="text-xs font-semibold"
-                    style={{ color: groupFilter === String(g.id) ? "#FFF" : "#475569" }}
-                  >
-                    {g.name}
-                  </Text>
-                </TouchableOpacity>
+                <FilterChip
+                  label={g.name}
+                  active={filter.quickFilters["group_id"] === String(g.id)}
+                  onPress={() => filter.setQuickFilter("group_id", String(g.id))}
+                  color="#0284C7"
+                />
               )}
             />
           )}
@@ -182,107 +162,79 @@ export function CustomerListScreen() {
           <Text className="text-slate-900 font-semibold mt-3">No customers found</Text>
         </View>
       ) : (
-        <View className="flex-1 flex-row">
-          <SectionList
-            sections={sections}
-            keyExtractor={(item) => String(item.userid)}
-            renderItem={({ item }) => <CustomerCard item={item} />}
-            renderSectionHeader={({ section }) => (
-              <View className="px-4 py-1 bg-slate-50">
-                <Text className="text-xs font-bold text-slate-400">{section.title}</Text>
-              </View>
-            )}
-            contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 12 }}
-            ItemSeparatorComponent={() => <View className="h-2" />}
-            stickySectionHeadersEnabled
-            refreshControl={
-              <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
-            }
-          />
-
-          {/* Alphabet sidebar */}
-          <View className="py-2 px-1 items-center justify-center">
-            {ALPHABET.map((letter) => (
-              <TouchableOpacity
-                key={letter}
-                className="py-0.5 px-1"
-                activeOpacity={0.6}
-              >
-                <Text className="text-[9px] font-bold text-slate-400">{letter}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+        <SectionList
+          sections={sections}
+          keyExtractor={(item) => String(item.userid)}
+          renderItem={({ item }) => <CustomerCard item={item} />}
+          renderSectionHeader={({ section }) => (
+            <View className="px-4 py-1 bg-slate-50">
+              <Text className="text-xs font-bold text-slate-400">{section.title}</Text>
+            </View>
+          )}
+          contentContainerStyle={{ paddingBottom: 20, paddingHorizontal: 12 }}
+          ItemSeparatorComponent={() => <View className="h-2" />}
+          stickySectionHeadersEnabled
+          refreshControl={
+            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
+          }
+        />
       )}
+
+      {/* Filter sheet modal */}
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={CUSTOMERS_FILTER_CONFIG.rules}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
     </View>
   );
 }
 
-const CustomerCard = memo(function CustomerCard({ item }: { item: any }) {
-  const company = item.company || "Unnamed";
-  const contact = item.name || item.contact_name || "";
-  const phone = item.phonenumber || "";
-  const city = item.city || "";
-  const vat = item.vat || "";
-  const isActive = String(item.active) === "1";
+// ─── Customer Card ──────────────────────────────────────────────────────
 
+const CustomerCard = memo(function CustomerCard({ item }: { item: any }) {
+  const active = Number(item.active) === 1;
   return (
     <TouchableOpacity
       onPress={() => router.push(`/(tabs)/customers/${item.userid}` as any)}
-      activeOpacity={0.72}
-      className="bg-white rounded-xl p-4 shadow-sm"
+      className="bg-white rounded-xl p-4 border border-gray-100"
+      activeOpacity={0.7}
     >
-      <View className="flex-row items-start">
-        <View className="flex-1">
-          <View className="flex-row items-center">
-            <View
-              className="w-2.5 h-2.5 rounded-full mr-2"
-              style={{ backgroundColor: isActive ? "#16A34A" : "#94A3B8" }}
-            />
-            <Text className="text-base font-bold text-slate-900 flex-1" numberOfLines={1}>
-              {company}
-            </Text>
-          </View>
-          {contact ? (
-            <Text className="text-sm text-slate-600 mt-0.5" numberOfLines={1}>
-              {contact}
-            </Text>
+      <View className="flex-row items-center justify-between">
+        <View className="flex-1 mr-2">
+          <Text className="text-base font-semibold text-slate-900" numberOfLines={1}>
+            {item.company || "—"}
+          </Text>
+          {item.phonenumber ? (
+            <View className="flex-row items-center mt-1">
+              <Ionicons name="call-outline" size={11} color="#64748B" />
+              <Text className="text-xs text-slate-500 ml-1">{item.phonenumber}</Text>
+            </View>
           ) : null}
-          <View className="flex-row items-center mt-1.5 flex-wrap gap-x-3">
-            {phone ? (
-              <Text className="text-xs text-slate-500">{phone}</Text>
-            ) : null}
-            {city ? (
-              <Text className="text-xs text-slate-500">{city}</Text>
-            ) : null}
-            {vat ? (
-              <Text className="text-xs text-slate-400">VAT: {vat}</Text>
-            ) : null}
-          </View>
         </View>
-
-        {/* Quick actions */}
-        <View className="flex-row gap-2 ml-2">
-          {phone ? (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`tel:${phone}`)}
-              className="w-8 h-8 rounded-full bg-green-50 items-center justify-center"
-              hitSlop={4}
-            >
-              <Ionicons name="call-outline" size={16} color="#16A34A" />
-            </TouchableOpacity>
-          ) : null}
-          {item.email ? (
-            <TouchableOpacity
-              onPress={() => Linking.openURL(`mailto:${item.email}`)}
-              className="w-8 h-8 rounded-full bg-blue-50 items-center justify-center"
-              hitSlop={4}
-            >
-              <Ionicons name="mail-outline" size={16} color="#2563EB" />
-            </TouchableOpacity>
-          ) : null}
+        <View
+          className="rounded-full px-2.5 py-1"
+          style={{ backgroundColor: active ? "#DCFCE7" : "#FEE2E2" }}
+        >
+          <Text
+            className="text-[10px] font-semibold"
+            style={{ color: active ? "#166534" : "#991B1B" }}
+          >
+            {active ? "Active" : "Inactive"}
+          </Text>
         </View>
       </View>
+      {item.city || item.country ? (
+        <Text className="text-xs text-slate-400 mt-1.5" numberOfLines={1}>
+          {[item.city, item.state].filter(Boolean).join(", ")}
+        </Text>
+      ) : null}
     </TouchableOpacity>
   );
 });

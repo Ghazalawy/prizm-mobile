@@ -15,6 +15,7 @@ import {
   type ExpenseFilters,
 } from "@/lib/queries/expenses";
 import { colors } from "@/lib/theme";
+import { FilterChip } from "@/components/ui/FilterChip";
 
 const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
   travel: "airplane-outline",
@@ -63,34 +64,6 @@ function fmtDate(s: string): string {
     month: "short",
     day: "numeric",
   });
-}
-
-function FilterChip({
-  label,
-  active,
-  onPress,
-}: {
-  label: string;
-  active: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <TouchableOpacity
-      onPress={onPress}
-      activeOpacity={0.7}
-      className="mr-2 px-4 py-2 rounded-full"
-      style={{
-        backgroundColor: active ? colors.primary : colors.slate100,
-      }}
-    >
-      <Text
-        className="text-sm font-semibold"
-        style={{ color: active ? colors.white : colors.slate600 }}
-      >
-        {label}
-      </Text>
-    </TouchableOpacity>
-  );
 }
 
 function ExpenseRow({ item }: { item: ExpenseListItem }) {

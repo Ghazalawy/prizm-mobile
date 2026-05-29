@@ -2,8 +2,8 @@ import {
   ActivityIndicator,
   FlatList,
   RefreshControl,
+  ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -13,18 +13,25 @@ import { memo, useCallback, useMemo, useState } from "react";
 import { useTendersList, type TenderListItem } from "@/lib/queries/tenders";
 import { colors } from "@/lib/theme";
 
+// ─── Perfix filter system ──────────────────────────────────────────────
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { TENDERS_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { FilterSheet } from "@/components/ui/FilterSheet";
+
 const ACCENT = "#B45309";
 
 type StatusFilter = "all" | "Draft" | "Submitted" | "Awarded" | "Won" | "Lost" | "Cancelled";
 
-const FILTER_CHIPS: Array<{ key: StatusFilter; label: string }> = [
-  { key: "all", label: "All" },
-  { key: "Draft", label: "Draft" },
-  { key: "Submitted", label: "Submitted" },
-  { key: "Awarded", label: "Awarded" },
-  { key: "Won", label: "Won" },
-  { key: "Lost", label: "Lost" },
-  { key: "Cancelled", label: "Cancelled" },
+const FILTER_CHIPS: Array<{ key: StatusFilter; label: string; color: string }> = [
+  { key: "all", label: "All", color: ACCENT },
+  { key: "Draft", label: "Draft", color: "#B45309" },
+  { key: "Submitted", label: "Submitted", color: "#0284C7" },
+  { key: "Awarded", label: "Awarded", color: "#2563EB" },
+  { key: "Won", label: "Won", color: "#16A34A" },
+  { key: "Lost", label: "Lost", color: "#DC2626" },
+  { key: "Cancelled", label: "Cancelled", color: "#64748B" },
 ];
 
 function getStatusBadge(status: string): { label: string; color: string; bg: string } {
@@ -55,14 +62,18 @@ function closingCountdown(closingDate: string | null): {
 type SortKey = "closing_date" | "title";
 
 export function TenderListScreen() {
-  const [search, setSearch] = useState("");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [sortBy, setSortBy] = useState<SortKey>("closing_date");
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
 
+  // ─── Perfix filter state ──────────────────────────────────────────────
+  const filter = useFilterState(TENDERS_FILTER_CONFIG.rules);
+
+  // ─── API query ────────────────────────────────────────────────────────
+  const queryParams = filter.toQueryParams();
   const q = useTendersList({
-    search: search.trim() || undefined,
-    status: statusFilter === "all" ? undefined : statusFilter,
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    status: queryParams.tender_status ? String(queryParams.tender_status) : undefined,
     limit: 200,
   });
 
@@ -115,50 +126,36 @@ export function TenderListScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Search */}
-        <View className="flex-row items-center mt-3 bg-gray-100 rounded-xl px-3 py-2">
-          <Ionicons name="search-outline" size={18} color="#64748B" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search by title or tender number…"
-            placeholderTextColor="#94A3B8"
-            className="flex-1 ml-2 text-slate-900"
-            autoCorrect={false}
-            autoCapitalize="none"
+        {/* FilterBar */}
+        <View style={{ marginTop: 12 }}>
+          <FilterBar
+            search={filter.search}
+            onSearchChange={filter.setSearch}
+            searchPlaceholder="Search by title or tender number…"
+            activeFilterCount={filter.activeFilterCount}
+            onFilterPress={() => setShowFilterSheet(true)}
+            onClearAll={filter.clearAll}
           />
-          {search ? (
-            <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          ) : null}
         </View>
 
         {/* Status filter chips */}
-        <FlatList
-          data={FILTER_CHIPS}
+        <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          keyExtractor={(item) => item.key}
-          contentContainerStyle={{ paddingTop: 10, gap: 6 }}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              onPress={() => setStatusFilter(item.key)}
-              className="rounded-full px-3 py-1.5"
-              style={{
-                backgroundColor: statusFilter === item.key ? ACCENT : "#F1F5F9",
-              }}
-              activeOpacity={0.7}
-            >
-              <Text
-                className="text-xs font-semibold"
-                style={{ color: statusFilter === item.key ? "#FFF" : "#475569" }}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          )}
-        />
+          contentContainerStyle={{ gap: 6, paddingTop: 12 }}
+        >
+          {FILTER_CHIPS.map((chip) => (
+            <FilterChip
+              key={chip.key}
+              label={chip.label}
+              active={filter.quickFilters["tender_status"] === chip.key || (chip.key === "all" && !filter.quickFilters["tender_status"])}
+              onPress={() =>
+                filter.setQuickFilter("tender_status", chip.key === "all" ? "" : chip.key)
+              }
+              color={chip.color}
+            />
+          ))}
+        </ScrollView>
       </View>
 
       {/* Content */}
@@ -187,74 +184,60 @@ export function TenderListScreen() {
         <FlatList
           data={rows}
           keyExtractor={(item) => String(item.id)}
-          renderItem={({ item }) => <TenderCard item={item} />}
-          contentContainerStyle={{ padding: 12 }}
+          contentContainerStyle={{ padding: 12, paddingBottom: 32 }}
           ItemSeparatorComponent={() => <View className="h-2" />}
-          refreshControl={
-            <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />
-          }
+          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
+          renderItem={({ item }) => {
+            const st = getStatusBadge(item.tender_status);
+            const cc = closingCountdown(item.closing_date);
+            return (
+              <TouchableOpacity
+                onPress={() => router.push(`/(tabs)/tenders/${item.id}` as any)}
+                className="bg-white rounded-xl p-4 border border-gray-100"
+                activeOpacity={0.7}
+              >
+                <View className="flex-row items-start justify-between">
+                  <View className="flex-1 mr-2">
+                    <Text className="text-base font-semibold text-slate-900" numberOfLines={2}>
+                      {item.tender_description || "Untitled"}
+                    </Text>
+                    <Text className="text-xs text-slate-400 mt-1">
+                      {item.tender_number || `#${item.id}`}
+                      {item.tenderer_name ? ` · ${item.tenderer_name}` : ""}
+                    </Text>
+                  </View>
+                  <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: st.bg }}>
+                    <Text className="text-[10px] font-semibold" style={{ color: st.color }}>
+                      {st.label}
+                    </Text>
+                  </View>
+                </View>
+                {cc && (
+                  <View className="flex-row items-center mt-2">
+                    <Ionicons name="time-outline" size={12} color={cc.color} />
+                    <Text className="text-xs font-medium ml-1" style={{ color: cc.color }}>
+                      {cc.text}
+                    </Text>
+                  </View>
+                )}
+              </TouchableOpacity>
+            );
+          }}
         />
       )}
+
+      {/* Filter sheet modal */}
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={TENDERS_FILTER_CONFIG.rules}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
     </View>
   );
 }
-
-const TenderCard = memo(function TenderCard({ item }: { item: TenderListItem }) {
-  const title = item.tender_description || "Untitled Tender";
-  const status = getStatusBadge(item.tender_status);
-  const countdown = closingCountdown(item.closing_date);
-
-  return (
-    <TouchableOpacity
-      onPress={() => router.push(`/(tabs)/tenders/${item.id}` as any)}
-      activeOpacity={0.72}
-      className="bg-white rounded-xl p-4 shadow-sm"
-    >
-      <View className="flex-row items-start">
-        <View className="flex-1">
-          <View className="flex-row items-center">
-            <Text className="text-base font-semibold text-slate-900 flex-1" numberOfLines={2}>
-              {title}
-            </Text>
-            <View
-              className="px-2 py-0.5 rounded-full ml-2"
-              style={{ backgroundColor: status.bg }}
-            >
-              <Text className="text-[10px] font-bold" style={{ color: status.color }}>
-                {status.label}
-              </Text>
-            </View>
-          </View>
-
-          <View className="flex-row items-center mt-1 gap-x-2">
-            {item.tender_number ? (
-              <Text className="text-xs text-slate-500">#{item.tender_number}</Text>
-            ) : null}
-            {item.source ? (
-              <View className="flex-row items-center">
-                <Ionicons name="globe-outline" size={10} color="#64748B" />
-                <Text className="text-xs text-slate-500 ml-0.5">{item.source}</Text>
-              </View>
-            ) : null}
-          </View>
-
-          {item.closing_date ? (
-            <View className="flex-row items-center mt-2">
-              <Ionicons name="calendar-outline" size={12} color="#64748B" />
-              <Text className="text-xs text-slate-600 ml-1">
-                Closes: {new Date(item.closing_date).toLocaleDateString()}
-              </Text>
-              {countdown ? (
-                <View className="ml-2 px-1.5 py-0.5 rounded" style={{ backgroundColor: countdown.color + "15" }}>
-                  <Text className="text-[10px] font-bold" style={{ color: countdown.color }}>
-                    {countdown.text}
-                  </Text>
-                </View>
-              ) : null}
-            </View>
-          ) : null}
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
-});

@@ -1,5 +1,5 @@
-import { ContractListScreen } from "@/components/contracts/ContractListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function ContractsScreen() {
-  return <ContractListScreen />;
+  return <CrudListScreen moduleKey="contracts" />;
 }

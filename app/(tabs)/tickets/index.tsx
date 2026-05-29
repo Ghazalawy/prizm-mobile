@@ -1,5 +1,5 @@
-import { TicketListScreen } from "@/components/tickets/TicketListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function TicketsScreen() {
-  return <TicketListScreen />;
+  return <CrudListScreen moduleKey="tickets" />;
 }

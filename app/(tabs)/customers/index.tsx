@@ -1,5 +1,5 @@
-import { CustomerListScreen } from "@/components/customers/CustomerListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function CustomersScreen() {
-  return <CustomerListScreen />;
+  return <CrudListScreen moduleKey="customers" />;
 }

@@ -1,5 +1,5 @@
-import { TenderListScreen } from "@/components/tenders/TenderListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function TendersScreen() {
-  return <TenderListScreen />;
+  return <CrudListScreen moduleKey="tenders" />;
 }

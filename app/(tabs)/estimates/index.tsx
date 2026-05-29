@@ -1,5 +1,5 @@
-import { EstimateListScreen } from "@/components/finance/EstimateListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function EstimatesScreen() {
-  return <EstimateListScreen />;
+  return <CrudListScreen moduleKey="estimates" />;
 }

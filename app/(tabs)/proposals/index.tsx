@@ -1,5 +1,5 @@
-import { ProposalListScreen } from "@/components/finance/ProposalListScreen";
+import { CrudListScreen } from "@/components/crud/CrudListScreen";
 
 export default function ProposalsScreen() {
-  return <ProposalListScreen />;
+  return <CrudListScreen moduleKey="proposals" />;
 }

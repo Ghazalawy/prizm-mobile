@@ -1,0 +1,6 @@
+
+// ── Projects sub-resources (mobile) ──────────────────────────────────────
+$route['api/projects/(:num)/members']            = 'projects/members/$1';
+$route['api/projects/(:num)/members/(:num)']    = 'projects/members/$1/$2';
+$route['api/projects/(:num)/discussions']        = 'projects/discussions/$1';
+$route['api/projects/(:num)/notes']              = 'projects/notes/$1';

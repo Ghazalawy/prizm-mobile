@@ -19,11 +19,14 @@ import {
   useChangeLeadStatus,
   useConvertToCustomer,
   useDeleteLead,
+  useMarkLeadLost,
+  useMarkLeadJunk,
 } from "@/lib/queries/leads";
 import type { LeadStatus } from "@/lib/queries/leads";
 import { rtlTextStyle } from "@/lib/rtl";
 import { colors } from "@/lib/theme";
 import { FilesTab } from "@/components/crud/FilesTab";
+import { NotesPanel } from "@/components/crud/NotesPanel";
 import Toast from "react-native-toast-message";
 
 type Props = { id: string };
@@ -33,7 +36,7 @@ const DEFAULT_STATUS_COLORS: Record<string, string> = {
   "5": "#DC2626", "6": "#64748B", "7": "#0891B2", "8": "#EA580C",
 };
 
-type TabKey = "tasks" | "files";
+type TabKey = "tasks" | "files" | "notes";
 
 export function LeadDetailScreen({ id }: Props) {
   const [refreshing, setRefreshing] = useState(false);
@@ -46,6 +49,8 @@ export function LeadDetailScreen({ id }: Props) {
   const changeStatus = useChangeLeadStatus();
   const convert = useConvertToCustomer();
   const deleteLead = useDeleteLead();
+  const markLost = useMarkLeadLost();
+  const markJunk = useMarkLeadJunk();
 
   const lead = leadQuery.data;
   const statuses = statusesQuery.data ?? [];
@@ -277,7 +282,7 @@ export function LeadDetailScreen({ id }: Props) {
         {/* Tabs: Tasks & Files */}
         <View className="mt-3 bg-white rounded-2xl shadow-sm overflow-hidden">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
-            {(["tasks", "files"] as TabKey[]).map((k) => (
+            {(["tasks", "notes", "files"] as TabKey[]).map((k) => (
               <TouchableOpacity
                 key={k}
                 onPress={() => setTab(k)}
@@ -290,7 +295,7 @@ export function LeadDetailScreen({ id }: Props) {
                 }}
               >
                 <Text style={{ color: tab === k ? "#FFF" : "#475569", fontWeight: "600", fontSize: 12 }}>
-                  {k === "tasks" ? "Tasks" : "Files"}
+                  {k === "tasks" ? "Tasks" : k === "notes" ? "Notes" : "Files"}
                 </Text>
               </TouchableOpacity>
             ))}
@@ -298,6 +303,15 @@ export function LeadDetailScreen({ id }: Props) {
           <View className="border-t border-slate-100" style={{ minHeight: 200 }}>
             {tab === "files" ? (
               <FilesTab relType="lead" relId={id} color={colors.primary} />
+            ) : tab === "notes" ? (
+              <NotesPanel
+                queryKey={["leads", id, "notes"]}
+                fetchEndpoint={`leads/notes?lead_id=${id}`}
+                postEndpoint="leads/notes"
+                parentIdKey="lead_id"
+                parentId={id}
+                accent={colors.primary}
+              />
             ) : (
               <View className="px-4 py-6 items-center">
                 <Text className="text-xs text-slate-400">Related tasks shown in ERP module view</Text>
@@ -323,6 +337,36 @@ export function LeadDetailScreen({ id }: Props) {
               color="#16A34A"
               bg="#F0FDF4"
               onPress={handleConvert}
+              marginLeft={8}
+            />
+            <ActionButton
+              icon="close-circle-outline"
+              label="Mark Lost"
+              color="#DC2626"
+              bg="#FEF2F2"
+              onPress={() =>
+                markLost.mutate(id, {
+                  onSuccess: () => {
+                    Toast.show({ type: "success", text1: "Marked as lost" });
+                    leadQuery.refetch();
+                  },
+                })
+              }
+              marginLeft={8}
+            />
+            <ActionButton
+              icon="trash-bin-outline"
+              label="Mark Junk"
+              color="#64748B"
+              bg="#F1F5F9"
+              onPress={() =>
+                markJunk.mutate(id, {
+                  onSuccess: () => {
+                    Toast.show({ type: "success", text1: "Marked as junk" });
+                    leadQuery.refetch();
+                  },
+                })
+              }
               marginLeft={8}
             />
           </View>

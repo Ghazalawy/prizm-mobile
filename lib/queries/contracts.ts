@@ -115,3 +115,64 @@ export function useRenewContract() {
     },
   });
 }
+
+export function useContractComments(contractId: string | number) {
+  return useQuery({
+    queryKey: ["contract", String(contractId), "comments"],
+    queryFn: async () => normalizeList(await apiRequest(`contracts/comments?contract_id=${contractId}`)),
+    enabled: !!contractId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAddContractComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ contractId, content }: { contractId: string | number; content: string }) =>
+      apiRequest("contracts/comments", {
+        method: "POST",
+        body: JSON.stringify({ contract_id: contractId, content }),
+      }),
+    onSuccess: (_, { contractId }) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(contractId), "comments"] });
+    },
+  });
+}
+
+export function useContractNotes(contractId: string | number) {
+  return useQuery({
+    queryKey: ["contract", String(contractId), "notes"],
+    queryFn: async () => normalizeList(await apiRequest(`contracts/notes?contract_id=${contractId}`)),
+    enabled: !!contractId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAddContractNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ contractId, description }: { contractId: string | number; description: string }) =>
+      apiRequest("contracts/notes", {
+        method: "POST",
+        body: JSON.stringify({ contract_id: contractId, description }),
+      }),
+    onSuccess: (_, { contractId }) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(contractId), "notes"] });
+    },
+  });
+}
+
+export function useUnsignContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest("contracts/unsign", {
+        method: "POST",
+        body: JSON.stringify({ id }),
+      }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(id)] });
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
+  });
+}

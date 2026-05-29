@@ -15,8 +15,10 @@ import {
   useSignContract,
   useSendContract,
   useRenewContract,
+  useUnsignContract,
 } from "@/lib/queries/contracts";
 import { FilesTab } from "@/components/crud/FilesTab";
+import { NotesPanel } from "@/components/crud/NotesPanel";
 import { colors } from "@/lib/theme";
 
 const ACCENT = "#475569";
@@ -75,7 +77,7 @@ function stripHtml(html: string | null): string {
 
 export function ContractDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const [activeTab, setActiveTab] = useState<"details" | "files">("details");
+  const [activeTab, setActiveTab] = useState<"details" | "comments" | "notes" | "files">("details");
   const [showRenew, setShowRenew] = useState(false);
   const [renewStart, setRenewStart] = useState("");
   const [renewEnd, setRenewEnd] = useState("");
@@ -85,6 +87,7 @@ export function ContractDetailScreen() {
   const signMutation = useSignContract();
   const sendMutation = useSendContract();
   const renewMutation = useRenewContract();
+  const unsignMutation = useUnsignContract();
 
   if (detail.isLoading) {
     return (
@@ -133,6 +136,17 @@ export function ContractDetailScreen() {
       {
         text: "Send",
         onPress: () => sendMutation.mutate(id!),
+      },
+    ]);
+  };
+
+  const handleUnsign = () => {
+    Alert.alert("Clear Signature", "Remove the signed status from this contract?", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Unsign",
+        style: "destructive",
+        onPress: () => unsignMutation.mutate(id!),
       },
     ]);
   };
@@ -253,35 +267,47 @@ export function ContractDetailScreen() {
       </View>
 
       {/* Tab switch */}
-      <View className="flex-row px-4 pt-3 gap-2">
-        <TouchableOpacity
-          onPress={() => setActiveTab("details")}
-          className="px-3 py-1.5 rounded-full"
-          style={{ backgroundColor: activeTab === "details" ? ACCENT : "#F1F5F9" }}
-        >
-          <Text
-            className="text-xs font-semibold"
-            style={{ color: activeTab === "details" ? "#FFF" : "#475569" }}
+      <View className="flex-row px-4 pt-3 gap-2 flex-wrap">
+        {(["details", "comments", "notes", "files"] as const).map((tabKey) => (
+          <TouchableOpacity
+            key={tabKey}
+            onPress={() => setActiveTab(tabKey)}
+            className="px-3 py-1.5 rounded-full"
+            style={{ backgroundColor: activeTab === tabKey ? ACCENT : "#F1F5F9" }}
           >
-            Details
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={() => setActiveTab("files")}
-          className="px-3 py-1.5 rounded-full"
-          style={{ backgroundColor: activeTab === "files" ? ACCENT : "#F1F5F9" }}
-        >
-          <Text
-            className="text-xs font-semibold"
-            style={{ color: activeTab === "files" ? "#FFF" : "#475569" }}
-          >
-            Files
-          </Text>
-        </TouchableOpacity>
+            <Text
+              className="text-xs font-semibold capitalize"
+              style={{ color: activeTab === tabKey ? "#FFF" : "#475569" }}
+            >
+              {tabKey}
+            </Text>
+          </TouchableOpacity>
+        ))}
       </View>
 
       {/* Content */}
-      {activeTab === "details" ? (
+      {activeTab === "comments" ? (
+        <NotesPanel
+          queryKey={["contract", id!, "comments"]}
+          fetchEndpoint={`contracts/comments?contract_id=${id}`}
+          postEndpoint="contracts/comments"
+          parentIdKey="contract_id"
+          parentId={id!}
+          accent={ACCENT}
+          placeholder="Add a comment…"
+        />
+      ) : activeTab === "notes" ? (
+        <NotesPanel
+          queryKey={["contract", id!, "notes"]}
+          fetchEndpoint={`contracts/notes?contract_id=${id}`}
+          postEndpoint="contracts/notes"
+          parentIdKey="contract_id"
+          parentId={id!}
+          accent={ACCENT}
+        />
+      ) : activeTab === "files" ? (
+        <FilesTab relType="contract" relId={id!} color={ACCENT} />
+      ) : (
         <ScrollView className="flex-1 px-4 pt-3" contentContainerStyle={{ paddingBottom: 120 }}>
           {/* Content/Description */}
           {contentText ? (
@@ -350,10 +376,6 @@ export function ContractDetailScreen() {
             </View>
           )}
         </ScrollView>
-      ) : (
-        <View className="flex-1 mt-2">
-          <FilesTab relType="contract" relId={id!} color="#475569" />
-        </View>
       )}
 
       {/* Bottom Actions */}
@@ -370,6 +392,18 @@ export function ContractDetailScreen() {
               <Text className="text-white font-semibold ml-1.5">
                 {signMutation.isPending ? "Signing…" : "Sign"}
               </Text>
+            </View>
+          </TouchableOpacity>
+        )}
+        {isSigned && (
+          <TouchableOpacity
+            onPress={handleUnsign}
+            className="flex-1 py-3 rounded-xl items-center bg-red-50"
+            disabled={unsignMutation.isPending}
+          >
+            <View className="flex-row items-center">
+              <Ionicons name="close-circle-outline" size={18} color="#DC2626" />
+              <Text className="text-red-700 font-semibold ml-1.5">Unsign</Text>
             </View>
           </TouchableOpacity>
         )}

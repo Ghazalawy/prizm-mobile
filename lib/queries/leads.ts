@@ -99,10 +99,15 @@ export function useLeadSources() {
     queryKey: ["leads", "sources"],
     queryFn: async () => {
       try {
-        const data = await apiRequest("leads_sources");
+        const data = await apiRequest("leads/sources");
         return normalizeList(data).items as LeadSource[];
       } catch {
-        return [] as LeadSource[];
+        try {
+          const fallback = await apiRequest("lead_sources");
+          return normalizeList(fallback).items as LeadSource[];
+        } catch {
+          return [] as LeadSource[];
+        }
       }
     },
     staleTime: 10 * 60 * 1000,
@@ -114,13 +119,41 @@ export function useLeadStatuses() {
     queryKey: ["leads", "statuses"],
     queryFn: async () => {
       try {
-        const data = await apiRequest("leads_statuses");
+        const data = await apiRequest("leads/statuses");
         return normalizeList(data).items as LeadStatus[];
       } catch {
-        return [] as LeadStatus[];
+        try {
+          const fallback = await apiRequest("lead_statuses");
+          return normalizeList(fallback).items as LeadStatus[];
+        } catch {
+          return [] as LeadStatus[];
+        }
       }
     },
     staleTime: 10 * 60 * 1000,
+  });
+}
+
+export function useLeadNotes(leadId: string | number) {
+  return useQuery({
+    queryKey: ["leads", String(leadId), "notes"],
+    queryFn: async () => normalizeList(await apiRequest(`leads/notes?lead_id=${leadId}`)),
+    enabled: !!leadId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAddLeadNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ leadId, description }: { leadId: string | number; description: string }) =>
+      apiRequest("leads/notes", {
+        method: "POST",
+        body: JSON.stringify({ lead_id: leadId, description }),
+      }),
+    onSuccess: (_, { leadId }) => {
+      qc.invalidateQueries({ queryKey: ["leads", String(leadId), "notes"] });
+    },
   });
 }
 
@@ -168,6 +201,30 @@ export function useDeleteLead() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["leads"] });
       qc.invalidateQueries({ queryKey: ["crud", "leads"] });
+    },
+  });
+}
+
+export function useMarkLeadLost() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (leadId: string | number) =>
+      apiRequest(`leads/${leadId}/mark_lost`, { method: "PUT", body: JSON.stringify({}) }),
+    onSuccess: (_, leadId) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["leads", "detail", String(leadId)] });
+    },
+  });
+}
+
+export function useMarkLeadJunk() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (leadId: string | number) =>
+      apiRequest(`leads/${leadId}/mark_junk`, { method: "PUT", body: JSON.stringify({}) }),
+    onSuccess: (_, leadId) => {
+      qc.invalidateQueries({ queryKey: ["leads"] });
+      qc.invalidateQueries({ queryKey: ["leads", "detail", String(leadId)] });
     },
   });
 }

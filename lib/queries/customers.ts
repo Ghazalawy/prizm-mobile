@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, normalizeList, buildQS, type ListParams } from "../api";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -97,11 +97,57 @@ export function useCustomerContacts(customerId: string | number) {
   return useQuery({
     queryKey: ["customer", String(customerId), "contacts"],
     queryFn: async () => {
-      const data = await apiRequest(`contacts?customer_id=${customerId}&limit=100`);
-      return normalizeList(data).items as CustomerContact[];
+      try {
+        const data = await apiRequest(`customers/contacts?customer_id=${customerId}`);
+        return normalizeList(data).items as CustomerContact[];
+      } catch {
+        const data = await apiRequest(`contacts?customer_id=${customerId}&limit=100`);
+        return normalizeList(data).items as CustomerContact[];
+      }
     },
     enabled: !!customerId,
     staleTime: 60_000,
+  });
+}
+
+export function useCreateCustomerContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (payload: Partial<CustomerContact> & { customer_id: number }) => {
+      try {
+        return await apiRequest("customers/contacts", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      } catch {
+        return await apiRequest("contacts", {
+          method: "POST",
+          body: JSON.stringify(payload),
+        });
+      }
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["customer", String(vars.customer_id), "contacts"] });
+    },
+  });
+}
+
+export function useDeleteCustomerContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, customerId }: { id: number; customerId: string | number }) => {
+      try {
+        return await apiRequest("customers/contacts", {
+          method: "DELETE",
+          body: JSON.stringify({ id }),
+        });
+      } catch {
+        return await apiRequest(`contacts/${id}`, { method: "DELETE" });
+      }
+    },
+    onSuccess: (_, { customerId }) => {
+      qc.invalidateQueries({ queryKey: ["customer", String(customerId), "contacts"] });
+    },
   });
 }
 

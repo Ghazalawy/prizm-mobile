@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, normalizeList } from "../api";
 import { useImpersonation } from "../impersonation";
 
@@ -157,11 +157,103 @@ export function useProjectNotes(projectId: string | number) {
   return useQuery({
     queryKey: ["project", String(projectId), "notes"],
     queryFn: async () => {
-      const data = await apiRequest(`project_notes?project_id=${projectId}&limit=200`);
+      const data = await apiRequest(`projects/notes?project_id=${projectId}&limit=200`);
       return normalizeList(data);
     },
     enabled: !!projectId,
     staleTime: 60 * 1000,
+  });
+}
+
+export function useAddProjectNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, content }: { projectId: string | number; content: string }) =>
+      apiRequest("projects/notes", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId, content }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "notes"] });
+    },
+  });
+}
+
+// ─── Project members ──────────────────────────────────────────────────────
+
+export function useProjectMembers(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "members"],
+    queryFn: async () => {
+      const data = await apiRequest(`projects/members?project_id=${projectId}`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAddProjectMembers() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, members }: { projectId: string | number; members: number[] }) =>
+      apiRequest("projects/members", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId, members }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "members"] });
+    },
+  });
+}
+
+export function useRemoveProjectMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ projectId, staffId }: { projectId: string | number; staffId: number }) =>
+      apiRequest("projects/members", {
+        method: "DELETE",
+        body: JSON.stringify({ project_id: projectId, staff_id: staffId }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "members"] });
+    },
+  });
+}
+
+// ─── Project discussions ──────────────────────────────────────────────────
+
+export function useProjectDiscussions(projectId: string | number) {
+  return useQuery({
+    queryKey: ["project", String(projectId), "discussions"],
+    queryFn: async () => {
+      const data = await apiRequest(`projects/discussions?project_id=${projectId}`);
+      return normalizeList(data);
+    },
+    enabled: !!projectId,
+    staleTime: 60 * 1000,
+  });
+}
+
+export function useAddProjectDiscussion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      subject,
+      description,
+    }: {
+      projectId: string | number;
+      subject: string;
+      description: string;
+    }) =>
+      apiRequest("projects/discussions", {
+        method: "POST",
+        body: JSON.stringify({ project_id: projectId, subject, description }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "discussions"] });
+    },
   });
 }
 
@@ -171,7 +263,7 @@ export function useProjectActivity(projectId: string | number) {
   return useQuery({
     queryKey: ["project", String(projectId), "activity"],
     queryFn: async () => {
-      const data = await apiRequest(`project_activity?project_id=${projectId}&limit=100`);
+      const data = await apiRequest(`projects/activity?project_id=${projectId}&limit=100`);
       return normalizeList(data);
     },
     enabled: !!projectId,

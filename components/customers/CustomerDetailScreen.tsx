@@ -1,9 +1,11 @@
 import {
   ActivityIndicator,
+  Alert,
   FlatList,
   Linking,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -13,6 +15,7 @@ import { memo, useState } from "react";
 import {
   useCustomerDetail,
   useCustomerContacts,
+  useCreateCustomerContact,
   useCustomerInvoices,
   useCustomerEstimates,
   useCustomerProjects,
@@ -352,13 +355,97 @@ function InfoRow({ label, value }: { label: string; value: any }) {
 // ─── Tab: Contacts ───────────────────────────────────────────────────────
 
 function ContactsTab({ customerId }: { customerId: string }) {
-  const { data, isLoading } = useCustomerContacts(customerId);
+  const { data, isLoading, refetch } = useCustomerContacts(customerId);
+  const createContact = useCreateCustomerContact();
+  const [showForm, setShowForm] = useState(false);
+  const [firstname, setFirstname] = useState("");
+  const [lastname, setLastname] = useState("");
+  const [email, setEmail] = useState("");
+  const [phonenumber, setPhonenumber] = useState("");
+
+  const handleCreate = () => {
+    if (!firstname.trim() || !email.trim()) {
+      Alert.alert("Required", "First name and email are required.");
+      return;
+    }
+    createContact.mutate(
+      {
+        customer_id: Number(customerId),
+        firstname: firstname.trim(),
+        lastname: lastname.trim(),
+        email: email.trim(),
+        phonenumber: phonenumber.trim() || undefined,
+        password: "ChangeMe123!",
+        active: 1,
+      } as any,
+      {
+        onSuccess: () => {
+          setShowForm(false);
+          setFirstname("");
+          setLastname("");
+          setEmail("");
+          setPhonenumber("");
+          refetch();
+        },
+        onError: (e: Error) => Alert.alert("Failed", e.message),
+      }
+    );
+  };
 
   if (isLoading) return <LoadingState />;
-  if (!data || data.length === 0) return <EmptyState icon="person-outline" text="No contacts" />;
+  if (!data || data.length === 0) {
+    return (
+      <View className="flex-1">
+        {showForm ? (
+          <ContactForm
+            firstname={firstname}
+            lastname={lastname}
+            email={email}
+            phonenumber={phonenumber}
+            onChangeFirst={setFirstname}
+            onChangeLast={setLastname}
+            onChangeEmail={setEmail}
+            onChangePhone={setPhonenumber}
+            onCancel={() => setShowForm(false)}
+            onSave={handleCreate}
+            saving={createContact.isPending}
+          />
+        ) : (
+          <View className="flex-1 items-center justify-center py-12 px-6">
+            <Ionicons name="person-outline" size={36} color="#CBD5E1" />
+            <Text className="text-sm text-slate-400 mt-2">No contacts</Text>
+            <TouchableOpacity onPress={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-lg bg-primary">
+              <Text className="text-white font-medium">Add Contact</Text>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  }
 
   return (
-    <FlatList
+    <View className="flex-1">
+      <View className="px-3 py-2 flex-row justify-end">
+        <TouchableOpacity onPress={() => setShowForm((v) => !v)} className="px-3 py-1.5 rounded-lg bg-primary">
+          <Text className="text-white text-xs font-semibold">{showForm ? "Cancel" : "Add Contact"}</Text>
+        </TouchableOpacity>
+      </View>
+      {showForm ? (
+        <ContactForm
+          firstname={firstname}
+          lastname={lastname}
+          email={email}
+          phonenumber={phonenumber}
+          onChangeFirst={setFirstname}
+          onChangeLast={setLastname}
+          onChangeEmail={setEmail}
+          onChangePhone={setPhonenumber}
+          onCancel={() => setShowForm(false)}
+          onSave={handleCreate}
+          saving={createContact.isPending}
+        />
+      ) : null}
+      <FlatList
       data={data}
       keyExtractor={(c) => String(c.id)}
       contentContainerStyle={{ paddingHorizontal: 12, paddingBottom: 20 }}
@@ -402,6 +489,50 @@ function ContactsTab({ customerId }: { customerId: string }) {
         </View>
       )}
     />
+    </View>
+  );
+}
+
+function ContactForm({
+  firstname,
+  lastname,
+  email,
+  phonenumber,
+  onChangeFirst,
+  onChangeLast,
+  onChangeEmail,
+  onChangePhone,
+  onCancel,
+  onSave,
+  saving,
+}: {
+  firstname: string;
+  lastname: string;
+  email: string;
+  phonenumber: string;
+  onChangeFirst: (v: string) => void;
+  onChangeLast: (v: string) => void;
+  onChangeEmail: (v: string) => void;
+  onChangePhone: (v: string) => void;
+  onCancel: () => void;
+  onSave: () => void;
+  saving: boolean;
+}) {
+  return (
+    <View className="mx-3 mb-2 bg-white rounded-xl p-3 shadow-sm">
+      <TextInput className="border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2" placeholder="First name *" value={firstname} onChangeText={onChangeFirst} />
+      <TextInput className="border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2" placeholder="Last name" value={lastname} onChangeText={onChangeLast} />
+      <TextInput className="border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2" placeholder="Email *" value={email} onChangeText={onChangeEmail} keyboardType="email-address" autoCapitalize="none" />
+      <TextInput className="border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2" placeholder="Phone" value={phonenumber} onChangeText={onChangePhone} keyboardType="phone-pad" />
+      <View className="flex-row gap-2">
+        <TouchableOpacity onPress={onCancel} className="flex-1 py-2 rounded-lg bg-slate-100 items-center">
+          <Text className="text-slate-700 font-medium">Cancel</Text>
+        </TouchableOpacity>
+        <TouchableOpacity onPress={onSave} disabled={saving} className="flex-1 py-2 rounded-lg bg-primary items-center" style={{ opacity: saving ? 0.6 : 1 }}>
+          <Text className="text-white font-medium">{saving ? "Saving…" : "Save"}</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
   );
 }
 

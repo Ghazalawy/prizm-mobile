@@ -528,7 +528,7 @@ export const MODULES: ModuleDefinition[] = [
       ...shippingFields,
     ],
     tabs: [
-      { key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "contacts/{id}", createDefaults: { customer_id: "{id}" } },
+      { key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "customers/contacts?customer_id={id}", createDefaults: { customer_id: "{id}" } },
       { key: "invoices", title: "Invoices", moduleKey: "invoices", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
       { key: "estimates", title: "Estimates", moduleKey: "estimates", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
       { key: "proposals", title: "Proposals", moduleKey: "proposals", childField: "rel_id", parentField: "userid", fixedFilters: { rel_type: "customer" }, createDefaults: { rel_id: "{id}", rel_type: "customer" } },
@@ -614,6 +614,7 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "lead" }, createDefaults: { rel_id: "{id}", rel_type: "lead" } },
       { key: "projects", title: "Projects", moduleKey: "projects", childField: "clientid", parentField: "id", fixedFilters: { rel_type: "lead" }, createDefaults: { clientid: "{id}", rel_type: "lead" } },
+      { key: "notes", title: "Notes", moduleKey: "lead_notes", endpointTemplate: "leads/notes?lead_id={id}" },
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "lead" } },
     ],
     actions: [
@@ -622,6 +623,12 @@ export const MODULES: ModuleDefinition[] = [
           { key: "status", label: "New Status ID", type: "number", required: true, placeholder: "e.g. 4 for Customer" },
         ],
         successMessage: "Lead status updated" },
+      { key: "convert", title: "Convert to Customer", icon: "person-add-outline", endpointTemplate: "leads/{id}/convert_to_customer", method: "POST",
+        confirm: "Convert this lead to a customer?", successMessage: "Lead converted" },
+      { key: "mark_lost", title: "Mark as Lost", icon: "close-circle-outline", endpointTemplate: "leads/{id}/mark_lost", method: "PUT",
+        confirm: "Mark this lead as lost?", successMessage: "Lead marked lost", destructive: true },
+      { key: "mark_junk", title: "Mark as Junk", icon: "trash-bin-outline", endpointTemplate: "leads/{id}/mark_junk", method: "PUT",
+        confirm: "Mark this lead as junk?", successMessage: "Lead marked junk", destructive: true },
     ],
   },
   {
@@ -676,6 +683,10 @@ export const MODULES: ModuleDefinition[] = [
     tabs: [
       { key: "tasks", title: "Tasks", moduleKey: "tasks", childField: "rel_id", parentField: "id", fixedFilters: { rel_type: "project" }, createDefaults: { rel_id: "{id}", rel_type: "project" } },
       { key: "milestones", title: "Milestones", moduleKey: "milestones", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
+      { key: "members", title: "Members", moduleKey: "project_members", endpointTemplate: "projects/members?project_id={id}" },
+      { key: "discussions", title: "Discussions", moduleKey: "project_discussions", endpointTemplate: "projects/discussions?project_id={id}" },
+      { key: "notes", title: "Notes", moduleKey: "project_notes", endpointTemplate: "projects/notes?project_id={id}" },
+      { key: "activity", title: "Activity", moduleKey: "project_activity", endpointTemplate: "projects/activity?project_id={id}" },
       { key: "invoices", title: "Invoices", moduleKey: "invoices", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "expenses", title: "Expenses", moduleKey: "expenses", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
       { key: "tickets", title: "Tickets", moduleKey: "tickets", childField: "project_id", parentField: "id", createDefaults: { project_id: "{id}" } },
@@ -1043,7 +1054,10 @@ export const MODULES: ModuleDefinition[] = [
     ],
     tabs: [
       { key: "files", title: "Files", moduleKey: "files", kind: "files", fixedFilters: { rel_type: "contract" } },
+      { key: "comments", title: "Comments", moduleKey: "contract_comments", endpointTemplate: "contracts/comments?contract_id={id}" },
+      { key: "notes", title: "Notes", moduleKey: "contract_notes", endpointTemplate: "contracts/notes?contract_id={id}" },
     ],
+    canUpdate: true,
     actions: [
       { key: "sign", title: "Mark as Signed", icon: "checkmark-done-circle-outline", endpointTemplate: "contracts/{id}/sign", confirm: "Mark this contract as signed?", successMessage: "Contract signed" },
       { key: "send", title: "Send to Client", icon: "paper-plane-outline", endpointTemplate: "contracts/{id}/send", confirm: "Email this contract to the client?", successMessage: "Contract sent" },
@@ -1055,6 +1069,9 @@ export const MODULES: ModuleDefinition[] = [
         ],
         successMessage: "Contract renewed",
       },
+      { key: "unsign", title: "Clear Signature", icon: "close-circle-outline", endpointTemplate: "contracts/unsign", method: "POST",
+        fields: [{ key: "id", label: "Contract ID", type: "number", required: true, defaultValue: "{id}" }],
+        confirm: "Remove signed status from this contract?", successMessage: "Signature cleared", destructive: true },
     ],
   },
   {

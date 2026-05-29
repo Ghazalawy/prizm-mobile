@@ -4,6 +4,7 @@ import {
   RefreshControl,
   ScrollView,
   Text,
+  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
@@ -21,9 +22,13 @@ import {
   useProjectTickets,
   useProjectNotes,
   useProjectActivity,
+  useProjectMembers,
+  useProjectDiscussions,
+  useAddProjectDiscussion,
   type ProjectMilestone,
 } from "@/lib/queries/projects";
 import { FilesTab } from "@/components/crud/FilesTab";
+import { NotesPanel } from "@/components/crud/NotesPanel";
 import { colors } from "@/lib/theme";
 import { rtlTextStyle } from "@/lib/rtl";
 import Toast from "react-native-toast-message";
@@ -46,7 +51,7 @@ const TASK_STATUS: Record<string, { label: string; color: string }> = {
   "5": { label: "Complete", color: "#16A34A" },
 };
 
-type TabKey = "overview" | "tasks" | "milestones" | "files" | "expenses" | "invoices" | "tickets" | "notes" | "activity";
+type TabKey = "overview" | "tasks" | "milestones" | "members" | "discussions" | "files" | "expenses" | "invoices" | "tickets" | "notes" | "activity";
 
 type Props = { id: string };
 
@@ -64,6 +69,9 @@ export function ProjectDetailScreen({ id }: Props) {
   const tickets = useProjectTickets(id);
   const notes = useProjectNotes(id);
   const activity = useProjectActivity(id);
+  const members = useProjectMembers(id);
+  const discussions = useProjectDiscussions(id);
+  const addDiscussion = useAddProjectDiscussion();
   const row = project.data as any;
 
   const onRefresh = useCallback(async () => {
@@ -206,7 +214,7 @@ export function ProjectDetailScreen({ id }: Props) {
         {/* ── Tabs ──────────────────────────────────────────────── */}
         <View className="mt-3 bg-white rounded-2xl shadow-sm overflow-hidden">
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ padding: 8 }}>
-            {(["overview", "tasks", "milestones", "invoices", "tickets", "files", "notes", "activity", "expenses"] as TabKey[]).map((k) => (
+            {(["overview", "tasks", "milestones", "members", "discussions", "invoices", "tickets", "files", "notes", "activity", "expenses"] as TabKey[]).map((k) => (
               <TabPill key={k} active={tab === k} label={tabLabel(k)} onPress={() => setTab(k)} />
             ))}
           </ScrollView>
@@ -216,6 +224,17 @@ export function ProjectDetailScreen({ id }: Props) {
             ) : null}
             {tab === "tasks" ? <TasksPanel tasks={taskItems} projectId={id} /> : null}
             {tab === "milestones" ? <MilestonesPanel milestones={milestoneItems} /> : null}
+            {tab === "members" ? <MembersPanel data={members} /> : null}
+            {tab === "discussions" ? (
+              <DiscussionsPanel
+                data={discussions}
+                projectId={id}
+                onAdd={(subject, description) =>
+                  addDiscussion.mutate({ projectId: id, subject, description })
+                }
+                isAdding={addDiscussion.isPending}
+              />
+            ) : null}
             {tab === "invoices" ? <InvoicesPanel data={invoices} /> : null}
             {tab === "tickets" ? <TicketsPanel data={tickets} /> : null}
             {tab === "files" ? (
@@ -223,7 +242,16 @@ export function ProjectDetailScreen({ id }: Props) {
                 <FilesTab relType="project" relId={id} color={ACCENT} />
               </View>
             ) : null}
-            {tab === "notes" ? <NotesPanel data={notes} /> : null}
+            {tab === "notes" ? (
+              <NotesPanel
+                queryKey={["project", id, "notes"]}
+                fetchEndpoint={`projects/notes?project_id=${id}`}
+                postEndpoint="projects/notes"
+                parentIdKey="project_id"
+                parentId={id}
+                accent={ACCENT}
+              />
+            ) : null}
             {tab === "activity" ? <ActivityPanel data={activity} /> : null}
             {tab === "expenses" ? <ExpensesPanel projectId={id} /> : null}
           </View>
@@ -572,28 +600,6 @@ function TicketsPanel({ data }: { data: ReturnType<typeof useProjectTickets> }) 
   );
 }
 
-function NotesPanel({ data }: { data: ReturnType<typeof useProjectNotes> }) {
-  const items = (data.data?.items ?? []) as any[];
-  if (data.isLoading && !data.data) {
-    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
-  }
-  if (items.length === 0) {
-    return <Text className="text-sm text-muted text-center py-6 px-4">No notes yet.</Text>;
-  }
-  return (
-    <View className="px-4 py-3">
-      {items.map((n: any, idx: number) => (
-        <View key={n.id || idx} className="py-2.5 border-b border-slate-100">
-          <Text className="text-sm text-foreground">{cleanText(n.content || n.description || "")}</Text>
-          <Text className="text-xs text-muted mt-1">
-            {n.staff_name || ""} {n.dateadded ? `· ${n.dateadded.slice(0, 10)}` : ""}
-          </Text>
-        </View>
-      ))}
-    </View>
-  );
-}
-
 function ActivityPanel({ data }: { data: ReturnType<typeof useProjectActivity> }) {
   const items = (data.data?.items ?? []) as any[];
   if (data.isLoading && !data.data) {
@@ -647,13 +653,102 @@ function tabLabel(k: TabKey): string {
     case "overview": return "Overview";
     case "tasks": return "Tasks";
     case "milestones": return "Milestones";
+    case "members": return "Members";
+    case "discussions": return "Discussions";
     case "invoices": return "Invoices";
     case "tickets": return "Tickets";
     case "files": return "Files";
     case "notes": return "Notes";
     case "activity": return "Activity";
     case "expenses": return "Expenses";
+    default: return k;
   }
+}
+
+function MembersPanel({ data }: { data: ReturnType<typeof useProjectMembers> }) {
+  const items = data.data?.items ?? [];
+  if (data.isLoading && !data.data) {
+    return <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>;
+  }
+  if (items.length === 0) {
+    return <Text className="text-sm text-muted text-center py-6 px-4">No team members assigned.</Text>;
+  }
+  return (
+    <View className="px-4 py-3">
+      {items.map((m: any, idx: number) => (
+        <View key={m.staff_id || m.id || idx} className="flex-row items-center py-2.5 border-b border-slate-100">
+          <View className="w-8 h-8 rounded-full bg-blue-100 items-center justify-center mr-3">
+            <Ionicons name="person" size={16} color={ACCENT} />
+          </View>
+          <View className="flex-1">
+            <Text className="text-sm font-medium text-foreground">
+              {m.firstname ? `${m.firstname} ${m.lastname || ""}`.trim() : `Staff #${m.staff_id || m.id}`}
+            </Text>
+            {m.email ? <Text className="text-xs text-muted">{m.email}</Text> : null}
+          </View>
+        </View>
+      ))}
+    </View>
+  );
+}
+
+function DiscussionsPanel({
+  data,
+  projectId,
+  onAdd,
+  isAdding,
+}: {
+  data: ReturnType<typeof useProjectDiscussions>;
+  projectId: string;
+  onAdd: (subject: string, description: string) => void;
+  isAdding: boolean;
+}) {
+  const [subject, setSubject] = useState("");
+  const [description, setDescription] = useState("");
+  const items = data.data?.items ?? [];
+  return (
+    <View className="flex-1">
+      <View className="px-4 py-3 border-b border-slate-100 bg-white">
+        <TextInput
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm mb-2"
+          placeholder="Subject"
+          value={subject}
+          onChangeText={setSubject}
+        />
+        <TextInput
+          className="border border-slate-200 rounded-lg px-3 py-2 text-sm min-h-[60px]"
+          placeholder="Description"
+          value={description}
+          onChangeText={setDescription}
+          multiline
+        />
+        <TouchableOpacity
+          onPress={() => subject.trim() && onAdd(subject.trim(), description.trim())}
+          disabled={!subject.trim() || isAdding}
+          className="mt-2 py-2 rounded-lg items-center"
+          style={{ backgroundColor: ACCENT, opacity: !subject.trim() || isAdding ? 0.5 : 1 }}
+        >
+          <Text className="text-white font-medium text-sm">{isAdding ? "Adding…" : "Add Discussion"}</Text>
+        </TouchableOpacity>
+      </View>
+      {data.isLoading && !data.data ? (
+        <View className="py-6 items-center"><ActivityIndicator color={ACCENT} /></View>
+      ) : items.length === 0 ? (
+        <Text className="text-sm text-muted text-center py-6 px-4">No discussions yet.</Text>
+      ) : (
+        <View className="px-4 py-3">
+          {items.map((d: any, idx: number) => (
+            <View key={d.id || idx} className="py-2.5 border-b border-slate-100">
+              <Text className="text-sm font-semibold text-foreground">{d.subject}</Text>
+              {d.description ? (
+                <Text className="text-xs text-muted mt-1">{cleanText(d.description)}</Text>
+              ) : null}
+            </View>
+          ))}
+        </View>
+      )}
+    </View>
+  );
 }
 
 function formatDate(v: any): string {

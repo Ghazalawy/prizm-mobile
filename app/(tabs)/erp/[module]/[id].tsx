@@ -4,6 +4,7 @@ import { TaskDetailScreen } from "@/components/tasks/TaskDetailScreen";
 import { InvoiceDetailScreen } from "@/components/finance/InvoiceDetailScreen";
 import { EstimateDetailScreen } from "@/components/finance/EstimateDetailScreen";
 import { ProposalDetailScreen } from "@/components/finance/ProposalDetailScreen";
+import { BusinessPartnerDetailScreen } from "@/components/business-partners/BusinessPartnerDetailScreen";
 import { PurchaseWorkflowApprovalScreen } from "../../approvals/purchase_request/[id]";
 
 /**
@@ -34,6 +35,9 @@ export default function ModuleDetailRoute() {
   }
   if (module === "purchase_expense_requests") {
     return <PurchaseWorkflowApprovalScreen kind="expense_request" id={id} />;
+  }
+  if (module === "business_partners") {
+    return <BusinessPartnerDetailScreen id={id} />;
   }
   return <CrudDetailScreen moduleKey={module} id={id} />;
 }

@@ -7,6 +7,69 @@
 
 ---
 
+## Session 2026-05-30 (batch2-leads) — Leads API Gap Fill + Mobile Hooks
+
+**Status:** ✅ 3 API endpoints + 4 mobile hooks built; TypeScript clean; deployed
+**PR:** PrizmIT/prizm331#386
+
+### What was done
+1. **Reconciled CSV** — Of 13 listed gaps, 6 were false (mark_lost, mark_junk, convert, notes add, sources, statuses already existed in the API). 3 web-only gaps skipped (import, bulk, email).
+2. **Built 3 new API endpoints:**
+   - `DELETE /api/leads/notes` — deletes a note by id from `tblnotes` (rel_type=lead)
+   - `GET /api/leads/attachments?lead_id=` — wraps `Leads_model::get_lead_attachments()`
+   - `DELETE /api/leads/attachments` — wraps `Leads_model::delete_lead_attachment()`
+3. **Added 4 mobile hooks:**
+   - `useDeleteLeadNote({noteId, leadId})` — DELETE mutation
+   - `useLeadAttachments(leadId)` — GET query
+   - `useDeleteLeadAttachment({attachmentId, leadId})` — DELETE mutation
+   - `useLeadCount(filters?)` — GET query
+4. **Skipped as complex:** Kanban board + kanban load-more (needs Kanban class porting; significant effort)
+
+### Leads API — Current Full Coverage (18 endpoints)
+data_get, data_get/{id}, data_search_get, data_post, data_put, data_delete, count_get,
+status_put, statuses_get, sources_get,
+notes_get, notes_post, **notes_delete (NEW)**,
+convert_to_customer_post, mark_lost_put, mark_junk_put,
+**attachments_get (NEW)**, **attachments_delete (NEW)**
+
+### Mobile Hooks (15 hooks)
+List, Detail, Sources, Statuses, Notes (list/add/delete), ChangeStatus, ConvertToCustomer,
+Delete, MarkLost, MarkJunk, Attachments (list/delete), Count
+
+---
+
+## Session 2026-05-30 (batch2-customers) — Customers API Gap Fill + Mobile Hooks
+
+**Status:** ✅ 2 API endpoints + 5 mobile hooks built; TypeScript clean; deployed
+**PR:** PrizmIT/prizm331#385
+
+### What was done
+1. **Reconciled CSV** — Of 14 listed API gaps, only 2 were real. The API controller already had contacts_get/post/put/delete, groups_get/post/put, admins_get/post, billing_shipping_get — all built after the CSV sweep.
+2. **Built 2 new API endpoints:**
+   - `DELETE /api/customers/groups` — wraps `Clients_model::delete_group(id)`
+   - `DELETE /api/customers/admins` — direct DB delete from `tblcustomer_admins`
+3. **Added 5 mobile hooks:**
+   - `useCustomerCount(filters?)` — wraps count endpoint
+   - `useCustomerBillingShipping(customerId)` — wraps billing/shipping endpoint
+   - `useUpdateCustomerContact()` — PUT mutation
+   - `useDeleteCustomerGroup()` — DELETE mutation
+   - `useRemoveCustomerAdmin()` — DELETE mutation
+4. **Skipped as web-only:** Vault entries, Import, Bulk Action, Zip Documents, Statement — complex features with no simple API counterpart.
+
+### Customers API — Current Full Coverage (18 endpoints)
+data_get, data_get/{id}, data_search_get, data_post, data_put, data_delete, count_get,
+contacts_get, contacts_post, contacts_put, contacts_delete,
+groups_get, groups_post, groups_put, **groups_delete (NEW)**,
+admins_get, admins_post, **admins_delete (NEW)**,
+billing_shipping_get
+
+### Mobile Hooks (20 hooks)
+List, Detail, Contacts (list/create/delete/update), Groups (list/delete), Admins (remove),
+Invoices, Estimates, Projects, Contracts, Tasks, Tickets, Proposals, Expenses,
+FinancialSummary, Count, BillingShipping
+
+---
+
 ## Session 2026-05-30 (batch2-contracts) — Contracts API Gap Fill + Mobile Hooks
 
 **Status:** ✅ 4 API endpoints + 5 mobile hooks built; TypeScript clean

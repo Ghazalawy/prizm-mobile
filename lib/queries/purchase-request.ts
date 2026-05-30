@@ -1,6 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { buildAuthHeaders, parseApiResponse } from "../api";
+import { buildAuthHeaders, parseApiResponse, apiRequest, normalizeList } from "../api";
 import { getSessionGeneration } from "../auth-events";
 
 /**
@@ -196,5 +196,264 @@ export function usePRApproval(id: number | null | undefined) {
     queryFn: () => fetchPRApproval(id as number),
     enabled: typeof id === "number" && id > 0,
     staleTime: 30 * 1000,
+  });
+}
+
+// ─── Purchase Requests CRUD ──────────────────────────────────────────────
+
+export type PurchaseRequest = {
+  id: number;
+  title?: string | null;
+  sequence_number?: number | null;
+  display_code?: string | null;
+  status: number | string | null;
+  total_amount: string | number | null;
+  staff_id?: number | null;
+  department_id?: number | null;
+  department_name?: string | null;
+  currency_id?: number | null;
+  currency_symbol?: string | null;
+  project_id?: number | null;
+  requested_date?: string | null;
+  notes?: string | null;
+  date_created?: string | null;
+};
+
+export function usePurchaseRequestsList(filters?: { search?: string; limit?: number; status?: string }) {
+  return useQuery({
+    queryKey: ["purchase-requests", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 100 };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.status) params.status = filters.status;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      const data = await apiRequest(`purchase_api/requests?${qs}`);
+      return normalizeList(data).items as PurchaseRequest[];
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function usePurchaseRequestDetail(id: string | number | undefined) {
+  return useQuery({
+    queryKey: ["purchase-requests", "detail", String(id)],
+    queryFn: async () => (await apiRequest(`purchase_api/requests/${id}`))?.data as PurchaseRequest,
+    enabled: !!id,
+  });
+}
+
+export function useCreatePurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) =>
+      apiRequest("purchase_api/requests", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["purchase-requests"] }); },
+  });
+}
+
+export function useUpdatePurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) =>
+      apiRequest(`purchase_api/requests/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "detail", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "list"] });
+    },
+  });
+}
+
+export function useDeletePurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) =>
+      apiRequest(`purchase_api/requests/${id}`, { method: "DELETE" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["purchase-requests"] }); },
+  });
+}
+
+// ─── Request Items ───────────────────────────────────────────────────────
+
+export function useRequestItems(requestId: string | number | undefined) {
+  return useQuery({
+    queryKey: ["purchase-requests", "items", String(requestId)],
+    queryFn: async () => {
+      const data = await apiRequest(`purchase_api/request_items?request_id=${requestId}`);
+      return normalizeList(data).items as PRLineItem[];
+    },
+    enabled: !!requestId,
+  });
+}
+
+export function useAddRequestItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) =>
+      apiRequest("purchase_api/request_items", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["purchase-requests", "items"] }); },
+  });
+}
+
+export function useUpdateRequestItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) =>
+      apiRequest(`purchase_api/request_items/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["purchase-requests", "items"] }); },
+  });
+}
+
+export function useDeleteRequestItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) =>
+      apiRequest(`purchase_api/request_items/${id}`, { method: "DELETE" }),
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ["purchase-requests", "items"] }); },
+  });
+}
+
+// ─── Request Workflow ────────────────────────────────────────────────────
+
+export function useApprovePurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, comment }: { id: string | number; comment?: string }) =>
+      apiRequest(`purchase_api/requests/${id}/approve`, { method: "POST", body: JSON.stringify({ comment }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "detail", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "list"] });
+    },
+  });
+}
+
+export function useRejectPurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string | number; reason?: string }) =>
+      apiRequest(`purchase_api/requests/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "detail", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "list"] });
+    },
+  });
+}
+
+export function useClosePurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) =>
+      apiRequest(`purchase_api/requests/${id}/close`, { method: "POST" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "detail", String(id)] });
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "list"] });
+    },
+  });
+}
+
+export function usePublishPurchaseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) =>
+      apiRequest(`purchase_api/requests/${id}/publish`, { method: "POST" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "detail", String(id)] });
+      qc.invalidateQueries({ queryKey: ["purchase-requests", "list"] });
+    },
+  });
+}
+
+// ─── Payment Requests ────────────────────────────────────────────────────
+
+export function usePaymentRequestsList(filters?: { search?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["payment-requests", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 100 };
+      if (filters?.search) params.search = filters.search;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`purchase_api/payment_requests?${qs}`)).items;
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function usePaymentRequestApproval(id: string | number | undefined) {
+  return useQuery({
+    queryKey: ["payment-requests", "approval", String(id)],
+    queryFn: async () => (await apiRequest(`purchase_api/payment_requests/${id}/approval`))?.data,
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useApprovePaymentRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, comment }: { id: string | number; comment?: string }) =>
+      apiRequest(`purchase_api/payment_requests/${id}/approve`, { method: "POST", body: JSON.stringify({ comment }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["payment-requests", "approval", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["payment-requests", "list"] });
+    },
+  });
+}
+
+export function useRejectPaymentRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string | number; reason?: string }) =>
+      apiRequest(`purchase_api/payment_requests/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["payment-requests", "approval", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["payment-requests", "list"] });
+    },
+  });
+}
+
+// ─── Expense Requests ────────────────────────────────────────────────────
+
+export function useExpenseRequestsList(filters?: { search?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["expense-requests", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 100 };
+      if (filters?.search) params.search = filters.search;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`purchase_api/expense_requests?${qs}`)).items;
+    },
+    staleTime: 30_000,
+  });
+}
+
+export function useExpenseRequestApproval(id: string | number | undefined) {
+  return useQuery({
+    queryKey: ["expense-requests", "approval", String(id)],
+    queryFn: async () => (await apiRequest(`purchase_api/expense_requests/${id}/approval`))?.data,
+    enabled: !!id,
+    staleTime: 30_000,
+  });
+}
+
+export function useApproveExpenseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, comment }: { id: string | number; comment?: string }) =>
+      apiRequest(`purchase_api/expense_requests/${id}/approve`, { method: "POST", body: JSON.stringify({ comment }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["expense-requests", "approval", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["expense-requests", "list"] });
+    },
+  });
+}
+
+export function useRejectExpenseRequest() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string | number; reason?: string }) =>
+      apiRequest(`purchase_api/expense_requests/${id}/reject`, { method: "POST", body: JSON.stringify({ reason }) }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["expense-requests", "approval", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["expense-requests", "list"] });
+    },
   });
 }

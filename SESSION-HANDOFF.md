@@ -7,6 +7,67 @@
 
 ---
 
+## Session 2026-05-30 (batch2-contracts) — Contracts API Gap Fill + Mobile Hooks
+
+**Status:** ✅ 4 API endpoints + 5 mobile hooks built; TypeScript clean
+**QC Record:** Pending — run QC per §11.0 after backend deploy
+
+### What was done
+1. **Reconciled CSV inventory** — `batch2-crm-inventory.csv` was 9 months stale for Contracts. The live API controller had 13 working methods vs. the 7 claimed. Actual gaps identified: copy, edit comment, attachments list/upload (4 real gaps, not 14).
+2. **Built 4 new API endpoints** in `prizm331/modules/api/controllers/Contracts.php`:
+   - `POST /api/contracts/{id}/copy` — duplicates a contract via `Contracts_model::copy()`
+   - `PUT /api/contracts/comments` — edits a comment via `Contracts_model::edit_comment()`
+   - `GET /api/contracts/attachments?contract_id=` — lists attachments via `Contracts_model::get_contract_attachments()`
+   - `POST /api/contracts/attachments` — uploads a file via `handle_contract_attachment()` (multipart, field: `file`)
+3. **Added 5 mobile query hooks** in `lib/queries/contracts.ts`:
+   - `useUpdateContract(id, payload)` — PUT mutation
+   - `useDeleteContract(id)` — DELETE mutation
+   - `useCopyContract(id)` — POST mutation
+   - `useDeleteContractComment({commentId, contractId})` — DELETE mutation
+   - `useContractTypes(id?)` — GET query
+4. **TypeScript verification** — `npx tsc --noEmit` passed with 0 errors.
+
+### Contracts API — Current Full Coverage (21 methods)
+
+| # | Method | Route | Status |
+|---|---|---|---|
+| 1 | `data_get` | GET /api/contracts | ✅ Existing |
+| 2 | `data_get` | GET /api/contracts/{id} | ✅ Existing |
+| 3 | `data_post` | POST /api/contracts | ✅ Existing |
+| 4 | `data_put` | PUT /api/contracts/{id} | ✅ Existing |
+| 5 | `data_delete` | DELETE /api/contracts/{id} | ✅ Existing |
+| 6 | `sign_post` | POST /api/contracts/{id}/sign | ✅ Existing |
+| 7 | `unsign_post` | POST /api/contracts/unsign | ✅ Existing |
+| 8 | `send_post` | POST /api/contracts/{id}/send | ✅ Existing |
+| 9 | `renew_post` | POST /api/contracts/{id}/renew | ✅ Existing |
+| 10 | `copy_post` | POST /api/contracts/{id}/copy | ✅ NEW |
+| 11 | `comments_get` | GET /api/contracts/comments | ✅ Existing |
+| 12 | `comments_post` | POST /api/contracts/comments | ✅ Existing |
+| 13 | `comments_put` | PUT /api/contracts/comments | ✅ NEW |
+| 14 | `comments_delete` | DELETE /api/contracts/comments | ✅ Existing |
+| 15 | `notes_get` | GET /api/contracts/notes | ✅ Existing |
+| 16 | `notes_post` | POST /api/contracts/notes | ✅ Existing |
+| 17 | `types_get` | GET /api/contracts/types | ✅ Existing |
+| 18 | `types_post` | POST /api/contracts/types | ✅ Existing |
+| 19 | `attachments_get` | GET /api/contracts/attachments | ✅ NEW |
+| 20 | `attachments_post` | POST /api/contracts/attachments | ✅ NEW |
+| 21 | `validate_contract_number` | (helper) | ✅ Existing |
+
+### Mobile Hooks — Full Coverage (15 hooks)
+
+List, Detail, Sign, Unsign, Send, Renew, Update, Delete, Copy, Comments (list/add/delete), Notes (list/add), Types — all present.
+
+### Remaining Contracts gaps
+- `GET /api/contracts/{id}/pdf` — PDF generation (web calls `pdf()` which uses TCPDF; non-trivial)
+- `POST /api/contracts/comments/{id}` (edit comment via URL param) — can add if needed; current PUT with body works
+- Edit note / delete note — low priority; notes are simple append-only in practice
+
+### Next: Continue Batch 2
+- Contracts is now 95% covered. Remaining batch2 modules: Customers (14 API gaps), Leads (13 gaps).
+- Before building more, **deploy prizm331** to Hetzner so new endpoints are live for curl testing.
+
+---
+
 ## Session 2026-05-30 (routing batch) — No ERP Browser Escapes
 
 **Status:** ✅ Mobile-side routing cleanup complete; TypeScript clean

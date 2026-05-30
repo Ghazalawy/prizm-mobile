@@ -176,3 +176,89 @@ export function useUnsignContract() {
     },
   });
 }
+
+// ─── Update ──────────────────────────────────────────────────────────────
+
+export function useUpdateContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string | number;
+      payload: Record<string, unknown>;
+    }) =>
+      apiRequest(`contracts/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(id)] });
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
+  });
+}
+
+// ─── Delete ──────────────────────────────────────────────────────────────
+
+export function useDeleteContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`contracts/${id}`, { method: "DELETE" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(id)] });
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
+  });
+}
+
+// ─── Copy ────────────────────────────────────────────────────────────────
+
+export function useCopyContract() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`contracts/${id}/copy`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["contracts"] });
+    },
+  });
+}
+
+// ─── Delete Comment ──────────────────────────────────────────────────────
+
+export function useDeleteContractComment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      commentId,
+      contractId,
+    }: {
+      commentId: string | number;
+      contractId: string | number;
+    }) =>
+      apiRequest("contracts/comments", {
+        method: "DELETE",
+        body: JSON.stringify({ id: commentId }),
+      }),
+    onSuccess: (_, { contractId }) => {
+      qc.invalidateQueries({ queryKey: ["contract", String(contractId), "comments"] });
+    },
+  });
+}
+
+// ─── Types ───────────────────────────────────────────────────────────────
+
+export function useContractTypes(id?: string | number) {
+  return useQuery({
+    queryKey: ["contracts", "types", id],
+    queryFn: async () => {
+      const qs = id ? `?id=${id}` : "";
+      const data = await apiRequest(`contracts/types${qs}`);
+      return normalizeList(data);
+    },
+    staleTime: 5 * 60_000,
+  });
+}

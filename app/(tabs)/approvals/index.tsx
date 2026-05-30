@@ -4,6 +4,7 @@ import { router, Stack } from "expo-router";
 import { useInbox, type InboxItem } from "@/lib/queries/inbox";
 import { useState, useCallback } from "react";
 import { colors } from "@/lib/theme";
+import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 
 export default function ApprovalsIndexScreen() {
   const inbox = useInbox();
@@ -61,7 +62,11 @@ export default function ApprovalsIndexScreen() {
               activeOpacity={0.7}
               className="bg-white rounded-2xl p-4 mb-3 shadow-sm"
               onPress={() => {
-                if (item.deeplink) router.push(item.deeplink as any);
+                if (item.deeplink) {
+                  void navigateInAppOrExternalLink(item.deeplink, {
+                    fallbackRoute: "/(tabs)/approvals",
+                  });
+                }
               }}
             >
               <View className="flex-row items-start">

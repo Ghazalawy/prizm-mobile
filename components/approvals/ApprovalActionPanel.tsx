@@ -1,8 +1,8 @@
-import { ActivityIndicator, Alert, Linking, Text, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, Text, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { API_URL, BASE_URL } from "@/lib/config";
+import { API_URL } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 import Toast from "react-native-toast-message";
 import { NoteModal, type NoteMode } from "./NoteModal";
@@ -19,10 +19,7 @@ import { NoteModal, type NoteMode } from "./NoteModal";
  * On success: toast + invalidate the cached PR approval state so the
  * parent screen redraws with the new stamp + the typed note under it.
  *
- * On failure: toast with the server message. The web-fallback link is
- * kept as a tiny last-resort affordance for the rare edge case where
- * the mobile endpoint returns 5xx — but it's no longer the primary
- * action.
+ * On failure: toast with the server message.
  *
  * Auth: backend enforces "you are the current approver for this PR's
  * active stage" (via prz_purchase_request_statusdetail.is_current_status
@@ -33,7 +30,6 @@ import { NoteModal, type NoteMode } from "./NoteModal";
 export function ApprovalActionPanel({
   isCurrentApprover,
   statusDetailID,
-  webFallbackPath,
   requestId,
   endpointBase = "purchase_api/requests",
   queryKey,
@@ -45,9 +41,6 @@ export function ApprovalActionPanel({
    *  Sent to the backend so it updates the EXACT row instead of guessing,
    *  matching the web admin's approval_process(rowID, status) pattern. */
   statusDetailID: number;
-  /** Perfex web URL fragment for the rare "Open in web" backup link,
-   *  relative to /MS/admin/. */
-  webFallbackPath: string;
   /** PR id — used by the approve/reject endpoint URL. */
   requestId: number;
   /** API endpoint root, e.g. purchase_api/orders. */
@@ -119,15 +112,6 @@ export function ApprovalActionPanel({
     },
   });
 
-  const openInWeb = useCallback(async () => {
-    const url = `${BASE_URL}/MS/admin/${webFallbackPath.replace(/^\/+/, "")}`;
-    try {
-      await Linking.openURL(url);
-    } catch {
-      Alert.alert("Unable to open web", "Browser couldn't open the link.");
-    }
-  }, [webFallbackPath]);
-
   // Non-approver path: render NOTHING. The Approvers grid above this
   // panel already shows every approver's stamp + the viewer's "YOU"
   // pill, which is plenty of "what's my role here?" signal. The old
@@ -195,18 +179,6 @@ export function ApprovalActionPanel({
           )}
         </TouchableOpacity>
       </View>
-
-      {/* Tiny tertiary fallback — only here for the rare 5xx case where
-          a stage's underlying state is corrupt and only the web admin
-          can untangle it. Most users will never tap this. */}
-      <TouchableOpacity
-        onPress={openInWeb}
-        activeOpacity={0.7}
-        className="mt-3 self-center flex-row items-center"
-      >
-        <Ionicons name="open-outline" size={12} color="#94A3B8" />
-        <Text className="text-[11px] text-muted ml-1">Open in web admin</Text>
-      </TouchableOpacity>
 
       <NoteModal
         visible={modal !== null}

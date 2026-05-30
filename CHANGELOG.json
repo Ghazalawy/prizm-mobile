@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.8.3",
+      "date": "2026-05-30",
+      "title": "Keep ERP links inside the mobile app",
+      "highlights": [
+        "Notification, approval, search, and record links now resolve Prizm ERP URLs to native screens instead of opening the web admin.",
+        "Purchase attachments open in the in-app file preview, and rejected approval resubmits route to the mobile edit screen.",
+        "Internal ERP links without an exact native screen stay inside the ERP hub; only true external links open outside the app."
+      ]
+    },
+    {
       "version": "1.8.2",
       "date": "2026-05-27",
       "title": "Fix false session-expired kick-out during post-login query burst",

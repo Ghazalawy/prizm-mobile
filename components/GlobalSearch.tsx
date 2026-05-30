@@ -20,8 +20,7 @@ import {
   type SearchResultGroup,
   type SearchResultItem,
 } from "@/lib/queries/search";
-import { BASE_URL } from "@/lib/config";
-import { Linking } from "react-native";
+import { navigateInAppOrExternalLink, routeForModuleList } from "@/lib/native-routing";
 
 // ─── Module icon map ─────────────────────────────────────────────────────
 
@@ -65,49 +64,10 @@ function moduleName(type: string): string {
 function navigateToResult(item: SearchResultItem) {
   const link = item.link;
   if (!link) return;
-
-  // Try to map Perfex admin links to mobile routes
-  const mobileRoute = mapToMobileRoute(link, item.type);
-  if (mobileRoute) {
-    router.push(mobileRoute as any);
-    return;
-  }
-
-  // Fallback: open in browser
-  const url = link.startsWith("http")
-    ? link
-    : `${BASE_URL}/MS/admin/${link.replace(/^\/+/, "")}`;
-  Linking.openURL(url).catch(() => undefined);
-}
-
-function mapToMobileRoute(link: string, type: string): string | null {
-  const idMatch = link.match(/\/(\d+)$/);
-  const id = idMatch ? idMatch[1] : null;
-
-  if (!id) return null;
-
-  switch (type) {
-    case "customers":
-      return `/(tabs)/customers/${id}`;
-    case "projects":
-      return `/(tabs)/projects/${id}`;
-    case "tasks":
-      return `/(tabs)/tasks/${id}`;
-    case "invoices":
-      return `/(tabs)/erp/invoices/${id}`;
-    case "leads":
-      return `/(tabs)/erp/leads/${id}`;
-    case "tickets":
-      return `/(tabs)/erp/tickets/${id}`;
-    case "contracts":
-      return `/(tabs)/erp/contracts/${id}`;
-    case "expenses":
-      return `/(tabs)/erp/expenses/${id}`;
-    case "knowledge_base":
-      return `/(tabs)/knowledge/${id}`;
-    default:
-      return null;
-  }
+  void navigateInAppOrExternalLink(link, {
+    moduleKey: item.type,
+    fallbackRoute: routeForModuleList(item.type) ?? "/(tabs)/erp",
+  });
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────

@@ -5,8 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-26 (after batch 14 — native purchase approval siblings)
-**Recent:** batch 14 moved Purchase Order, Payment Request, and Expense Request approval detail/actions onto the same native approval screen pattern as Purchase Request, with avatar approval chains and permission-checked workflow endpoints.
+**Last updated:** 2026-05-30 (routing cleanup — no ERP browser escapes)
+**Recent:** internal Prizm ERP URLs from notifications, approvals, search, generic URL fields, purchase notes, and purchase attachments now resolve through `lib/native-routing.ts` and stay inside the mobile app. Unknown internal ERP links fall back to the ERP hub instead of opening the web admin.
 **Maintained by:** the Claude session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -467,6 +467,7 @@ Total: **17 new `/api/my/*` endpoints** across 4 PRs (#276, #278, #279, #280, al
 - Tap a chip → modal bottom sheet with the items in that category
 - Each row shows priority dot + title + subtitle + optional inline quick-action buttons (Approve / Reject / Done)
 - Polls every 90 s (`refetchInterval` in React Query)
+- Link handling now delegates to `lib/native-routing.ts`: Prizm ERP/admin URLs route to native screens or the ERP hub; only true external links leave the app.
 
 **Data shape** (from `lib/queries/inbox.ts`):
 ```ts

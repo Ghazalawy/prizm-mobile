@@ -34,6 +34,7 @@ import {
 import { usePermissions } from "@/lib/permission-context";
 import { FilesTab } from "./FilesTab";
 import { ActionRunner } from "./ActionRunner";
+import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -506,9 +507,7 @@ function renderCustomFieldValue(cf: CustomFieldRow): ReactNode {
       <Text
         className="text-primary underline"
         selectable
-        onPress={() => {
-          import("react-native").then(({ Linking }) => Linking.openURL(url));
-        }}
+        onPress={() => void navigateInAppOrExternalLink(url)}
       >
         {label}
       </Text>
@@ -790,7 +789,7 @@ function renderValue(value: any, field: ModuleField, row: any, lookups: LookupMa
   if (type === "url" || /^https?:\/\//i.test(text)) {
     const url = /^https?:\/\//i.test(text) ? text : `https://${text}`;
     return (
-      <TouchableOpacity onPress={() => Linking.openURL(url)}>
+      <TouchableOpacity onPress={() => void navigateInAppOrExternalLink(url)}>
         <Text className="text-primary underline" numberOfLines={2}>
           {text}
         </Text>

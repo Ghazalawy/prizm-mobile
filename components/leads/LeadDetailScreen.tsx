@@ -27,6 +27,7 @@ import { rtlTextStyle } from "@/lib/rtl";
 import { colors } from "@/lib/theme";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { NotesPanel } from "@/components/crud/NotesPanel";
+import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import Toast from "react-native-toast-message";
 
 type Props = { id: string };
@@ -243,7 +244,7 @@ export function LeadDetailScreen({ id }: Props) {
               value={lead.website}
               onPress={() => {
                 const url = lead.website!.startsWith("http") ? lead.website! : `https://${lead.website}`;
-                Linking.openURL(url);
+                void navigateInAppOrExternalLink(url);
               }}
               actionColor="#0891B2"
             />

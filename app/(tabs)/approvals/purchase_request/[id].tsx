@@ -2,7 +2,6 @@ import {
   ActivityIndicator,
   Image,
   LayoutAnimation,
-  Linking,
   Platform,
   Pressable,
   RefreshControl,
@@ -27,8 +26,14 @@ import {
   type PurchaseApprovalKind,
 } from "@/lib/queries/purchase-request";
 import { ApprovalActionPanel } from "@/components/approvals/ApprovalActionPanel";
+import { FilePreview, type PreviewFile } from "@/components/FilePreview";
 import { rtlTextStyle } from "@/lib/rtl";
-import { BASE_URL, staffAvatarUrl } from "@/lib/config";
+import { API_URL, staffAvatarUrl } from "@/lib/config";
+import { buildAuthHeaders, buildQS } from "@/lib/api";
+import {
+  navigateInAppOrExternalLink,
+  routeForModuleEdit,
+} from "@/lib/native-routing";
 
 // Enable Android layout animations once for smooth line-item collapse.
 if (
@@ -67,30 +72,35 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
   fallbackPrefix: string;
   label: string;
   endpointBase: string;
+  moduleKey: string;
   webPath: (id: number) => string;
 }> = {
   purchase_request: {
     fallbackPrefix: "PR-",
     label: "request",
     endpointBase: "purchase_api/requests",
+    moduleKey: "purchase_requests",
     webPath: (id) => `przpurchase/ag_view_purchase_request/${id}`,
   },
   purchase_order: {
     fallbackPrefix: "PO-",
     label: "purchase order",
     endpointBase: "purchase_api/orders",
+    moduleKey: "purchase_orders",
     webPath: (id) => `przpurchase/PurOrder/ag_view_purchase_order/${id}`,
   },
   payment_request: {
     fallbackPrefix: "MT-",
     label: "payment request",
     endpointBase: "purchase_api/payment_requests",
+    moduleKey: "purchase_payment_requests",
     webPath: (id) => `przpurchase/Payment_Request/view_payment_request/${id}`,
   },
   expense_request: {
     fallbackPrefix: "ER-",
     label: "expense request",
     endpointBase: "purchase_api/expense_requests",
+    moduleKey: "purchase_expense_requests",
     webPath: (id) => `przpurchase/Expense_Request/view_expense_request/${id}`,
   },
 };
@@ -175,7 +185,7 @@ export function PurchaseWorkflowApprovalScreen({
       `${code} · ${request.title || "Untitled"}\n` +
       `Requested by ${request.requester_name?.trim() || `staff #${request.staff_id}`}\n` +
       (cur ? `Total: ${cur}\n` : "") +
-      `${BASE_URL}/MS/admin/${(request.web_path || cfg.webPath(request.id)).replace(/^\/+/, "")}`;
+      "Open it from Prizm CRM mobile.";
     try {
       await Share.share({ title: code, message: summary });
     } catch {
@@ -397,28 +407,25 @@ function InfoTab({
         isCurrentApprover={viewer.is_current_approver}
         statusDetailID={viewer.actionable_status_detail_id}
         requestId={request.id}
-        webFallbackPath={request.web_path || config.webPath(request.id)}
         endpointBase={request.approval_endpoint || config.endpointBase}
         entityLabel={config.label}
         queryKey={["purchase_approval", kind, request.id]}
       />
 
       {/* Resubmit button — only when the viewer is the requester AND
-          there's a rejected row. Routes to the web admin which has the
-          full resubmit-with-edits flow. Mirrors web view line 496. */}
+          there's a rejected row. Keep it inside mobile; the edit screen
+          is the native replacement for the old web-admin handoff. */}
       {viewer.is_submitter && rejected ? (
         <TouchableOpacity
-          onPress={async () => {
-            const url = `${BASE_URL}/MS/admin/${(request.web_path || config.webPath(request.id)).replace(/^\/+/, "")}`;
-            try {
-              await Linking.openURL(url);
-            } catch {}
+          onPress={() => {
+            const editRoute = routeForModuleEdit(config.moduleKey, request.id);
+            if (editRoute) router.push(editRoute as any);
           }}
           activeOpacity={0.85}
           className="bg-amber-500 rounded-2xl p-4 mb-3 flex-row items-center justify-center shadow-sm"
         >
           <Ionicons name="refresh-outline" size={18} color="#FFFFFF" />
-          <Text className="text-white font-semibold ml-2">Resubmit in web admin</Text>
+          <Text className="text-white font-semibold ml-2">Edit and resubmit</Text>
         </TouchableOpacity>
       ) : null}
 
@@ -461,41 +468,65 @@ function InfoTab({
 }
 
 function AttachmentsTab({ attachments }: { attachments: PRAttachment[] }) {
+  const [previewFile, setPreviewFile] = useState<PreviewFile | null>(null);
+  const [previewUrl, setPreviewUrl] = useState<string | null>(null);
+
+  const handleOpen = useCallback(async (file: PRAttachment) => {
+    try {
+      const headers = await buildAuthHeaders();
+      const url = `${API_URL}/files/download/${encodeURIComponent(String(file.id))}${buildQS({
+        authtoken: headers["authtoken"] ?? "",
+      })}`;
+      setPreviewUrl(url);
+      setPreviewFile(file);
+    } catch {
+      setPreviewFile(file);
+      setPreviewUrl(null);
+    }
+  }, []);
+
+  const closePreview = useCallback(() => {
+    setPreviewFile(null);
+    setPreviewUrl(null);
+  }, []);
+
   if (attachments.length === 0) {
     return <EmptyState icon="document-attach-outline" label="No attachments" />;
   }
   return (
-    <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
-      {attachments.map((a, idx) => (
-        <TouchableOpacity
-          key={a.id}
-          activeOpacity={0.7}
-          onPress={() => {
-            // Perfex serves files via /MS/uploads/przpurchase/{rel_id}/{file_name}
-            // — best-effort open in browser. The mobile doesn't have a
-            // file viewer of its own.
-            const url = `${BASE_URL}/MS/admin/przpurchase/get_attachment/${a.id}`;
-            Linking.openURL(url).catch(() => undefined);
-          }}
-          className={`flex-row items-center px-4 py-3 ${idx > 0 ? "border-t border-slate-100" : ""}`}
-        >
-          <Ionicons
-            name={iconForFiletype(a.filetype)}
-            size={22}
-            color="#0284C7"
-          />
-          <View className="flex-1 ml-3">
-            <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
-              {a.file_name}
-            </Text>
-            <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
-              {a.dateadded?.replace("T", " ").slice(0, 16)}
-            </Text>
-          </View>
-          <Ionicons name="open-outline" size={18} color="#94A3B8" />
-        </TouchableOpacity>
-      ))}
-    </View>
+    <>
+      <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
+        {attachments.map((a, idx) => (
+          <TouchableOpacity
+            key={a.id}
+            activeOpacity={0.7}
+            onPress={() => void handleOpen(a)}
+            className={`flex-row items-center px-4 py-3 ${idx > 0 ? "border-t border-slate-100" : ""}`}
+          >
+            <Ionicons
+              name={iconForFiletype(a.filetype)}
+              size={22}
+              color="#0284C7"
+            />
+            <View className="flex-1 ml-3">
+              <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
+                {a.file_name}
+              </Text>
+              <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
+                {a.dateadded?.replace("T", " ").slice(0, 16)}
+              </Text>
+            </View>
+            <Ionicons name="eye-outline" size={18} color="#94A3B8" />
+          </TouchableOpacity>
+        ))}
+      </View>
+      <FilePreview
+        file={previewFile}
+        directUrl={previewUrl}
+        color="#0284C7"
+        onClose={closePreview}
+      />
+    </>
   );
 }
 
@@ -1085,7 +1116,7 @@ function NotesText({ raw }: { raw: string }) {
           <Text
             key={i}
             className="text-primary underline"
-            onPress={() => Linking.openURL(p.text).catch(() => undefined)}
+            onPress={() => void navigateInAppOrExternalLink(p.text)}
           >
             {p.text}
           </Text>

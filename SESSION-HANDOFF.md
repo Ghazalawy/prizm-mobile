@@ -7,6 +7,28 @@
 
 ---
 
+## Session 2026-05-30 (routing batch) — No ERP Browser Escapes
+
+**Status:** ✅ Mobile-side routing cleanup complete; TypeScript clean
+**QC Record:** `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26006-R01__routing-no-erp-browser-escapes-20260530.md` + `.pdf`
+
+### What was done
+1. **Checked current batch inventory state** — worktree started clean; previous Batch 2 Projects API gap fill is already deployed and documented below. No stale local code changes were present.
+2. **Added shared internal-link router** — `lib/native-routing.ts` centralizes Prizm ERP URL handling for `/MS/admin/...`, `/MS/api/...`, bare `admin/...`, hash links (`#taskid=`, `#leadid=`, `#eventid=`), and common Perfex controller paths.
+3. **Rewired notification/search/approval taps** — Action Center, Approvals list, Global Search, generic CRUD URL fields, purchase notes, and customer/lead website fields now call the shared router.
+4. **Removed ERP web fallbacks** — approval action panel no longer shows "Open in web admin"; rejected purchase resubmit now opens the mobile edit route; purchase attachments open in the in-app `FilePreview` modal.
+5. **Version bump + changelog** — mobile app bumped to `1.8.3` / Android `versionCode` 20 with release notes focused on in-app routing.
+
+### Verification
+- `npx tsc --noEmit -p tsconfig.json` ✅
+- `rg` sweep confirms no remaining `/MS/admin` browser-opening fallbacks in app flows; remaining `Linking.openURL` calls are phone, email, maps, or the shared external-link helper.
+
+### Remaining routing follow-ups
+- Any Prizm ERP URL whose controller is still unmapped will stay inside the ERP hub and show an informational toast. Add exact native patterns to `lib/native-routing.ts` as those notifications surface.
+- Continue the ERP batch program from the inventory below; this session did not add backend endpoints.
+
+---
+
 ## Session 2026-05-30 (later) — Batch 2 Projects: CSV Reconciliation + API Gap Fill + Deploy
 
 **Commits:** prizm331 `b91c179d` → PR #368 → `3aabec9682` (merged + Hetzner), prizm-mobile `6df5ed0` (pushed main)

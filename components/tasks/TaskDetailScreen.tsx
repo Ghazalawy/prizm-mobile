@@ -30,7 +30,7 @@ import {
   parseApiResponse,
   updateEntity,
 } from "@/lib/api";
-import { ADMIN_URL, API_URL, staffAvatarUrl } from "@/lib/config";
+import { API_URL, staffAvatarUrl } from "@/lib/config";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -320,8 +320,6 @@ export function TaskDetailScreen({ id }: Props) {
     row.added_by_name ||
     joinName(creatorStaff?.firstname, creatorStaff?.lastname) ||
     (creatorId ? `Staff #${creatorId}` : "");
-  const taskShareUrl = `${ADMIN_URL}/tasks/view/${encodeURIComponent(String(id))}`;
-
   const handleShare = async () => {
     try {
       const lines = [
@@ -329,7 +327,7 @@ export function TaskDetailScreen({ id }: Props) {
         status.label,
         priority.label ? `Priority: ${priority.label}` : "",
         due ? `Due: ${due}` : "",
-        taskShareUrl,
+        "Open it from Prizm CRM mobile.",
       ].filter(Boolean);
       await Share.share({
         title: row.name || "Prizm task",

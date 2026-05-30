@@ -8,7 +8,6 @@ import {
   ActivityIndicator,
   Image,
   Dimensions,
-  Linking,
   Platform,
 } from "react-native";
 import { useState, useMemo, useCallback, useRef, useEffect } from "react";
@@ -17,8 +16,9 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
-import { API_URL, BASE_URL, staffAvatarUrl } from "@/lib/config";
+import { API_URL, staffAvatarUrl } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { rtlTextStyle } from "@/lib/rtl";
 import { colors as prizmColors } from "@/lib/theme";
@@ -41,44 +41,6 @@ import {
   useReadInbox,
 } from "@/lib/inbox-read";
 import { formatRelativeShort, formatAbsolute } from "@/lib/time";
-
-/**
- * Map a bare Perfex admin path (e.g. "tasks/view/123") to the equivalent
- * native mobile route. Returns null for modules that have no native screen.
- */
-const PERFEX_ROUTE_PATTERNS: Array<{ re: RegExp; to: (m: RegExpMatchArray) => string }> = [
-  { re: /^(?:admin\/)?tasks\/view\/(\d+)/,                        to: (m) => `/(tabs)/tasks/${m[1]}` },
-  { re: /^#taskid=(\d+)/,                                          to: (m) => `/(tabs)/tasks/${m[1]}` },
-  { re: /^#leadid=(\d+)/,                                          to: (m) => `/(tabs)/leads/${m[1]}` },
-  { re: /^#eventid=(\d+)/,                                         to: (m) => `/(tabs)/calendar/${m[1]}` },
-  { re: /^(?:admin\/)?projects\/view\/(\d+)/,                      to: (m) => `/(tabs)/projects/${m[1]}` },
-  { re: /^(?:admin\/)?invoices\/list_invoices\/(\d+)/,             to: (m) => `/(tabs)/invoices/${m[1]}` },
-  { re: /^(?:admin\/)?estimates\/list_estimates\/(\d+)/,           to: (m) => `/(tabs)/estimates/${m[1]}` },
-  { re: /^(?:admin\/)?proposals\/list_proposals\/(\d+)/,           to: (m) => `/(tabs)/proposals/${m[1]}` },
-  { re: /^(?:admin\/)?clients\/client\/(\d+)/,                     to: (m) => `/(tabs)/customers/${m[1]}` },
-  { re: /^(?:admin\/)?customers\/client\/(\d+)/,                   to: (m) => `/(tabs)/customers/${m[1]}` },
-  { re: /^(?:admin\/)?leads\/index\/(\d+)/,                        to: (m) => `/(tabs)/leads/${m[1]}` },
-  { re: /^(?:admin\/)?contracts\/contract\/(\d+)/,                 to: (m) => `/(tabs)/contracts/${m[1]}` },
-  { re: /^(?:admin\/)?tickets\/ticket\/(\d+)/,                     to: (m) => `/(tabs)/tickets/${m[1]}` },
-  { re: /^(?:admin\/)?expenses\/list_expenses\/(\d+)/,             to: (m) => `/(tabs)/erp/expenses/${m[1]}` },
-  { re: /^(?:admin\/)?przpurchase\/Purchase_Requests?\/view[^/]*\/(\d+)/, to: (m) => `/(tabs)/approvals/purchase_request/${m[1]}` },
-  { re: /^(?:admin\/)?przpurchase\/Purchase_Order\/view[^/]*\/(\d+)/,     to: (m) => `/(tabs)/approvals/purchase_order/${m[1]}` },
-  { re: /^(?:admin\/)?przpurchase\/Payment_Request\/view[^/]*\/(\d+)/,    to: (m) => `/(tabs)/approvals/payment_request/${m[1]}` },
-  { re: /^(?:admin\/)?przpurchase\/Expense_Request\/view[^/]*\/(\d+)/,    to: (m) => `/(tabs)/approvals/expense_request/${m[1]}` },
-  { re: /^(?:admin\/)?tenders_api\/view\/(\d+)/,                   to: (m) => `/(tabs)/tenders/${m[1]}` },
-  { re: /^(?:admin\/)?opportunities_api\/view\/(\d+)/,             to: (m) => `/(tabs)/opportunities/${m[1]}` },
-  { re: /^(?:admin\/)?reports\/view\/(\d+)/,                       to: (m) => `/(tabs)/reports/${m[1]}` },
-  { re: /^(?:admin\/)?knowledge_base\/article\/(\d+)/,             to: (m) => `/(tabs)/knowledge/${m[1]}` },
-];
-
-function resolveToNativeRoute(path: string): string | null {
-  const cleaned = path.replace(/^\/+/, "");
-  for (const { re, to } of PERFEX_ROUTE_PATTERNS) {
-    const m = cleaned.match(re);
-    if (m) return to(m);
-  }
-  return null;
-}
 
 /**
  * Top bar (Action Center) — pinned at the top of every authenticated screen.
@@ -231,21 +193,7 @@ function InboxRow({
       return;
     }
     onClose();
-    if (link.startsWith("/(tabs)/")) {
-      router.push(link as any);
-      return;
-    }
-    if (link.startsWith("http://") || link.startsWith("https://")) {
-      Linking.openURL(link).catch(() => undefined);
-      return;
-    }
-    const nativeRoute = resolveToNativeRoute(link);
-    if (nativeRoute) {
-      router.push(nativeRoute as any);
-      return;
-    }
-    const url = `${BASE_URL}/MS/admin/${link.replace(/^\/+/, "")}`;
-    Linking.openURL(url).catch(() => undefined);
+    void navigateInAppOrExternalLink(link, { fallbackRoute: "/(tabs)/erp" });
   };
 
   const priorityColor =

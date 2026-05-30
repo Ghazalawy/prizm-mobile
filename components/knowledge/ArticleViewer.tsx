@@ -12,7 +12,6 @@ import { router } from "expo-router";
 import { colors } from "@/lib/theme";
 import { rtlTextStyle, isArabic } from "@/lib/rtl";
 import { useKBArticle, type KBArticle } from "@/lib/queries/knowledge";
-import { BASE_URL } from "@/lib/config";
 
 // ─── Simple HTML → Text/RN renderer ─────────────────────────────────────
 
@@ -51,7 +50,7 @@ export function ArticleViewer({ id }: { id: string | number }) {
     try {
       await Share.share({
         title: article.subject,
-        message: `${article.subject}\n\n${BASE_URL}/MS/admin/knowledge_base/article/${article.articleid}`,
+        message: `${article.subject}\n\nOpen it from Prizm CRM mobile.`,
       });
     } catch {
       // User cancelled

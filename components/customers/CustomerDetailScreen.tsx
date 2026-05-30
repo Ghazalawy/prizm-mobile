@@ -29,6 +29,7 @@ import {
 } from "@/lib/queries/customers";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { colors } from "@/lib/theme";
+import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 
 const ACCENT = colors.primary;
 
@@ -137,7 +138,7 @@ export function CustomerDetailScreen() {
             <TouchableOpacity
               onPress={() => {
                 const url = c.website.startsWith("http") ? c.website : `https://${c.website}`;
-                Linking.openURL(url);
+                void navigateInAppOrExternalLink(url);
               }}
               className="flex-row items-center"
             >

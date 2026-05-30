@@ -228,3 +228,71 @@ export function useMarkLeadJunk() {
     },
   });
 }
+
+// ─── Delete Note ──────────────────────────────────────────────────────────
+
+export function useDeleteLeadNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      noteId,
+      leadId,
+    }: {
+      noteId: string | number;
+      leadId: string | number;
+    }) =>
+      apiRequest("leads/notes", {
+        method: "DELETE",
+        body: JSON.stringify({ id: noteId }),
+      }),
+    onSuccess: (_, { leadId }) => {
+      qc.invalidateQueries({ queryKey: ["leads", String(leadId), "notes"] });
+    },
+  });
+}
+
+// ─── Attachments ──────────────────────────────────────────────────────────
+
+export function useLeadAttachments(leadId: string | number) {
+  return useQuery({
+    queryKey: ["leads", String(leadId), "attachments"],
+    queryFn: async () =>
+      normalizeList(await apiRequest(`leads/attachments?lead_id=${leadId}`)),
+    enabled: !!leadId,
+    staleTime: 60_000,
+  });
+}
+
+export function useDeleteLeadAttachment() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      attachmentId,
+      leadId,
+    }: {
+      attachmentId: string | number;
+      leadId: string | number;
+    }) =>
+      apiRequest("leads/attachments", {
+        method: "DELETE",
+        body: JSON.stringify({ id: attachmentId }),
+      }),
+    onSuccess: (_, { leadId }) => {
+      qc.invalidateQueries({ queryKey: ["leads", String(leadId), "attachments"] });
+    },
+  });
+}
+
+// ─── Lead Count ───────────────────────────────────────────────────────────
+
+export function useLeadCount(filters?: { status?: string }) {
+  return useQuery({
+    queryKey: ["leads", "count", filters],
+    queryFn: async () => {
+      const qs = filters?.status ? `?status=${filters.status}` : "";
+      const data = await apiRequest(`leads/count${qs}`);
+      return (data?.data ?? data) as { total?: number };
+    },
+    staleTime: 60_000,
+  });
+}

@@ -7,6 +7,40 @@
 
 ---
 
+## Session 2026-05-31 (batch2-remainder) — Contacts, Business Partners, Milestones, Projects Cleanup
+
+**Status:** ✅ 5 API endpoints + 8 mobile hooks built; TypeScript clean; deployed
+**PR:** PrizmIT/prizm331#387
+
+### What was done
+1. **Contacts** — `PUT /api/contacts/{id}/status` + `useChangeContactStatus` hook
+2. **Business Partners** — Added 3 mobile mutation hooks (create/update/delete); API was already complete
+3. **Milestones** — `PUT /api/milestones/reorder` + `PUT /api/milestones/{id}/color` + `useReorderMilestones` + `useChangeMilestoneColor` hooks
+4. **Projects** — `POST /api/projects/{id}/pin` + `usePinProject` hook
+
+### Batch 2 Final Status — ALL 7 MODULES COMPLETE
+
+| Module | API Endpoints | Mobile Hooks | PR |
+|---|---|---|---|
+| **Projects** | 20 (+1 pin) | 15 (+ pin, milestones reorder/color) | #387 |
+| **Customers** | 18 (+2) | 20 (+5) | #385 |
+| **Leads** | 18 (+3) | 15 (+4) | #386 |
+| **Contracts** | 20 (+4) | 15 (+5) | #384 |
+| **Milestones** | 8 (+2) | (in projects.ts) | #387 |
+| **Business Partners** | 7 (complete) | 7 (+3) | #387 |
+| **Contacts** | 8 (+1) | (in customers.ts) | #387 |
+| **Batch 2 Total** | **16 new endpoints** | **23 new hooks** | **4 PRs** |
+
+### Key findings
+- CSV inventory was ~80% stale — most "gaps" were endpoints built after the sweep
+- The sweep methodology works but needs re-run after each batch
+- Complex web-only features (Kanban, Gantt, Import, Bulk, Vault, Statement) intentionally skipped
+
+### Next: Batch 3 (Sales & Finance)
+Invoices, Estimates, Proposals, Payments, Items, Credit Notes, Expenses, Budget, Cost Centers
+
+---
+
 ## Session 2026-05-30 (batch2-leads) — Leads API Gap Fill + Mobile Hooks
 
 **Status:** ✅ 3 API endpoints + 4 mobile hooks built; TypeScript clean; deployed

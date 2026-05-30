@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "../config";
 import { buildAuthHeaders, parseApiResponse } from "../api";
 import { getSessionGeneration } from "../auth-events";
@@ -254,3 +254,12 @@ export const useExpensesSummary = () => {
     staleTime: FIVE_MIN,
   });
 };
+
+// ─── Dashboard Profile API hooks (Dashboard_api.php) ──────────────────────
+import { apiRequest } from "../api";
+
+export function useDashboardProfile() { return useQuery({ queryKey: ["dashboard","profile_api"], queryFn: async () => (await apiRequest("dashboard_api/profile"))?.data, staleTime: 30_000 }); }
+export function useUpdateDashboardProfile() { const qc = useQueryClient(); return useMutation({ mutationFn: async (d: Record<string,unknown>) => apiRequest("dashboard_api/profile",{method:"PUT",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["dashboard"]}); } }); }
+export function useDeleteDashboardOverride() { const qc = useQueryClient(); return useMutation({ mutationFn: async () => apiRequest("dashboard_api/override",{method:"DELETE"}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["dashboard"]}); } }); }
+export function useDashboardWidgets() { return useQuery({ queryKey: ["dashboard","widgets"], queryFn: async () => (await apiRequest("dashboard_api/widgets"))?.data, staleTime: 30_000 }); }
+export function useDashboardProfiles() { return useQuery({ queryKey: ["dashboard","profiles"], queryFn: async () => (await apiRequest("dashboard_api/profiles"))?.data, staleTime: 60_000 }); }

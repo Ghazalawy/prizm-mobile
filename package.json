@@ -1,6 +1,6 @@
 {
   "name": "prizm-mobile",
-  "version": "1.8.3",
+  "version": "1.9.0",
   "main": "expo-router/entry",
   "scripts": {
     "postinstall": "patch-package",

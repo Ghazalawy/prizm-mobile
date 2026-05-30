@@ -231,3 +231,95 @@ export function useAssignTicket() {
     },
   });
 }
+
+// ─── Notes ──────────────────────────────────────────────────────────────────
+
+export function useTicketNotes(ticketId: string | number) {
+  return useQuery({
+    queryKey: ["tickets", "notes", String(ticketId)],
+    queryFn: async () => {
+      const data = await apiRequest(`tickets/${ticketId}/notes`);
+      return normalizeList(data).items;
+    },
+    enabled: !!ticketId,
+    staleTime: 15 * 1000,
+  });
+}
+
+export function useAddTicketNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ ticketId, description }: { ticketId: string | number; description: string }) => {
+      return apiRequest(`tickets/${ticketId}/notes`, {
+        method: "POST",
+        body: JSON.stringify({ description }),
+      });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["tickets", "notes", String(vars.ticketId)] });
+    },
+  });
+}
+
+// ─── CRUD Mutations ─────────────────────────────────────────────────────────
+
+export function useCreateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      return apiRequest("tickets", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tickets", "list"] });
+    },
+  });
+}
+
+export function useUpdateTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) => {
+      return apiRequest(`tickets/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["tickets", "detail", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["tickets", "list"] });
+      qc.invalidateQueries({ queryKey: ["crud", "tickets"] });
+    },
+  });
+}
+
+export function useDeleteTicket() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      return apiRequest(`tickets/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["tickets", "list"] });
+      qc.invalidateQueries({ queryKey: ["crud", "tickets"] });
+    },
+  });
+}
+
+// ─── Search ─────────────────────────────────────────────────────────────────
+
+export function useSearchTickets(query: string) {
+  return useQuery({
+    queryKey: ["tickets", "search", query],
+    queryFn: async () => {
+      const data = await apiRequest(`tickets/search/${encodeURIComponent(query)}`);
+      return normalizeList(data).items as TicketListItem[];
+    },
+    enabled: query.length > 0,
+    staleTime: 30 * 1000,
+  });
+}

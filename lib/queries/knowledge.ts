@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, buildQS } from "../api";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -69,5 +69,94 @@ export function useKBGroups() {
       return (res?.data ?? (Array.isArray(res) ? res : [])) as KBGroup[];
     },
     staleTime: 300_000,
+  });
+}
+
+// ─── CRUD Mutations ─────────────────────────────────────────────────────────
+
+export function useCreateKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) => {
+      return apiRequest("knowledge_api", {
+        method: "POST",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+export function useUpdateKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) => {
+      return apiRequest(`knowledge_api/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(data),
+      });
+    },
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["kb-article", String(vars.id)] });
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+export function useDeleteKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      return apiRequest(`knowledge_api/${id}`, {
+        method: "DELETE",
+      });
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+// ─── Publish / Unpublish ────────────────────────────────────────────────────
+
+export function usePublishKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      return apiRequest(`knowledge_api/${id}/publish`, { method: "PUT" });
+    },
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["kb-article", String(id)] });
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+export function useUnpublishKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => {
+      return apiRequest(`knowledge_api/${id}/unpublish`, { method: "PUT" });
+    },
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["kb-article", String(id)] });
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+// ─── Search ─────────────────────────────────────────────────────────────────
+
+export function useSearchKB(query: string) {
+  return useQuery({
+    queryKey: ["kb-search", query],
+    queryFn: async () => {
+      const res = await apiRequest(`knowledge_api/search?q=${encodeURIComponent(query)}`);
+      return (res?.data ?? (Array.isArray(res) ? res : [])) as KBArticle[];
+    },
+    enabled: query.length > 0,
+    staleTime: 30_000,
   });
 }

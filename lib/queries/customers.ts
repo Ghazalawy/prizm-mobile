@@ -350,3 +350,95 @@ export function useCustomerFinancialSummary(customerId: string | number) {
     isError: invoices.isError,
   };
 }
+
+// ─── Customer Count ────────────────────────────────────────────────────────
+
+export function useCustomerCount(filters?: { active?: string; group?: string }) {
+  return useQuery({
+    queryKey: ["customers", "count", filters],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (filters?.active) params.set("active", filters.active);
+      if (filters?.group) params.set("group_id", filters.group);
+      const qs = params.toString();
+      const data = await apiRequest(`customers/count${qs ? `?${qs}` : ""}`);
+      return (data?.data ?? data) as { total?: number; count?: number; active?: number; inactive?: number };
+    },
+    staleTime: 60_000,
+  });
+}
+
+// ─── Billing / Shipping ────────────────────────────────────────────────────
+
+export function useCustomerBillingShipping(customerId: string | number) {
+  return useQuery({
+    queryKey: ["customer", String(customerId), "billing_shipping"],
+    queryFn: async () => {
+      const data = await apiRequest(
+        `customers/billing_shipping?customer_id=${customerId}`
+      );
+      return (data?.data ?? data) as Record<string, unknown>;
+    },
+    enabled: !!customerId,
+  });
+}
+
+// ─── Update Contact ────────────────────────────────────────────────────────
+
+export function useUpdateCustomerContact() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      payload,
+    }: {
+      id: string | number;
+      payload: Partial<CustomerContact>;
+    }) =>
+      apiRequest("customers/contacts", {
+        method: "PUT",
+        body: JSON.stringify({ id, ...payload }),
+      }),
+    onSuccess: (_, vars) => {
+      qc.invalidateQueries({ queryKey: ["customer", String(vars.payload.customer_id ?? ""), "contacts"] });
+    },
+  });
+}
+
+// ─── Delete Group ──────────────────────────────────────────────────────────
+
+export function useDeleteCustomerGroup() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest("customers/groups", {
+        method: "DELETE",
+        body: JSON.stringify({ id }),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["customer-groups"] });
+    },
+  });
+}
+
+// ─── Remove Admin ──────────────────────────────────────────────────────────
+
+export function useRemoveCustomerAdmin() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      customerId,
+      staffId,
+    }: {
+      customerId: string | number;
+      staffId: string | number;
+    }) =>
+      apiRequest("customers/admins", {
+        method: "DELETE",
+        body: JSON.stringify({ customer_id: customerId, staff_id: staffId }),
+      }),
+    onSuccess: (_, { customerId }) => {
+      qc.invalidateQueries({ queryKey: ["customer", String(customerId), "admins"] });
+    },
+  });
+}

@@ -7,6 +7,40 @@
 
 ---
 
+## Session 2026-05-30 (later) — Batch 2 Projects: CSV Reconciliation + API Gap Fill + Deploy
+
+**Commits:** prizm331 `b91c179d` → PR #368 → `3aabec9682` (merged + Hetzner), prizm-mobile `6df5ed0` (pushed main)
+**Status:** ✅ Deployed to production (both repos)
+
+### What was done
+1. **Reconciled stale CSV inventory** — `batch2-crm-inventory.csv` had 7 Projects operations marked `API_Available=NO` that actually existed in live code (members GET/POST/DELETE, discussions GET/POST, notes GET/POST, count, activity). Updated endpoints + corrected totals: 52→62 existing (48.4%), 76→66 gaps (51.6%).
+2. **Built 2 new API endpoints in prizm331 `Projects.php`:**
+   - `POST /api/projects/copy` — copies a project with defaults (name + " (Copy)", original clientid, start_date, deadline)
+   - `GET /api/projects/timesheets?project_id=` — wraps `Projects_model::get_timesheets()`
+3. **Fixed Expenses.php parse error** — spurious `}` at line 207 closed the class early, hiding `data_search_get` and all methods below it. Removed the stray brace.
+4. **Confirmed `/api/expenses?project_id=N` works** — no new endpoint needed; existing Expenses API supports project_id filter.
+5. **Added 3 mobile query hooks** in `lib/queries/projects.ts`:
+   - `useCopyProject()` — mutation for POST /api/projects/copy
+   - `useProjectExpenses(projectId)` — query for GET /api/expenses?project_id=
+   - `useProjectTimesheets(projectId)` — query for GET /api/projects/timesheets?project_id=
+6. **TypeScript --noEmit: zero errors**
+7. **Deployed:** PR #368 merged upstream → Hetzner git pull confirmed; prizm-mobile pushed to main
+
+### Key decisions
+- **API-first routing pattern:** Sub-resource endpoints that don't have an ID in the URL path use `POST /api/projects/{resource}` with `project_id` in body (matches `members_post` pattern). `POST /api/projects/{id}/copy` doesn't work — REST_Controller routes it to `data_post`.
+- **Model requires defaults:** `Projects_model::copy()` needs `clientid_copy_project`, `start_date`, `name`, `deadline` in the `$data` array. Provide defaults from the original project.
+- **Expenses/Timesheets:** Use existing module-level APIs with `project_id` filter rather than duplicating in Projects controller. Only Timesheets needed a wrapper because the standalone `Timesheets_api` references a non-existent table (`tblprz_timesheets`).
+
+### Remaining Projects gaps (not built — future batches)
+- Add Timesheet (POST) — row 30
+- Gantt Data — row 31
+- BoQ Management — row 32
+- Bulk Action Files — row 35
+- Invoice Project — row 36
+- Pin Action — row 37
+
+---
+
 ## Session 2026-05-30 — Batch 2 Production Push & Policy Hardening
 
 **Commits:** prizm331 `ab5422d` → PR #367 → `4185ea17` (merged upstream), prizm-mobile `6b75f2e` → `0293820` (merged to main)

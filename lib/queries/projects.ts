@@ -123,6 +123,63 @@ export function useProjectStats(projectId: string | number) {
   };
 }
 
+// ─── Pin ──────────────────────────────────────────────────────────────────
+
+export function usePinProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`projects/${id}/pin`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["projects"] });
+    },
+  });
+}
+
+// ─── Milestone mutations ──────────────────────────────────────────────────
+
+export function useReorderMilestones() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      projectId,
+      order,
+    }: {
+      projectId: string | number;
+      order: [number, number][];
+    }) =>
+      apiRequest("milestones/reorder", {
+        method: "PUT",
+        body: JSON.stringify({ order }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "milestones"] });
+    },
+  });
+}
+
+export function useChangeMilestoneColor() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      milestoneId,
+      color,
+      projectId,
+    }: {
+      milestoneId: string | number;
+      color: string;
+      projectId: string | number;
+    }) =>
+      apiRequest(`milestones/${milestoneId}/color`, {
+        method: "PUT",
+        body: JSON.stringify({ color }),
+      }),
+    onSuccess: (_, { projectId }) => {
+      qc.invalidateQueries({ queryKey: ["project", String(projectId), "milestones"] });
+    },
+  });
+}
+
 // ─── Project invoices ─────────────────────────────────────────────────────
 
 export function useProjectInvoices(projectId: string | number) {

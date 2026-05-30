@@ -1,4 +1,4 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, normalizeList } from "../api";
 
 export type BusinessPartner = {
@@ -57,5 +57,53 @@ export function useBusinessPartnersList(filters?: { search?: string; limit?: num
       return normalizeList(await apiRequest(`business_partners_api?${params.toString()}`));
     },
     staleTime: 60 * 1000,
+  });
+}
+
+// ─── Mutations ────────────────────────────────────────────────────────────
+
+export function useCreateBusinessPartner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Partial<BusinessPartner>) =>
+      apiRequest("business_partners_api", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["business_partners"] });
+    },
+  });
+}
+
+export function useUpdateBusinessPartner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      payload,
+    }: {
+      id: string | number;
+      payload: Partial<BusinessPartner>;
+    }) =>
+      apiRequest(`business_partners_api/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["business_partner", String(id)] });
+      qc.invalidateQueries({ queryKey: ["business_partners"] });
+    },
+  });
+}
+
+export function useDeleteBusinessPartner() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`business_partners_api/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["business_partners"] });
+    },
   });
 }

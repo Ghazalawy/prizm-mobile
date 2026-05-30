@@ -442,3 +442,27 @@ export function useRemoveCustomerAdmin() {
     },
   });
 }
+
+// ─── Change Contact Status ─────────────────────────────────────────────────
+
+export function useChangeContactStatus() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      contactId,
+      status,
+      customerId,
+    }: {
+      contactId: string | number;
+      status: number;
+      customerId: string | number;
+    }) =>
+      apiRequest(`contacts/${contactId}/status`, {
+        method: "PUT",
+        body: JSON.stringify({ status }),
+      }),
+    onSuccess: (_, { customerId }) => {
+      qc.invalidateQueries({ queryKey: ["customer", String(customerId), "contacts"] });
+    },
+  });
+}

@@ -119,6 +119,45 @@ export function useMarkInvoiceCancelled() {
   });
 }
 
+export function useInvoiceList(filters?: { search?: string; status?: string; clientid?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["invoices", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200, sort: "date", sort_dir: "desc" };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.status) params.status = filters.status;
+      if (filters?.clientid) params.clientid = filters.clientid;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`invoices?${qs}`));
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useCopyInvoice() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`invoices/${id}/copy`, { method: "POST" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["invoices"] });
+      qc.invalidateQueries({ queryKey: ["crud", "invoices"] });
+    },
+  });
+}
+
+export function useUnmarkInvoiceCancelled() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`invoices/${id}/unmark_cancelled`, { method: "PUT" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["invoice", String(id)] });
+      qc.invalidateQueries({ queryKey: ["crud", "invoices"] });
+    },
+  });
+}
+
 // ─── Estimate ────────────────────────────────────────────────────────────
 
 export function useEstimateDetail(id: string | number) {
@@ -171,6 +210,21 @@ export function useConvertToInvoice() {
       qc.invalidateQueries({ queryKey: ["crud", "estimates"] });
       qc.invalidateQueries({ queryKey: ["crud", "invoices"] });
     },
+  });
+}
+
+export function useEstimateList(filters?: { search?: string; status?: string; clientid?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["estimates", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200, sort: "date", sort_dir: "desc" };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.status) params.status = filters.status;
+      if (filters?.clientid) params.clientid = filters.clientid;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`estimates?${qs}`));
+    },
+    staleTime: 60_000,
   });
 }
 
@@ -227,5 +281,168 @@ export function useMarkProposal() {
       qc.invalidateQueries({ queryKey: ["proposal", String(id)] });
       qc.invalidateQueries({ queryKey: ["crud", "proposals"] });
     },
+  });
+}
+
+export function useProposalList(filters?: { search?: string; status?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["proposals", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200, sort: "date", sort_dir: "desc" };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.status) params.status = filters.status;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`proposals?${qs}`));
+    },
+    staleTime: 60_000,
+  });
+}
+
+// ─── Payments ─────────────────────────────────────────────────────────────
+
+export function usePaymentsList(filters?: { invoiceid?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["payments", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200, sort: "date", sort_dir: "desc" };
+      if (filters?.invoiceid) params.invoiceid = filters.invoiceid;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`payments?${qs}`));
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function usePaymentModes() {
+  return useQuery({
+    queryKey: ["payments", "modes"],
+    queryFn: async () => normalizeList(await apiRequest("payments/modes")),
+    staleTime: 10 * 60_000,
+  });
+}
+
+// ─── Items ────────────────────────────────────────────────────────────────
+
+export function useItemsList(filters?: { search?: string; group?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["items", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200 };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.group) params.group_id = filters.group;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`items?${qs}`));
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useItemDetail(id: string | number) {
+  return useQuery({
+    queryKey: ["item", String(id)],
+    queryFn: async () => {
+      const data = await apiRequest(`items/${id}`);
+      return unwrapDetail(data);
+    },
+    enabled: !!id,
+  });
+}
+
+export function useCreateItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiRequest("items", { method: "POST", body: JSON.stringify(payload) }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
+    },
+  });
+}
+
+export function useUpdateItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, payload }: { id: string | number; payload: Record<string, unknown> }) =>
+      apiRequest(`items/${id}`, { method: "PUT", body: JSON.stringify(payload) }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["item", String(id)] });
+      qc.invalidateQueries({ queryKey: ["items"] });
+    },
+  });
+}
+
+export function useDeleteItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string | number) =>
+      apiRequest(`items/${id}`, { method: "DELETE" }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["items"] });
+    },
+  });
+}
+
+// ─── Credit Notes ─────────────────────────────────────────────────────────
+
+export function useCreditNoteList(filters?: { search?: string; status?: string; clientid?: string; limit?: number }) {
+  return useQuery({
+    queryKey: ["credit_notes", "list", filters],
+    queryFn: async () => {
+      const params: Record<string, string | number> = { limit: filters?.limit ?? 200, sort: "date", sort_dir: "desc" };
+      if (filters?.search) params.search = filters.search;
+      if (filters?.status) params.status = filters.status;
+      if (filters?.clientid) params.clientid = filters.clientid;
+      const qs = Object.entries(params).map(([k, v]) => `${k}=${encodeURIComponent(v)}`).join("&");
+      return normalizeList(await apiRequest(`credit_notes?${qs}`));
+    },
+    staleTime: 60_000,
+  });
+}
+
+export function useCreditNoteDetail(id: string | number) {
+  return useQuery({
+    queryKey: ["credit_note", String(id)],
+    queryFn: async () => {
+      const data = await apiRequest(`credit_notes/${id}`);
+      return unwrapDetail(data);
+    },
+    enabled: !!id,
+  });
+}
+
+// ─── Budget ────────────────────────────────────────────────────────────────
+
+export function useBudgetItemsList(budgetId: string | number) {
+  return useQuery({
+    queryKey: ["budget", String(budgetId), "items"],
+    queryFn: async () => normalizeList(await apiRequest(`budget_api/items/${budgetId}`)),
+    enabled: !!budgetId,
+    staleTime: 60_000,
+  });
+}
+
+export function useBudgetCategories() {
+  return useQuery({
+    queryKey: ["budget", "categories"],
+    queryFn: async () => normalizeList(await apiRequest("budget_api/categories")),
+    staleTime: 10 * 60_000,
+  });
+}
+
+// ─── Cost Centers ──────────────────────────────────────────────────────────
+
+export function useCostCentersList() {
+  return useQuery({
+    queryKey: ["cost_centers", "list"],
+    queryFn: async () => normalizeList(await apiRequest("cost_centers_api")),
+    staleTime: 5 * 60_000,
+  });
+}
+
+export function useCostCenterDetail(id: string | number) {
+  return useQuery({
+    queryKey: ["cost_center", String(id)],
+    queryFn: async () => unwrapDetail(await apiRequest(`cost_centers_api/${id}`)),
+    enabled: !!id,
   });
 }

@@ -7,6 +7,44 @@
 
 ---
 
+## Session 2026-05-31 (batch3) — Sales & Finance: Invoices, Estimates, Proposals, Payments, Items, Credit Notes, Budget, Cost Centers
+
+**Status:** ✅ 5 API endpoints + 18 mobile hooks built; TypeScript clean; deployed
+**PR:** PrizmIT/prizm331#388
+
+### What was done
+1. **Invoices** — `POST /api/invoices/{id}/copy` + `PUT /api/invoices/{id}/unmark_cancelled` + 3 hooks (list/copy/unmark)
+2. **Items** — Full CRUD added to API controller (data_post/put/delete) + 5 hooks (list/detail/create/update/delete)
+3. **Estimates** — `useEstimateList` hook (API already complete)
+4. **Proposals** — `useProposalList` hook (API already complete)
+5. **Payments** — `usePaymentsList` + `usePaymentModes` hooks (API already complete)
+6. **Credit Notes** — `useCreditNoteList` + `useCreditNoteDetail` hooks (API already complete)
+7. **Budget** — `useBudgetItemsList` + `useBudgetCategories` hooks (API already complete, 24 methods)
+8. **Cost Centers** — `useCostCentersList` + `useCostCenterDetail` hooks (API already complete, 14 methods)
+
+### Batch 3 — Final Status (9 modules)
+
+| Module | API Status | New API | New Mobile |
+|---|---|---|---|
+| **Invoices** | 12 endpoints | +2 | +3 |
+| **Estimates** | 11 endpoints | — | +1 |
+| **Proposals** | 13 endpoints | — | +1 |
+| **Payments** | 7 endpoints | — | +2 |
+| **Items** | 6 endpoints | +3 | +5 |
+| **Credit Notes** | 7 endpoints | — | +2 |
+| **Expenses** | 10 endpoints | — | (already complete) |
+| **Budget** | 24 endpoints | — | +2 |
+| **Cost Centers** | 14 endpoints | — | +2 |
+| **Batch 3 Total** | **104 endpoints** | **5 new** | **18 new hooks** |
+
+### Key observation
+Batch 3 had far fewer real gaps than anticipated — most API endpoints already existed. Only Invoices (copy/unmark) and Items (full CRUD missing) needed backend work. The rest needed only mobile list hooks.
+
+### Next: Batch 4 (Support & Knowledge)
+Tickets, Knowledge Base, Surveys, Announcements
+
+---
+
 ## Session 2026-05-31 (batch2-remainder) — Contacts, Business Partners, Milestones, Projects Cleanup
 
 **Status:** ✅ 5 API endpoints + 8 mobile hooks built; TypeScript clean; deployed

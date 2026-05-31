@@ -2,6 +2,59 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.12.0",
+      "date": "2026-05-31",
+      "title": "Operations, BD, Admin & System modules — complete mobile API coverage",
+      "highlights": [
+        "Gatepass: list, detail, CRUD, approve/reject/close, staff/vehicle tracking, expiring alerts.",
+        "Fixed Equipment: inventory CRUD with allocate/return, categories, locations, manufacturers, analytics.",
+        "Materials Catalog: 23 hooks covering materials, categories, specs, kits, UOMs, UNSPSC classifications.",
+        "Technical Inquiries: full CRUD with line items and specifications sub-resources.",
+        "Advance Leads: CRUD with custom detail fields, statuses, and activity logging.",
+        "RFQ, Dashboard widgets, Automation rules, Custom Statuses, Tags — all queryable.",
+        "No backend changes needed — all APIs were already complete."
+      ]
+    },
+    {
+      "version": "1.11.0",
+      "date": "2026-05-31",
+      "title": "HR & People — Staff, Payroll, Recruitment, Goals, Todo",
+      "highlights": [
+        "Staff directory: list, detail, search, and CRUD for 200+ staff members.",
+        "Payroll: 17 hooks for payslips, earnings/deductions, templates, commissions, and summary.",
+        "Recruitment: positions, candidates (with hire/reject/stage-change), proposals, pipeline, analytics.",
+        "Goals: CRUD with mark-complete, reopen, summary, and overdue tracking.",
+        "Todo list: new backend API controller + 6 mobile hooks with status toggle.",
+        "Leave, payslips, and profile already covered via existing my.ts/hr.ts hooks."
+      ]
+    },
+    {
+      "version": "1.10.0",
+      "date": "2026-05-31",
+      "title": "Purchase & Supply Chain — 9 modules fully covered",
+      "highlights": [
+        "Purchase Requests: CRUD, line items, approve/reject, close, publish — all 23 hooks.",
+        "Purchase Orders: CRUD with items, mark paid/received, send to supplier — 15 hooks.",
+        "Suppliers: vendor CRUD with contacts, categories, and search — 10 hooks.",
+        "Delivery Notes, Quotations, Received Vouchers, Completion Certificates: list + approval + approve/reject.",
+        "Payment Requests and Expense Requests: list + approval workflow with approver context.",
+        "Reference data: stages, statuses, units, analytics, and activity log — all queryable.",
+        "Backend Purchase_api.php already had all 66 endpoints — zero API changes needed."
+      ]
+    },
+    {
+      "version": "1.9.0",
+      "date": "2026-05-31",
+      "title": "Support & Knowledge — Tickets, KB, Surveys, Announcements",
+      "highlights": [
+        "Tickets: 16 hooks covering list, detail, replies, notes, status/priority/assign changes, CRUD, and search.",
+        "Knowledge Base: 9 hooks — article CRUD, publish/unpublish, group listing, full-text search.",
+        "Surveys: 10 hooks — list, detail, results, send log, CRUD, publish/close.",
+        "Announcements: new backend API + 5 mobile hooks for company-wide announcement CRUD.",
+        "Backend: added notes_post to Tickets API and full Announcements_api controller (6 endpoints)."
+      ]
+    },
+    {
       "version": "1.8.3",
       "date": "2026-05-30",
       "title": "Keep ERP links inside the mobile app",

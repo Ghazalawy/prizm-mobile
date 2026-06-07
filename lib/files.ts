@@ -1,5 +1,5 @@
-import * as ImagePicker from "expo-image-picker";
 import * as DocumentPicker from "expo-document-picker";
+import * as ImagePicker from "expo-image-picker";
 import * as FileSystem from "expo-file-system/legacy";
 import * as Clipboard from "expo-clipboard";
 import { API_URL } from "./config";
@@ -131,34 +131,34 @@ type UploadParams = {
 };
 
 /**
- * Upload a picked file as an attachment to any entity in Perfex. Encodes the
- * file as base64 and POSTs to /api/files/upload_bytes, which writes both the
- * DB row in tblfiles and the bytes to disk via the standard Files helper.
- *
- * Returns the created tblfiles row on success.
+ * Upload a picked file as an attachment to any entity in Perfex via
+ * multipart/form-data — bytes never base64-encoded in JSON.
  */
 export async function uploadAttachment(params: UploadParams): Promise<{ id: number; file_name: string }> {
   const gen = getSessionGeneration();
-  const headers = await buildAuthHeaders();
-  const content_base64 = await FileSystem.readAsStringAsync(params.file.uri, {
-    encoding: FileSystem.EncodingType.Base64,
-  });
+  const tokenHeaders = await buildAuthHeaders();
+  const { "Content-Type": _drop, ...headers } = tokenHeaders as Record<string, string>;
 
-  const res = await fetch(`${API_URL}/files/upload_bytes`, {
+  const form = new FormData();
+  form.append("file", {
+    uri: params.file.uri,
+    name: params.file.name,
+    type: params.file.mimeType,
+  } as unknown as Blob);
+  form.append("rel_type", params.relType);
+  form.append("rel_id", String(params.relId));
+  form.append("filetype", params.file.mimeType);
+  if (params.visibleToCustomer) {
+    form.append("visible_to_customer", "1");
+  }
+
+  const res = await fetch(`${API_URL}/files/upload_multipart`, {
     method: "POST",
     headers,
-    body: JSON.stringify({
-      rel_type: params.relType,
-      rel_id: params.relId,
-      file_name: params.file.name,
-      filetype: params.file.mimeType,
-      file_mime_type: params.file.mimeType,
-      visible_to_customer: params.visibleToCustomer ? 1 : 0,
-      content_base64,
-    }),
+    body: form,
   });
 
-  const token = headers["authtoken"];
+  const token = tokenHeaders["authtoken"];
   const { body: j, invalidToken } = await parseApiResponse(res, !!token, gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
@@ -166,8 +166,12 @@ export async function uploadAttachment(params: UploadParams): Promise<{ id: numb
       (j && typeof j === "object" && j.message) || `HTTP ${res.status}`;
     throw new Error(message);
   }
-  // upload_bytes_post returns { status: true, id: N, file_name: "..." }
-  return { id: Number(j.id ?? j.data?.id ?? 0), file_name: j.file_name ?? params.file.name };
+
+  const data = (j as { data?: { file_id?: number; file_name?: string }; id?: number; file_name?: string })?.data ?? j;
+  return {
+    id: Number((data as { file_id?: number; id?: number }).file_id ?? (data as { id?: number }).id ?? 0),
+    file_name: (data as { file_name?: string }).file_name ?? params.file.name,
+  };
 }
 
 function extensionForMime(mimeType: string): string {

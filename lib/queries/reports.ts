@@ -1,7 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, buildAuthHeaders, buildQS } from "@/lib/api";
 import { API_URL, BASE_URL } from "@/lib/config";
-import * as FileSystem from "expo-file-system/legacy";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -221,26 +220,37 @@ export function useUploadReportImages() {
       reportId: number;
       images: ImageUploadItem[];
     }) => {
-      const headers = await buildAuthHeaders();
-      const payload: any[] = [];
+      const tokenHeaders = await buildAuthHeaders();
+      const { "Content-Type": _drop, ...headers } = tokenHeaders as Record<string, string>;
+      const uploaded: unknown[] = [];
+
       for (const img of images) {
-        const b64 = await FileSystem.readAsStringAsync(img.uri, {
-          encoding: FileSystem.EncodingType.Base64,
-        });
         const ext = img.uri.split(".").pop()?.toLowerCase() || "jpg";
-        payload.push({
-          content_base64: b64,
-          description: img.description,
-          extension: ext,
+        const mimeType = ext === "png" ? "image/png" : ext === "webp" ? "image/webp" : "image/jpeg";
+        const form = new FormData();
+        form.append("image", {
+          uri: img.uri,
+          name: `report-${reportId}-${Date.now()}.${ext}`,
+          type: mimeType,
+        } as unknown as Blob);
+        form.append("description", img.description);
+        form.append("extension", ext);
+
+        const res = await fetch(`${API_URL}/reports_api/images/${reportId}`, {
+          method: "POST",
+          headers,
+          body: form,
         });
+        const json = await res.json();
+        if (!res.ok) {
+          throw new Error(json?.message || `HTTP ${res.status}`);
+        }
+        const row = json?.data;
+        if (Array.isArray(row)) uploaded.push(...row);
+        else if (row) uploaded.push(row);
       }
-      const res = await fetch(`${API_URL}/reports_api/images/${reportId}`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({ images: payload }),
-      });
-      const json = await res.json();
-      return json?.data ?? [];
+
+      return uploaded;
     },
     onSuccess: (_data, vars) => {
       qc.invalidateQueries({ queryKey: ["report", vars.reportId] });

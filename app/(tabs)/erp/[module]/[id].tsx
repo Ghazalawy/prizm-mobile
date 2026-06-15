@@ -6,6 +6,7 @@ import { EstimateDetailScreen } from "@/components/finance/EstimateDetailScreen"
 import { ProposalDetailScreen } from "@/components/finance/ProposalDetailScreen";
 import { BusinessPartnerDetailScreen } from "@/components/business-partners/BusinessPartnerDetailScreen";
 import { PurchaseWorkflowApprovalScreen } from "../../approvals/purchase_request/[id]";
+import { OpportunityDetailScreen } from "@/components/opportunities/OpportunityDetailScreen";
 
 /**
  * Generic CRUD-module detail route — covers every entity in the ERP tab
@@ -38,6 +39,9 @@ export default function ModuleDetailRoute() {
   }
   if (module === "business_partners") {
     return <BusinessPartnerDetailScreen id={id} />;
+  }
+  if (module === "opportunities") {
+    return <OpportunityDetailScreen />;
   }
   return <CrudDetailScreen moduleKey={module} id={id} />;
 }

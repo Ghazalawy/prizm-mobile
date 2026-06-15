@@ -243,12 +243,16 @@ Status legend:
 - **Mobile:** full fields + tabs (BOQ / requirements / risks / documents)
 - **Mobile actions:** 3
 
-### 16. Opportunities (`opportunities`) ✅
+### 16. Opportunities (`opportunities`) ✅ Tier C
 
-- **API endpoints (batch 1):**
-  - `PUT /api/opportunities_api/:id/stage` (body `{stage_id}`)
-  - `PUT /api/opportunities_api/:id/status` (body `{status_id}`)
-- **Mobile actions:** 2
+- **API controller:** `modules/api/controllers/Opportunities_api.php` (permissions, PUT allowlist, workflow via `tblopportunity_statusdetail`)
+- **API highlights:**
+  - CRUD: `GET/POST/PUT/DELETE /api/opportunities_api/data`
+  - Workflow: `POST …/{id}/change_status`, `approve`, `reject`, `resubmit`, `GET …/statusdetail`, `…/approval_info`
+  - Sub-resources: members, milestones, BOQ, notes, tasks, timesheets, RFQ, TI, estimation, suppliers, discussions, emails, TenderOps stages
+  - Actions: `submit`, `convert`, `pin`, `archive`, `GET …/dashboard`
+- **Mobile:** native `OpportunityListScreen` + `OpportunityDetailScreen` (17 tabs), pinnable tab, create/edit via `CrudFormScreen`
+- **Deprecated:** `PUT …/stage` and `PUT …/status` (return 400 — use `change_status`)
 
 ### 17. Purchase Orders (`purchase_orders`) ✅
 

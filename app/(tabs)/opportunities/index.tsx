@@ -1,5 +1,5 @@
-import { CrudListScreen } from "@/components/crud/CrudListScreen";
+import { OpportunityListScreen } from "@/components/opportunities/OpportunityListScreen";
 
 export default function OpportunitiesScreen() {
-  return <CrudListScreen moduleKey="opportunities" />;
+  return <OpportunityListScreen basePath="/(tabs)/opportunities" />;
 }

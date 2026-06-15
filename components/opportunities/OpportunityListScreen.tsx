@@ -16,6 +16,7 @@ import {
   type OpportunityListItem,
   type OpportunityStage,
 } from "@/lib/queries/opportunities";
+import { usePermissions } from "@/lib/permission-context";
 import { colors } from "@/lib/theme";
 
 // ─── Perfix filter system ──────────────────────────────────────────────
@@ -47,7 +48,7 @@ function getOppStatusBadge(status: string): { label: string; color: string; bg: 
   return { label: status || "—", color: "#64748B", bg: "#F1F5F9" };
 }
 
-export function OpportunityListScreen() {
+export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { basePath?: string }) {
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [refreshing, setRefreshing] = useState(false);
   const [showFilterSheet, setShowFilterSheet] = useState(false);
@@ -67,6 +68,9 @@ export function OpportunityListScreen() {
   const items = useMemo(() => {
     return (q.data?.items ?? []) as OpportunityListItem[];
   }, [q.data]);
+
+  const permissions = usePermissions();
+  const canCreate = permissions.canCreate("opportunities");
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -177,7 +181,13 @@ export function OpportunityListScreen() {
           <Text className="text-slate-900 font-semibold mt-3">No opportunities found</Text>
         </View>
       ) : viewMode === "pipeline" ? (
-        <PipelineView items={items} stages={stages.data} refreshing={refreshing} onRefresh={onRefresh} />
+        <PipelineView
+          items={items}
+          stages={stages.data}
+          refreshing={refreshing}
+          onRefresh={onRefresh}
+          basePath={basePath}
+        />
       ) : (
         <FlatList
           data={items}
@@ -189,7 +199,7 @@ export function OpportunityListScreen() {
             const st = getOppStatusBadge(item.status || item.stage?.toString() || "");
             return (
               <TouchableOpacity
-                onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
+                onPress={() => router.push(`${basePath}/${item.opportunity_id}` as any)}
                 className="bg-white rounded-xl p-4 border border-gray-100"
                 activeOpacity={0.7}
               >
@@ -239,6 +249,17 @@ export function OpportunityListScreen() {
         onUpdateRule={filter.updateRule}
         onSetMatchType={filter.setMatchType}
       />
+
+      {canCreate ? (
+        <TouchableOpacity
+          onPress={() => router.push(`${basePath}/new` as any)}
+          className="absolute bottom-6 right-6 w-14 h-14 rounded-full items-center justify-center shadow-lg"
+          style={{ backgroundColor: ACCENT }}
+          activeOpacity={0.85}
+        >
+          <Ionicons name="add" size={28} color="#FFF" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }
@@ -250,11 +271,13 @@ function PipelineView({
   stages,
   refreshing,
   onRefresh,
+  basePath,
 }: {
   items: OpportunityListItem[];
   stages: OpportunityStage[] | undefined;
   refreshing: boolean;
   onRefresh: () => void;
+  basePath: string;
 }) {
   const stageList = stages ?? [];
   const columns = useMemo(() => {
@@ -291,7 +314,7 @@ function PipelineView({
             {col.items.map((item) => (
               <TouchableOpacity
                 key={item.opportunity_id}
-                onPress={() => router.push(`/(tabs)/opportunities/${item.opportunity_id}` as any)}
+                onPress={() => router.push(`${basePath}/${item.opportunity_id}` as any)}
                 className="bg-white rounded-lg p-3 shadow-sm"
                 activeOpacity={0.7}
               >

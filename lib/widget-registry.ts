@@ -197,9 +197,9 @@ export const WIDGET_REGISTRY: Record<string, WidgetDef> = {
     componentType: "stat",
     defaultSize: "1x1",
     sizes: ["1x1"],
-    permissionFeature: null,
+    permissionFeature: "opportunities",
     module: "opportunities",
-    route: "/(tabs)/erp/opportunities",
+    route: "/(tabs)/opportunities",
     sortOrder: 130,
   },
 

@@ -212,10 +212,55 @@ export function useSubmitForApproval() {
 export function useChangeStage() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, stage_id }: { id: number; stage_id: number }) =>
-      apiRequest(`opportunities_api/${id}/stage`, {
+    mutationFn: ({
+      id,
+      statusID,
+      stage,
+      optional,
+    }: {
+      id: number;
+      statusID: number;
+      stage: number;
+      optional?: number;
+    }) =>
+      apiRequest(`opportunities_api/${id}/change_status`, {
+        method: "POST",
+        body: JSON.stringify({ statusID, stage, optional: optional ?? 0 }),
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
+      qc.invalidateQueries({ queryKey: ["opportunity", "approval", String(id)] });
+    },
+  });
+}
+
+/** @deprecated use useChangeStage — calls change_status POST */
+export function useChangeOpportunityStatus() {
+  return useChangeStage();
+}
+
+export function useCreateOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiRequest("opportunities_api/data", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+}
+
+export function useUpdateOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: number } & Record<string, unknown>) =>
+      apiRequest(`opportunities_api/data/${id}`, {
         method: "PUT",
-        body: JSON.stringify({ stage_id }),
+        body: JSON.stringify(payload),
       }),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
@@ -224,16 +269,403 @@ export function useChangeStage() {
   });
 }
 
-export function useChangeOpportunityStatus() {
+export function useOpportunityStatuses() {
+  return useQuery({
+    queryKey: ["opportunities", "statuses"],
+    queryFn: async () => {
+      const data = await apiRequest("opportunities_api/statuses");
+      if (data?.status === true && Array.isArray(data.data)) return data.data;
+      return [];
+    },
+    staleTime: 5 * 60_000,
+  });
+}
+
+export type OpportunityStatusDetailRow = {
+  id?: number;
+  opportunity_id?: number;
+  stage?: number;
+  status?: number;
+  staff_id?: number;
+  is_current_status?: number;
+  chosen_status_id?: number;
+  status_name?: string;
+  stage_name?: string;
+};
+
+export function useOpportunityStatusDetail(oppId: string | number) {
+  return useQuery({
+    queryKey: ["opportunity", "statusdetail", String(oppId)],
+    queryFn: async () => {
+      const data = await apiRequest(`opportunities_api/statusdetail/${oppId}`);
+      if (data?.status === true && Array.isArray(data.data)) {
+        return data.data as OpportunityStatusDetailRow[];
+      }
+      return [];
+    },
+    enabled: !!oppId,
+  });
+}
+
+export type OpportunityApprovalInfo = {
+  approval_info: Record<string, unknown>[];
+  rejection: unknown;
+  viewer_staff_id: number;
+};
+
+export function useOpportunityApprovalInfo(oppId: string | number) {
+  return useQuery({
+    queryKey: ["opportunity", "approval", String(oppId)],
+    queryFn: async () => {
+      const data = await apiRequest(`opportunities_api/approval_info/${oppId}`);
+      if (data?.status === true && data.data) {
+        return data.data as OpportunityApprovalInfo;
+      }
+      return null;
+    },
+    enabled: !!oppId,
+  });
+}
+
+export type OpportunityMember = {
+  staff_id: number;
+  staff_name?: string;
+  email?: string;
+};
+
+export function useOpportunityMembers(oppId: string | number) {
+  return useQuery({
+    queryKey: ["opportunity", "members", String(oppId)],
+    queryFn: async () => {
+      const data = await apiRequest(`opportunities_api/members/${oppId}`);
+      if (data?.status === true && Array.isArray(data.data)) {
+        return data.data as OpportunityMember[];
+      }
+      return [];
+    },
+    enabled: !!oppId,
+  });
+}
+
+export function useAddOpportunityMember() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: ({ id, status_id }: { id: number; status_id: number }) =>
-      apiRequest(`opportunities_api/${id}/status`, {
-        method: "PUT",
-        body: JSON.stringify({ status_id }),
+    mutationFn: (payload: { opportunity_id: number; staff_id: number }) =>
+      apiRequest("opportunities_api/members", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "members", String(opportunity_id)] });
+    },
+  });
+}
+
+export function useRemoveOpportunityMember() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ oppId, staffId }: { oppId: number; staffId: number }) =>
+      apiRequest(`opportunities_api/members/${oppId}/${staffId}`, { method: "DELETE" }),
+    onSuccess: (_, { oppId }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "members", String(oppId)] });
+    },
+  });
+}
+
+export function useApproveOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      request_id,
+      comment,
+    }: {
+      id: number;
+      request_id: number;
+      comment?: string;
+    }) =>
+      apiRequest(`opportunities_api/${id}/approve`, {
+        method: "POST",
+        body: JSON.stringify({ request_id, comment }),
       }),
     onSuccess: (_, { id }) => {
       qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunity", "approval", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunity", "statusdetail", String(id)] });
+    },
+  });
+}
+
+export function useRejectOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      request_id,
+      comment,
+    }: {
+      id: number;
+      request_id: number;
+      comment?: string;
+    }) =>
+      apiRequest(`opportunities_api/${id}/reject`, {
+        method: "POST",
+        body: JSON.stringify({ request_id, comment }),
+      }),
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunity", "approval", String(id)] });
+    },
+  });
+}
+
+export function useResubmitOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiRequest(`opportunities_api/${id}/resubmit`, { method: "POST", body: "{}" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunity", "approval", String(id)] });
+    },
+  });
+}
+
+export type OpportunityMilestone = {
+  id: number;
+  opportunity_id: number;
+  name?: string;
+  title?: string;
+  due_date?: string;
+  status?: string;
+};
+
+export function useOpportunityMilestones(oppId: string | number) {
+  return useQuery({
+    queryKey: ["opportunity", "milestones", String(oppId)],
+    queryFn: async () => {
+      const data = await apiRequest(`opportunities_api/milestones/${oppId}`);
+      if (data?.status === true && Array.isArray(data.data)) {
+        return data.data as OpportunityMilestone[];
+      }
+      return [];
+    },
+    enabled: !!oppId,
+  });
+}
+
+export function useCreateOpportunityMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiRequest("opportunities_api/milestones", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, payload) => {
+      const oid = payload.opportunity_id;
+      if (oid) qc.invalidateQueries({ queryKey: ["opportunity", "milestones", String(oid)] });
+    },
+  });
+}
+
+export function useUpdateOpportunityMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, ...payload }: { id: number; opportunity_id?: number } & Record<string, unknown>) =>
+      apiRequest(`opportunities_api/milestone/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, { opportunity_id }) => {
+      if (opportunity_id) {
+        qc.invalidateQueries({ queryKey: ["opportunity", "milestones", String(opportunity_id)] });
+      }
+    },
+  });
+}
+
+export function useDeleteOpportunityMilestone() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, opportunity_id }: { id: number; opportunity_id: number }) =>
+      apiRequest(`opportunities_api/milestone/${id}`, { method: "DELETE" }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "milestones", String(opportunity_id)] });
+    },
+  });
+}
+
+export function useUpdateOpportunityNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, content, opportunity_id }: { id: number; content: string; opportunity_id: number }) =>
+      apiRequest(`opportunities_api/note/${id}`, {
+        method: "PUT",
+        body: JSON.stringify({ content }),
+      }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "notes", String(opportunity_id)] });
+    },
+  });
+}
+
+export function useDeleteOpportunityNote() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, opportunity_id }: { id: number; opportunity_id: number }) =>
+      apiRequest(`opportunities_api/note/${id}`, { method: "DELETE" }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "notes", String(opportunity_id)] });
+    },
+  });
+}
+
+export function useCreateOpportunityBOQItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiRequest("opportunities_api/boq_items", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, payload) => {
+      const oid = payload.opportunity_id ?? payload.rel_id;
+      if (oid) qc.invalidateQueries({ queryKey: ["opportunity", "boq", String(oid)] });
+    },
+  });
+}
+
+export function useUpdateOpportunityBOQItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, opportunity_id, ...payload }: { id: number; opportunity_id: number } & Record<string, unknown>) =>
+      apiRequest(`opportunities_api/boq_items/${id}`, {
+        method: "PUT",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "boq", String(opportunity_id)] });
+    },
+  });
+}
+
+export function useDeleteOpportunityBOQItem() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, opportunity_id }: { id: number; opportunity_id: number }) =>
+      apiRequest(`opportunities_api/boq_items/${id}`, { method: "DELETE" }),
+    onSuccess: (_, { opportunity_id }) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", "boq", String(opportunity_id)] });
+    },
+  });
+}
+
+function useOpportunityLinkedList<T>(oppId: string | number, segment: string, queryKey: string) {
+  return useQuery({
+    queryKey: ["opportunity", queryKey, String(oppId)],
+    queryFn: async () => {
+      const data = await apiRequest(`opportunities_api/${oppId}/${segment}`);
+      if (data?.status === true && Array.isArray(data.data)) return data.data as T[];
+      if (data?.status === true && data.data) return data.data as T;
+      return [] as T[];
+    },
+    enabled: !!oppId,
+  });
+}
+
+export function useOpportunityTasks(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "tasks", "tasks");
+}
+
+export function useOpportunityTimesheets(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "timesheets", "timesheets");
+}
+
+export function useOpportunityRFQ(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "rfq", "rfq");
+}
+
+export function useOpportunityTechnicalInquiries(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "technical_inquiries", "technical_inquiries");
+}
+
+export function useOpportunityEstimation(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "estimation", "estimation");
+}
+
+export function useOpportunitySuppliers(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "suppliers", "suppliers");
+}
+
+export function useOpportunityDiscussions(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "discussions", "discussions");
+}
+
+export function useCreateOpportunityDiscussion() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: Record<string, unknown>) =>
+      apiRequest("opportunities_api/discussions", {
+        method: "POST",
+        body: JSON.stringify(payload),
+      }),
+    onSuccess: (_, payload) => {
+      const oid = payload.opportunity_id;
+      if (oid) qc.invalidateQueries({ queryKey: ["opportunity", "discussions", String(oid)] });
+    },
+  });
+}
+
+export function useOpportunityEmails(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "emails", "emails");
+}
+
+export function useOpportunityTenderOpsStages(oppId: string | number) {
+  return useOpportunityLinkedList<Record<string, unknown>>(oppId, "tenderops_stages", "tenderops");
+}
+
+export function useOpportunityDashboard() {
+  return useQuery({
+    queryKey: ["opportunities", "dashboard"],
+    queryFn: async () => {
+      const data = await apiRequest("opportunities_api/dashboard");
+      if (data?.status === true && data.data) return data.data;
+      return null;
+    },
+    staleTime: 120_000,
+  });
+}
+
+export function useConvertOpportunityToProject() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiRequest(`opportunities_api/${id}/convert`, { method: "POST", body: "{}" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+      qc.invalidateQueries({ queryKey: ["opportunities"] });
+    },
+  });
+}
+
+export function usePinOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiRequest(`opportunities_api/${id}/pin`, { method: "POST", body: "{}" }),
+    onSuccess: (_, id) => {
+      qc.invalidateQueries({ queryKey: ["opportunity", String(id)] });
+    },
+  });
+}
+
+export function useArchiveOpportunity() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) =>
+      apiRequest(`opportunities_api/${id}/archive`, { method: "POST", body: "{}" }),
+    onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["opportunities"] });
     },
   });

@@ -25,6 +25,7 @@ export const PINNABLE_MODULES: PinnableModule[] = [
   { key: "timesheets",   title: "Timesheets",  icon: "time-outline",              route: "/(tabs)/timesheets",   tabName: "timesheets" },
   { key: "calendar",     title: "Calendar",    icon: "calendar-outline",           route: "/(tabs)/calendar",     tabName: "calendar" },
   { key: "approvals",    title: "Approvals",   icon: "shield-checkmark-outline",   route: "/(tabs)/approvals",    tabName: "approvals" },
+  { key: "opportunities", title: "Opportunities", icon: "trending-up-outline",     route: "/(tabs)/opportunities", tabName: "opportunities" },
   { key: "leave",        title: "Leave",       icon: "airplane-outline",           route: "/(tabs)/leave",        tabName: "leave" },
   { key: "knowledge",    title: "Knowledge",   icon: "book-outline",               route: "/(tabs)/knowledge",    tabName: "knowledge" },
 ];

@@ -17,22 +17,68 @@ import {
   useOpportunityStages,
   useAddOpportunityNote,
   useSubmitForApproval,
-  useChangeStage,
-  useChangeOpportunityStatus,
   useDeleteOpportunity,
+  useConvertOpportunityToProject,
+  usePinOpportunity,
+  useArchiveOpportunity,
   type OpportunityNote,
 } from "@/lib/queries/opportunities";
+import {
+  ApprovalTab,
+  TeamTab,
+  MilestonesTab,
+  TasksTab,
+  TimesheetsTab,
+  RfqTab,
+  TechnicalInquiriesTab,
+  EstimationTab,
+  SuppliersTab,
+  DiscussionsTab,
+  EmailsTab,
+  TenderOpsTab,
+  ThreadsTab,
+} from "./OpportunityExtendedTabs";
 import { FilesTab } from "@/components/crud/FilesTab";
 import Toast from "react-native-toast-message";
 
 const ACCENT = "#E65100";
 
-type Tab = "overview" | "boq" | "notes" | "files";
+type Tab =
+  | "overview"
+  | "approval"
+  | "team"
+  | "milestones"
+  | "boq"
+  | "notes"
+  | "tasks"
+  | "timesheets"
+  | "rfq"
+  | "ti"
+  | "estimation"
+  | "suppliers"
+  | "discussions"
+  | "tenderops"
+  | "emails"
+  | "threads"
+  | "files";
 
 const TABS: Array<{ key: Tab; label: string; icon: string }> = [
   { key: "overview", label: "Overview", icon: "information-circle-outline" },
+  { key: "approval", label: "Approval", icon: "shield-checkmark-outline" },
+  { key: "team", label: "Team", icon: "people-outline" },
+  { key: "milestones", label: "Milestones", icon: "flag-outline" },
   { key: "boq", label: "BOQ", icon: "list-outline" },
   { key: "notes", label: "Notes", icon: "chatbubble-outline" },
+  { key: "tasks", label: "Tasks", icon: "checkbox-outline" },
+  { key: "timesheets", label: "Timesheets", icon: "time-outline" },
+  { key: "rfq", label: "RFQ", icon: "document-text-outline" },
+  { key: "ti", label: "TI", icon: "help-circle-outline" },
+  { key: "estimation", label: "Estimation", icon: "calculator-outline" },
+  { key: "suppliers", label: "Suppliers", icon: "storefront-outline" },
+  { key: "discussions", label: "Discussions", icon: "chatbubbles-outline" },
+  { key: "tenderops", label: "TenderOps", icon: "layers-outline" },
+  { key: "emails", label: "Emails", icon: "mail-outline" },
+  { key: "threads", label: "Threads", icon: "logo-microsoft" },
   { key: "files", label: "Files", icon: "attach-outline" },
 ];
 
@@ -60,8 +106,10 @@ export function OpportunityDetailScreen() {
   const q = useOpportunityDetail(id);
   const stagesQ = useOpportunityStages();
   const submitApproval = useSubmitForApproval();
-  const changeStage = useChangeStage();
   const deleteOpp = useDeleteOpportunity();
+  const convert = useConvertOpportunityToProject();
+  const pin = usePinOpportunity();
+  const archive = useArchiveOpportunity();
 
   const opp = q.data as any;
 
@@ -106,6 +154,20 @@ export function OpportunityDetailScreen() {
               onError: (e: any) => Toast.show({ type: "error", text1: e?.message || "Failed" }),
             }
           ),
+      },
+    ]);
+  };
+
+  const handleConvert = () => {
+    Alert.alert("Convert to project?", "Creates a project from this opportunity.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Convert",
+        onPress: () =>
+          convert.mutate(Number(id), {
+            onSuccess: () => Toast.show({ type: "success", text1: "Converted to project" }),
+            onError: (e: any) => Toast.show({ type: "error", text1: e?.message || "Failed" }),
+          }),
       },
     ]);
   };
@@ -200,13 +262,32 @@ export function OpportunityDetailScreen() {
         {/* Tab content */}
         <View className="px-4 pt-4">
           {activeTab === "overview" && <OverviewTab opp={opp} />}
+          {activeTab === "approval" && <ApprovalTab oppId={id} oppStatus={opp.status} />}
+          {activeTab === "team" && <TeamTab oppId={id} />}
+          {activeTab === "milestones" && <MilestonesTab oppId={id} />}
           {activeTab === "boq" && <BOQTab oppId={id} />}
           {activeTab === "notes" && <NotesTab oppId={id} />}
+          {activeTab === "tasks" && <TasksTab oppId={id} />}
+          {activeTab === "timesheets" && <TimesheetsTab oppId={id} />}
+          {activeTab === "rfq" && <RfqTab oppId={id} />}
+          {activeTab === "ti" && <TechnicalInquiriesTab oppId={id} />}
+          {activeTab === "estimation" && <EstimationTab oppId={id} />}
+          {activeTab === "suppliers" && <SuppliersTab oppId={id} />}
+          {activeTab === "discussions" && <DiscussionsTab oppId={id} />}
+          {activeTab === "tenderops" && <TenderOpsTab oppId={id} />}
+          {activeTab === "emails" && <EmailsTab oppId={id} />}
+          {activeTab === "threads" && <ThreadsTab teamsChannel={opp.teams_channel} />}
           {activeTab === "files" && <FilesTab relType="opportunity" relId={id} color={ACCENT} />}
         </View>
 
         {/* Actions */}
         <View className="px-4 mt-6 gap-2">
+          <TouchableOpacity
+            onPress={() => router.push(`/(tabs)/opportunities/${id}/edit` as any)}
+            className="py-3 rounded-xl items-center bg-white border border-slate-200"
+          >
+            <Text className="text-sm font-medium text-slate-700">Edit Opportunity</Text>
+          </TouchableOpacity>
           {opp.status === "Draft" ? (
             <TouchableOpacity
               onPress={handleSubmitApproval}
@@ -219,6 +300,36 @@ export function OpportunityDetailScreen() {
               </Text>
             </TouchableOpacity>
           ) : null}
+          {!opp.project_id && !opp.Is_converted_to_project ? (
+            <TouchableOpacity onPress={handleConvert} className="py-3 rounded-xl items-center bg-slate-100">
+              <Text className="text-sm font-medium text-slate-700">Convert to Project</Text>
+            </TouchableOpacity>
+          ) : null}
+          <TouchableOpacity
+            onPress={() =>
+              pin.mutate(Number(id), {
+                onSuccess: () => Toast.show({ type: "success", text1: "Pinned" }),
+                onError: (e: any) => Toast.show({ type: "error", text1: e?.message || "Failed" }),
+              })
+            }
+            className="py-3 rounded-xl items-center bg-slate-100"
+          >
+            <Text className="text-sm font-medium text-slate-700">Pin Opportunity</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() =>
+              archive.mutate(Number(id), {
+                onSuccess: () => {
+                  Toast.show({ type: "success", text1: "Archived" });
+                  router.back();
+                },
+                onError: (e: any) => Toast.show({ type: "error", text1: e?.message || "Failed" }),
+              })
+            }
+            className="py-3 rounded-xl items-center bg-slate-100"
+          >
+            <Text className="text-sm font-medium text-slate-700">Archive</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             onPress={handleDelete}
             className="py-3 rounded-xl items-center bg-slate-100"

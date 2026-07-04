@@ -224,7 +224,7 @@ export function InvoiceDetailScreen({ id }: Props) {
           <View className="border-t border-slate-100">
             {tab === "details" ? (
               <View>
-                <LineItemsTable items={items} currency={row.currency_name || row.symbol} />
+                <LineItemsTable items={items} currency={row.currency_name || row.symbol} variant="compact" />
                 <View className="px-3 pb-3 pt-2">
                   <TotalsCard
                     data={{

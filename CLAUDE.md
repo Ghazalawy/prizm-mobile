@@ -103,6 +103,24 @@ identified. Don't repeat.
   pre-existing errors (datetimepicker, image-picker, document-picker)
   are missing peer deps, not regressions — ignore them.
 
+## Pre-push release checklist (mandatory)
+
+Every merge to `main` that ships user-facing changes MUST update release
+metadata in the **same commit** (CI enforces via `scripts/verify-release-metadata.mjs`):
+
+1. **CHANGELOG.json** — new top `releases[0]` entry: `version`, `date`,
+   `title`, `highlights` (drives Settings → Changelog and What's New copy).
+2. **package.json** — `"version"` matches CHANGELOG top entry.
+3. **app.json** — `expo.version` matches; increment `expo.android.versionCode`.
+4. **lib/build-info.ts** — set any new `BUILD_FLAGS.*` defaults for the
+   feature (CI preserves flags when injecting `BUILD_SHA`).
+5. Run locally before push:
+   - `npm run verify:release`
+   - `npx tsc --noEmit -p tsconfig.json`
+
+Skipping step 1–3 produces APKs whose in-app Changelog / What's New still
+show the previous version — the failure mode caught after Opportunities Tier C.
+
 ## Don'ts
 
 - DON'T re-derive auth headers inline; use `buildAuthHeaders()`.

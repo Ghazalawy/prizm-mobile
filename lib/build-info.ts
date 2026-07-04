@@ -30,7 +30,7 @@ export const BUILD_FLAGS = {
   leadsNative:           true,
   invoicesNative:        true,
   tendersNative:         false,
-  opportunitiesNative:   false,
+  opportunitiesNative:   true,
   purchaseNative:        false,
   materialsNative:       false,
   ticketsNative:         false,

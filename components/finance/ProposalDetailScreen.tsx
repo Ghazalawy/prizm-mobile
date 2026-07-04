@@ -191,7 +191,7 @@ export function ProposalDetailScreen({ id }: Props) {
 
             {tab === "items" ? (
               <View>
-                <LineItemsTable items={items} currency={row.currency_name || row.symbol} />
+                <LineItemsTable items={items} currency={row.currency_name || row.symbol} variant="compact" />
                 {Number(row.total || 0) > 0 ? (
                   <View className="px-3 pb-3 pt-2">
                     <TotalsCard

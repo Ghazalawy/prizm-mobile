@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, buildQS, type ListParams } from "../api";
+import { apiRequest, buildQS, normalizeList, type ListParams } from "../api";
 
 // ─── Types ───────────────────────────────────────────────────────────────
 
@@ -105,10 +105,8 @@ export function useOpportunitiesList(filters?: OpportunityFilters) {
       if (filters?.stage) params.stage = String(filters.stage);
       if (filters?.client_id) params.client_id = String(filters.client_id);
       const data = await apiRequest(`opportunities_api/data${buildQS(params)}`);
-      if (data?.status === true && Array.isArray(data.data)) {
-        return { items: data.data as OpportunityListItem[], total: data.data.length };
-      }
-      return { items: [] as OpportunityListItem[], total: 0 };
+      const { items, total } = normalizeList(data);
+      return { items: items as OpportunityListItem[], total };
     },
     staleTime: 60_000,
   });

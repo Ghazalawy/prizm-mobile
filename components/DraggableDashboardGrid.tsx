@@ -93,7 +93,7 @@ export function DraggableDashboardGrid<T extends string>({
   // Dashboard's outer ScrollView padding is 16 each side (p-4). Subtract
   // it so the cells fit within their column width.
   const initialSlotW = Math.floor((screenW - 32) / COLS);
-  const initialSlotH = 140; // approximate; refined via onMeasure
+  const initialSlotH = 96; // compact stat tile height
   const cardW = useSharedValue(initialSlotW);
   const cardH = useSharedValue(initialSlotH);
   const [measuredHeight, setMeasuredHeight] = useState(initialSlotH);

@@ -15,6 +15,7 @@ import { useMyTasks, useTasksByStatus, type TaskListItem } from "@/lib/queries/t
 import { useMyTasksSummary } from "@/lib/queries/dashboard";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { colors } from "@/lib/theme";
+import { DenseListRow } from "@/components/ui/DenseListRow";
 
 const ACCENT = colors.primary;
 
@@ -65,60 +66,32 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
   const due = dueCountdown(task.duedate);
 
   return (
-    <TouchableOpacity
+    <DenseListRow
+      title={task.name || `Task #${task.id}`}
+      subtitle={task.rel_name || task.rel_type || undefined}
       onPress={() => router.push(`/(tabs)/tasks/${task.id}` as any)}
-      activeOpacity={0.7}
-      className="bg-white rounded-2xl shadow-sm overflow-hidden"
-    >
-      <View className="flex-row">
-        {/* Priority color bar */}
-        <View className="w-1.5" style={{ backgroundColor: priority.color }} />
-        <View className="flex-1 p-3.5">
-          <View className="flex-row items-start">
-            <View className="flex-1 mr-2">
-              <Text className="text-sm font-semibold text-foreground" numberOfLines={2}>
-                {task.name || `Task #${task.id}`}
-              </Text>
-              {task.rel_type ? (
-                <Text className="text-xs text-muted mt-0.5" numberOfLines={1}>
-                  {task.rel_name || task.rel_type}
-                </Text>
-              ) : null}
-            </View>
-            <View
-              className="px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: priority.bg }}
-            >
-              <Text style={{ color: priority.color, fontSize: 10, fontWeight: "700" }}>
-                {priority.label}
-              </Text>
-            </View>
+      leftAccent={<View className="w-1 rounded-full self-stretch" style={{ backgroundColor: priority.color }} />}
+      badges={
+        <View className="flex-row flex-wrap gap-1">
+          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: status.bg }}>
+            <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>{status.label}</Text>
           </View>
-
-          <View className="flex-row items-center mt-2 flex-wrap gap-1.5">
-            <View
-              className="px-2 py-0.5 rounded-full"
-              style={{ backgroundColor: status.bg }}
-            >
-              <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>
-                {status.label}
-              </Text>
-            </View>
-            {due ? (
-              <View className="flex-row items-center">
-                <Ionicons name="calendar-outline" size={11} color={due.color} />
-                <Text className="text-xs font-medium ml-0.5" style={{ color: due.color }}>
-                  {due.label}
-                </Text>
-              </View>
-            ) : null}
+          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: priority.bg }}>
+            <Text style={{ color: priority.color, fontSize: 10, fontWeight: "700" }}>{priority.label}</Text>
           </View>
         </View>
-        <View className="justify-center pr-3">
-          <Ionicons name="chevron-forward" size={16} color="#CBD5E1" />
-        </View>
-      </View>
-    </TouchableOpacity>
+      }
+      rightMeta={
+        due ? (
+          <View className="items-end">
+            <Ionicons name="calendar-outline" size={12} color={due.color} />
+            <Text className="text-[10px] font-semibold mt-0.5" style={{ color: due.color }}>
+              {due.label}
+            </Text>
+          </View>
+        ) : null
+      }
+    />
   );
 });
 

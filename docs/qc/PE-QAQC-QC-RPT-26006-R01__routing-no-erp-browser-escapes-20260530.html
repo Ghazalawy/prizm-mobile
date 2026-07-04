@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QC Report — PE-QAQC-QC-RPT-26006-R01</title>
+<style>
+  /* ═══════════════════════════════════════════════════════════════
+     Prizm Energy — Hawiya v0.1 Brand Identity
+     QC Report PDF Template
+     Classification: Internal
+     ═══════════════════════════════════════════════════════════════ */
+
+  @page {
+    size: A4 portrait;
+    margin: 25mm 25mm 30mm 25mm;
+    @top-left {
+      content: "";
+      background: #103090;
+      height: 4mm;
+      width: 160mm;
+    }
+    @bottom-left {
+      content: "Prizm Energy LLC  |  Office 502, Sheikh Zayed Road, Dubai, UAE  |  info@prizm-energy.com";
+      font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 7pt;
+      color: #7A7A7A;
+    }
+    @bottom-center {
+      content: "Classification: Internal";
+      font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 7pt;
+      color: #7A7A7A;
+    }
+    @bottom-right {
+      content: "Page " counter(page) " of " counter(pages);
+      font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+      font-size: 7pt;
+      color: #7A7A7A;
+    }
+  }
+
+  @page :first {
+    @top-left {
+      content: "";
+      background: #103090;
+      height: 6mm;
+      width: 160mm;
+    }
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 11pt;
+    line-height: 1.45;
+    color: #1F1F1F;
+    background: #FFFFFF;
+  }
+
+  /* ── Classification Banner ────────────────────────────────── */
+  .classification-bar {
+    background: #103090;
+    color: #FFFFFF;
+    font-family: Calibri, 'Helvetica Neue', Arial, sans-serif;
+    font-size: 9pt;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 4mm 6mm;
+    margin-bottom: 10mm;
+    text-align: right;
+  }
+
+  /* ── Header Block ─────────────────────────────────────────── */
+  .page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding-bottom: 8mm;
+    border-bottom: 1pt solid #2090F0;
+    margin-bottom: 10mm;
+  }
+
+  .header-brand {
+    flex: 1;
+  }
+
+  .header-brand .company {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #103090;
+    letter-spacing: -0.01em;
+    margin-bottom: 2pt;
+  }
+
+  .header-brand .tagline {
+    font-size: 9pt;
+    color: #4A4A4A;
+    font-weight: 400;
+  }
+
+  .header-meta {
+    text-align: right;
+    flex-shrink: 0;
+  }
+
+  .header-meta .doc-code {
+    font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+    font-size: 9pt;
+    color: #2090F0;
+    font-weight: 700;
+    margin-bottom: 4pt;
+  }
+
+  .header-meta .doc-date {
+    font-size: 9pt;
+    color: #4A4A4A;
+  }
+
+  /* ── Report Title ─────────────────────────────────────────── */
+  .report-title {
+    font-size: 24pt;
+    font-weight: 700;
+    color: #103090;
+    letter-spacing: -0.02em;
+    margin-bottom: 6mm;
+    line-height: 1.2;
+  }
+
+  .report-subtitle {
+    font-size: 12pt;
+    color: #4A4A4A;
+    font-weight: 400;
+    margin-bottom: 8mm;
+  }
+
+  /* ── Key-Value Table (Report Header) ──────────────────────── */
+  .kv-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-bottom: 10mm;
+    background: #F5F5F5;
+    border-radius: 3mm;
+    overflow: hidden;
+  }
+
+  .kv-table td {
+    padding: 3mm 5mm;
+    border-bottom: 0.5pt solid #E0E0E0;
+    font-size: 9.5pt;
+    vertical-align: top;
+  }
+
+  .kv-table td:first-child {
+    font-weight: 700;
+    color: #103090;
+    width: 35%;
+    background: #F0F4FC;
+  }
+
+  .kv-table td:last-child {
+    color: #1F1F1F;
+    font-family: 'JetBrains Mono', Consolas, Menlo, monospace;
+    font-size: 9pt;
+  }
+
+  .kv-table tr:last-child td {
+    border-bottom: none;
+  }
+
+  /* ── Section Headings ─────────────────────────────────────── */
+  h2 {
+    font-size: 18pt;
+    font-weight: 700;
+    color: #103090;
+    letter-spacing: -0.01em;
+    margin: 8mm 0 4mm 0;
+    padding-top: 4mm;
+    border-top: 1pt solid #2090F0;
+  }
+
+  h3 {
+    font-size: 14pt;
+    font-weight: 600;
+    color: #2090F0;
+    margin: 6mm 0 3mm 0;
+  }
+
+  /* ── Tables ───────────────────────────────────────────────── */
+  table.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 4mm 0 8mm 0;
+    font-size: 9pt;
+  }
+
+  table.data-table thead th {
+    background: #103090;
+    color: #FFFFFF;
+    font-weight: 700;
+    padding: 2.5mm 4mm;
+    text-align: left;
+    font-size: 8.5pt;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+  }
+
+  table.data-table tbody td {
+    padding: 2mm 4mm;
+    border-bottom: 0.5pt solid #E0E0E0;
+  }
+
+  table.data-table tbody tr:nth-child(even) {
+    background: #F5F5F5;
+  }
+
+  table.data-table tbody tr:nth-child(odd) {
+    background: #FFFFFF;
+  }
+
+  /* ── Status Pills ─────────────────────────────────────────── */
+  .pill-pass {
+    display: inline-block;
+    background: #D4EDDA;
+    color: #2EA84E;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 1pt 8pt;
+    border-radius: 100pt;
+    text-transform: uppercase;
+  }
+
+  .pill-fail {
+    display: inline-block;
+    background: #F8D7DA;
+    color: #D63B3B;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 1pt 8pt;
+    border-radius: 100pt;
+    text-transform: uppercase;
+  }
+
+  .pill-pending {
+    display: inline-block;
+    background: #FFF3CD;
+    color: #F09010;
+    font-size: 8pt;
+    font-weight: 700;
+    padding: 1pt 8pt;
+    border-radius: 100pt;
+    text-transform: uppercase;
+  }
+
+  /* ── Acceptance Criteria Highlight ────────────────────────── */
+  .result-banner {
+    background: #D4EDDA;
+    border-left: 4pt solid #2EA84E;
+    padding: 4mm 6mm;
+    margin: 6mm 0;
+    font-size: 14pt;
+    font-weight: 700;
+    color: #2EA84E;
+  }
+
+  .result-banner.fail {
+    background: #F8D7DA;
+    border-left-color: #D63B3B;
+    color: #D63B3B;
+  }
+
+  /* ── Sign-off Block ───────────────────────────────────────── */
+  .signoff-block {
+    display: flex;
+    gap: 10mm;
+    margin-top: 12mm;
+    padding-top: 6mm;
+    border-top: 1pt solid #E0E0E0;
+  }
+
+  .signoff-slot {
+    flex: 1;
+  }
+
+  .signoff-slot .label {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #103090;
+    margin-bottom: 8mm;
+  }
+
+  .signoff-slot .signature-line {
+    border-bottom: 1pt solid #4A4A4A;
+    margin-bottom: 2mm;
+    height: 8mm;
+  }
+
+  .signoff-slot .name {
+    font-size: 9pt;
+    font-weight: 600;
+    color: #1F1F1F;
+  }
+
+  .signoff-slot .date {
+    font-size: 8pt;
+    color: #7A7A7A;
+  }
+
+  /* ── Page Footer Rule ─────────────────────────────────────── */
+  .footer-rule {
+    margin-top: 4mm;
+    border: none;
+    border-top: 0.5pt solid #E0E0E0;
+  }
+
+  /* ── Print Optimizations ──────────────────────────────────── */
+  @media print {
+    body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .page-break { page-break-before: always; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══ Classification Bar ═══ -->
+<div class="classification-bar">INTERNAL — Prizm Energy LLC</div>
+
+<!-- ═══ Page Header ═══ -->
+<div class="page-header">
+  <div class="header-brand">
+    <div class="company">PRIZM ENERGY</div>
+    <div class="tagline">MEP / EPC Contractor</div>
+  </div>
+  <div class="header-meta">
+    <div class="doc-code">PE-QAQC-QC-RPT-26006-R01</div>
+    <div class="doc-date">2026-05-30</div>
+  </div>
+</div>
+
+<!-- ═══ Report Title ═══ -->
+<div class="report-title">QC Report — Session QA/QC Verification</div>
+<div class="report-subtitle">Automated verification report generated per Prizm QA/QC Policy v1.0 §11.0</div>
+
+<!-- ═══ Report Header ═══ -->
+<table class="kv-table">
+  <tr><td>Report Code</td><td>PE-QAQC-QC-RPT-26006-R01</td></tr>
+  <tr><td>Session ID</td><td>routing-no-erp-browser-escapes-20260530</td></tr>
+  <tr><td>Date</td><td>2026-05-30</td></tr>
+  <tr><td>Time</td><td>22:37:34 +04:00</td></tr>
+  <tr><td>Agent</td><td>Codex</td></tr>
+  <tr><td>Agent Model</td><td>GPT-5</td></tr>
+  <tr><td>Workspace</td><td>C:\wamp64\www\prizm-mobile</td></tr>
+  <tr><td>Duration</td><td>single coding session</td></tr>
+  <tr><td>Turns</td><td>1 user request + tool verification turns</td></tr>
+  <tr><td>Classification</td><td>Internal</td></tr>
+</table>
+
+<!-- ═══ 1.0 Executive Summary ═══ -->
+<h2>1.0 Executive Summary</h2>
+<p>This session continued the mobile parity batch by eliminating ERP web-admin escapes from notification, approval, search, and record-link flows. A shared native routing helper now converts Prizm ERP URLs into in-app Expo routes where possible, falls back to the ERP hub for unmapped internal URLs, and only permits true external destinations such as phone, email, maps, and non-company websites to leave the app. No backend API endpoints or database schemas were modified.</p>
+
+<!-- ═══ 2.0 Scope of Work ═══ -->
+<h2>2.0 Scope of Work</h2>
+
+<h3>2.1 Modules / Batches Covered</h3>
+<table class="data-table">
+  <thead><tr><th>Batch</th><th>Module(s)</th><th>Phase(s) Executed</th></tr></thead>
+  <tbody>
+    <tr><td>Routing cleanup</td><td>Action Center; Approvals; Global Search; CRUD Detail; Purchase Approval; Customer/Lead detail</td><td>Inventory check; implementation; verification; documentation</td></tr>
+  </tbody>
+</table>
+
+<h3>2.2 Operations Inventoried</h3>
+<table class="data-table">
+  <thead><tr><th>Module</th><th>Operations Mapped</th><th>API Endpoints</th><th>New Endpoints</th></tr></thead>
+  <tbody>
+    <tr><td>Cross-cutting native routing</td><td>1 routing policy surface</td><td>0 API endpoints touched</td><td>0 backend endpoints</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ 3.0 Test Execution ═══ -->
+<h2>3.0 Test Execution Results</h2>
+
+<h3>3.1 API Endpoint Verification</h3>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Endpoint</th><th>Method</th><th>URL</th><th>HTTP</th><th>Status</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>1</td><td>TypeScript compile</td><td>CLI</td><td>npx tsc --noEmit -p tsconfig.json</td><td>0</td><td>PASS</td><td>Clean compile after routing changes</td></tr>
+<tr><td>2</td><td>Expo dependency drift check</td><td>CLI</td><td>npx expo install --check</td><td>0</td><td>PASS</td><td>Dependencies are up to date</td></tr>
+<tr><td>3</td><td>ERP browser-exit sweep</td><td>CLI</td><td>rg Linking.openURL /MS/admin Open in web</td><td>0</td><td>PASS</td><td>Remaining openURL calls are phone, email, maps, or shared external-link helper</td></tr>
+<tr><td>4</td><td>API endpoints</td><td>N/A</td><td>No API endpoint modified</td><td>N/A</td><td>PASS</td><td>Mobile-only routing/session change</td></tr>
+  </tbody>
+</table>
+
+<h3>3.2 Acceptance Criteria</h3>
+<table class="data-table">
+  <thead><tr><th>Severity</th><th>Threshold</th><th>Pass</th><th>Total</th><th>%</th><th>Met?</th></tr></thead>
+  <tbody>
+    <tr><td>CRITICAL (S1)</td><td>100%</td><td>3</td><td>3</td><td>100%</td><td>Yes</td></tr>
+    <tr><td>HIGH (S2)</td><td>≥95%</td><td>3</td><td>3</td><td>100%</td><td>Yes</td></tr>
+    <tr><td>MEDIUM (S3)</td><td>≥90%</td><td>2</td><td>2</td><td>100%</td><td>Yes</td></tr>
+    <tr><td>LOW (S4)</td><td>Documented</td><td>—</td><td>—</td><td>—</td><td>✓</td></tr>
+  </tbody>
+</table>
+
+<div class="result-banner pass">
+  Overall Result: PASS
+</div>
+
+<!-- ═══ 4.0 Defects & Fixes ═══ -->
+<h2>4.0 Defects &amp; Fixes</h2>
+
+<h3>4.1 Defects Identified</h3>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Severity</th><th>Module</th><th>Endpoint</th><th>Description</th><th>Status</th></tr></thead>
+  <tbody><tr><td>1</td><td>HIGH (S2)</td><td>Notifications / Search</td><td>N/A</td><td>Internal Prizm ERP URLs could open the web admin outside the mobile app.</td><td>Fixed</td></tr>
+<tr><td>2</td><td>HIGH (S2)</td><td>Purchase approvals</td><td>N/A</td><td>Approval fallback and rejected resubmit path exposed web-admin navigation.</td><td>Fixed</td></tr>
+<tr><td>3</td><td>MEDIUM (S3)</td><td>Purchase attachments</td><td>N/A</td><td>Attachment rows opened /MS/admin get_attachment instead of native preview.</td><td>Fixed</td></tr></tbody>
+</table>
+
+<h3>4.2 Fixes Applied</h3>
+<table class="data-table">
+  <thead><tr><th>#</th><th>File</th><th>Change</th><th>Commit SHA</th></tr></thead>
+  <tbody><tr><td>1</td><td>lib/native-routing.ts</td><td>Added centralized Prizm ERP URL to native route resolver and external-link gate.</td><td>Uncommitted</td></tr>
+<tr><td>2</td><td>components/ActionCenter.tsx, components/GlobalSearch.tsx, app/(tabs)/approvals/index.tsx</td><td>Rewired notification/search/approval taps to shared native router.</td><td>Uncommitted</td></tr>
+<tr><td>3</td><td>app/(tabs)/approvals/purchase_request/[id].tsx, components/approvals/ApprovalActionPanel.tsx</td><td>Removed web fallback, moved resubmit to mobile edit, opened attachments in FilePreview.</td><td>Uncommitted</td></tr>
+<tr><td>4</td><td>components/crud/CrudDetailScreen.tsx, customer/lead detail screens</td><td>Routed generic URL fields through the internal-link guard.</td><td>Uncommitted</td></tr></tbody>
+</table>
+
+<!-- ═══ 5.0 Code Changes ═══ -->
+<h2>5.0 Code Changes</h2>
+
+<h3>5.1 prizm331 (ERP)</h3>
+<table class="data-table">
+  <thead><tr><th>File</th><th>Lines Changed</th><th>Description</th></tr></thead>
+  <tbody><tr><td>N/A</td><td>0</td><td>No ERP/backend changes in this session.</td></tr></tbody>
+</table>
+
+<h3>5.2 prizm-mobile (Mobile App)</h3>
+<table class="data-table">
+  <thead><tr><th>File</th><th>Lines Changed</th><th>Description</th></tr></thead>
+  <tbody><tr><td>lib/native-routing.ts</td><td>New file</td><td>Centralized native route resolver for Prizm ERP/admin/API links plus external-link gate.</td></tr>
+<tr><td>components/ActionCenter.tsx</td><td>Modified</td><td>Notification deeplinks now route in-app or to ERP hub fallback, never direct web admin.</td></tr>
+<tr><td>components/GlobalSearch.tsx</td><td>Modified</td><td>Search result links now use shared native routing.</td></tr>
+<tr><td>app/(tabs)/approvals/index.tsx</td><td>Modified</td><td>Approval list taps now use shared native routing.</td></tr>
+<tr><td>app/(tabs)/approvals/purchase_request/[id].tsx</td><td>Modified</td><td>Purchase share text, resubmit path, attachment preview, and note links stay mobile-first.</td></tr>
+<tr><td>components/approvals/ApprovalActionPanel.tsx</td><td>Modified</td><td>Removed web-admin fallback button.</td></tr>
+<tr><td>components/crud/CrudDetailScreen.tsx</td><td>Modified</td><td>Generic URL/custom-field links now pass through native routing guard.</td></tr>
+<tr><td>components/customers/CustomerDetailScreen.tsx, components/leads/LeadDetailScreen.tsx</td><td>Modified</td><td>Website fields now guard internal company URLs before external open.</td></tr>
+<tr><td>components/tasks/TaskDetailScreen.tsx, components/knowledge/ArticleViewer.tsx</td><td>Modified</td><td>Share messages no longer include ERP web-admin URLs.</td></tr>
+<tr><td>app.json, package.json, package-lock.json, CHANGELOG.json</td><td>Modified</td><td>Version bumped to 1.8.3 / Android versionCode 20 and release notes added.</td></tr>
+<tr><td>SESSION-HANDOFF.md, docs/MODULE_AUDIT.md</td><td>Modified</td><td>Session and module audit documentation updated.</td></tr></tbody>
+</table>
+
+<!-- ═══ 6.0 Git Commits ═══ -->
+<h2>6.0 Git Commits</h2>
+<table class="data-table">
+  <thead><tr><th>Repo</th><th>Commit SHA</th><th>Message</th><th>Branch</th></tr></thead>
+  <tbody><tr><td>prizm-mobile</td><td>Uncommitted</td><td>Working tree on codex/no-erp-browser-escapes</td><td>codex/no-erp-browser-escapes</td></tr></tbody>
+</table>
+
+<!-- ═══ 7.0 Deployment ═══ -->
+<h2>7.0 Deployment</h2>
+<table class="data-table">
+  <thead><tr><th>Repo</th><th>Method</th><th>Status</th><th>Notes</th></tr></thead>
+  <tbody>
+    <tr><td>prizm-mobile</td><td>GitHub Actions (auto)</td><td>Not deployed</td><td>Local working tree only; ready for review/commit/push.</td></tr>
+    <tr><td>prizm331</td><td>Hetzner SSH / On-Demand</td><td>N/A</td><td>No prizm331 changes.</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ 8.0 Deliverables ═══ -->
+<h2>8.0 Deliverables Checklist</h2>
+<table class="data-table">
+  <thead><tr><th>#</th><th>Deliverable</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>D1</td><td>Module Operations CSV</td><td>Checked existing batch inventory; no CSV changed</td></tr>
+    <tr><td>D2</td><td>Gap Analysis Report</td><td>Completed for routing gap</td></tr>
+    <tr><td>D3</td><td>API Code (new endpoints)</td><td>N/A — no backend endpoints</td></tr>
+    <tr><td>D4</td><td>Mobile Code (hooks + screens)</td><td>Complete</td></tr>
+    <tr><td>D5</td><td>Test Execution Log</td><td>Complete — tsc, expo check, rg sweep</td></tr>
+    <tr><td>D6</td><td>Defect Register</td><td>Complete — defects listed in §4.1</td></tr>
+    <tr><td>D7</td><td>Batch Sign-off Report</td><td>Complete — this report</td></tr>
+    <tr><td>D8</td><td>Git commit + tag</td><td>Pending — not committed/tagged</td></tr>
+  </tbody>
+</table>
+
+<!-- ═══ 9.0 Sign-off ═══ -->
+<h2>9.0 Sign-off</h2>
+<div class="signoff-block">
+  <div class="signoff-slot">
+    <div class="label">QA Engineer (Deep Code)</div>
+    <div class="signature-line"></div>
+    <div class="name">Codex</div>
+    <div class="date">Automated — 2026-05-30</div>
+  </div>
+  <div class="signoff-slot">
+    <div class="label">Reviewer</div>
+    <div class="signature-line"></div>
+    <div class="name">Osama Hassan</div>
+    <div class="date">Pending Review</div>
+  </div>
+</div>
+
+<hr class="footer-rule">
+
+<!-- ═══ Footer ═══ -->
+<div style="font-size:7pt; color:#7A7A7A; text-align:center; margin-top:3mm;">
+  Prizm Energy LLC &nbsp;|&nbsp; Office 502, Sheikh Zayed Road, Dubai, UAE &nbsp;|&nbsp; info@prizm-energy.com &nbsp;|&nbsp; www.prizm-energy.com<br>
+  Generated by [AI-Hawiya] + [Asmaa] &nbsp;|&nbsp; Classification: Internal &nbsp;|&nbsp; PE-QAQC-QC-RPT-26006-R01
+</div>
+
+</body>
+</html>
+

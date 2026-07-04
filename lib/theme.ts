@@ -80,6 +80,26 @@ export const spacing = {
   xxxl: 32,
 } as const;
 
+/** Compact density scale for information-dense mobile layouts. */
+export const density = {
+  comfortable: {
+    cardPadding: 16,
+    sectionGap: 16,
+    rowHeight: 56,
+    minTouch: 44,
+    statTileHeight: 140,
+  },
+  compact: {
+    cardPadding: 12,
+    sectionGap: 12,
+    rowHeight: 52,
+    minTouch: 44,
+    statTileHeight: 96,
+  },
+} as const;
+
+export type DensityMode = keyof typeof density;
+
 // ── Radius ──────────────────────────────────────────────────────────────
 
 export const radius = {

@@ -30,7 +30,7 @@ import {
   type DashboardCardKey,
   type DashboardLayout,
 } from "@/lib/dashboard-layout";
-import { getWidget, type WidgetDef } from "@/lib/widget-registry";
+import { getWidget, type WidgetDef, type WidgetSize } from "@/lib/widget-registry";
 import { StatWidget } from "@/components/widgets/StatWidget";
 import { ChartWidget, type ChartSegment } from "@/components/widgets/ChartWidget";
 import { ListWidget, type ListWidgetItem } from "@/components/widgets/ListWidget";
@@ -38,6 +38,9 @@ import { ActionWidget } from "@/components/widgets/ActionWidget";
 import { useDashboardProfile, useSaveDashboardProfile } from "@/lib/queries/dashboard-profile";
 import { clearDismissedUpdate } from "@/lib/updates";
 import { DraggableDashboardGrid } from "@/components/DraggableDashboardGrid";
+import { InsightStrip } from "@/components/ui/InsightStrip";
+import { DenseListRow } from "@/components/ui/DenseListRow";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 // CheckinCard removed from dashboard — available via Settings only
 import { useInbox } from "@/lib/queries/inbox";
 import { useTasksDueToday, type TaskListItem } from "@/lib/queries/tasks";
@@ -45,7 +48,11 @@ import { useMyActivity, type ActivityRow } from "@/lib/queries/activity";
 import { useCurrentUser } from "@/lib/auth-context";
 import { colors, shadows, radius } from "@/lib/theme";
 
-// ─── Priority / Status maps ─────────────────────────────────────────────
+function isWideWidget(size: WidgetSize | undefined): boolean {
+  return size === "2x1" || size === "2x2";
+}
+
+const QUICK_ACTIONS_COLLAPSED_KEY = "prizm_dashboard_quick_actions_collapsed";
 
 const PRIORITY: Record<string, { label: string; color: string; bg: string }> = {
   "1": { label: "Low", color: "#475569", bg: "#F1F5F9" },
@@ -177,12 +184,34 @@ function QuickAction({
   label,
   color,
   onPress,
+  compact,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   color: string;
   onPress: () => void;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <TouchableOpacity
+        onPress={onPress}
+        activeOpacity={0.7}
+        className="items-center justify-center p-2"
+        style={{ width: "25%", minHeight: 72 }}
+      >
+        <View
+          className="w-9 h-9 rounded-lg items-center justify-center mb-1"
+          style={{ backgroundColor: `${color}1A` }}
+        >
+          <Ionicons name={icon} size={18} color={color} />
+        </View>
+        <Text className="text-[10px] text-foreground text-center" numberOfLines={2}>
+          {label}
+        </Text>
+      </TouchableOpacity>
+    );
+  }
   return (
     <TouchableOpacity
       onPress={onPress}
@@ -220,17 +249,18 @@ function relativeTime(dateStr: string): string {
 
 const ActivityItem = memo(function ActivityItem({ row }: { row: ActivityRow }) {
   return (
-    <View className="flex-row items-start py-2.5 border-b border-slate-100">
-      <View className="w-8 h-8 rounded-full bg-slate-100 items-center justify-center mr-3">
-        <Ionicons name="pulse-outline" size={14} color="#64748B" />
-      </View>
-      <View className="flex-1">
-        <Text className="text-sm text-foreground leading-snug" numberOfLines={2}>
-          {row.description}
-        </Text>
-        <Text className="text-xs text-muted mt-0.5">{relativeTime(row.date)}</Text>
-      </View>
-    </View>
+    <DenseListRow
+      title={row.description}
+      subtitle={row.fullname || undefined}
+      leftAccent={
+        <View className="w-7 h-7 rounded-full bg-slate-100 items-center justify-center mr-2">
+          <Ionicons name="pulse-outline" size={13} color="#64748B" />
+        </View>
+      }
+      rightMeta={
+        <Text className="text-xs text-muted">{relativeTime(row.date)}</Text>
+      }
+    />
   );
 });
 
@@ -253,40 +283,32 @@ const DueTaskRow = memo(function DueTaskRow({ task }: { task: TaskListItem }) {
   const due = task.duedate ? dueCountdown(task.duedate) : null;
 
   return (
-    <TouchableOpacity
+    <DenseListRow
+      title={task.name}
       onPress={() => router.push(`/(tabs)/tasks/${task.id}` as any)}
-      activeOpacity={0.7}
-      className="flex-row items-center py-2.5 border-b border-slate-100"
-    >
-      <View
-        className="w-1 rounded-full mr-3"
-        style={{ backgroundColor: priority.color, height: 32 }}
-      />
-      <View className="flex-1">
-        <Text className="text-sm font-medium text-foreground" numberOfLines={1}>
-          {task.name}
-        </Text>
-        <View className="flex-row items-center mt-1">
-          <View
-            className="px-1.5 py-0.5 rounded"
-            style={{ backgroundColor: status.bg }}
-          >
+      leftAccent={
+        <View
+          className="w-1 rounded-full mr-2"
+          style={{ backgroundColor: priority.color, height: 28 }}
+        />
+      }
+      badges={
+        <>
+          <View className="px-1.5 py-0.5 rounded" style={{ backgroundColor: status.bg }}>
             <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>
               {status.label}
             </Text>
           </View>
-          {due ? (
-            <Text
-              className="text-xs font-medium ml-2"
-              style={{ color: due.color }}
-            >
-              {due.label}
-            </Text>
-          ) : null}
-        </View>
-      </View>
-      <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
-    </TouchableOpacity>
+        </>
+      }
+      rightMeta={
+        due ? (
+          <Text className="text-xs font-medium" style={{ color: due.color }}>
+            {due.label}
+          </Text>
+        ) : null
+      }
+    />
   );
 });
 
@@ -515,6 +537,8 @@ export default function DashboardScreen() {
       default: {
         // stat type — default
         const data = widgetDataMap[key] ?? { value: undefined, isLoading: false, isError: false };
+        const ts = tasksSummary.data;
+        const isTasksSummary = key === "tasks_summary";
         return (
           <StatWidget
             widget={widget}
@@ -523,6 +547,16 @@ export default function DashboardScreen() {
             isError={data.isError}
             footnote={data.footnote}
             isDragging={isDragging}
+            variant={isTasksSummary ? "rich" : "compact"}
+            secondaryMetrics={
+              isTasksSummary && ts
+                ? [
+                    { label: "new", value: ts.not_started },
+                    { label: "overdue", value: ts.overdue, color: "#DC2626" },
+                    { label: "stale", value: ts.stale },
+                  ]
+                : undefined
+            }
           />
         );
       }
@@ -530,6 +564,33 @@ export default function DashboardScreen() {
   }, [widgetDataMap, chartDataMap, listDataMap, tasksSummary, pendingApprovals, dueTasks, checkinStatus, expensesSummary]);
 
   const cardKeys = visibleCards(layout);
+
+  const { wideCardKeys, gridCardKeys } = useMemo(() => {
+    const wide: DashboardCardKey[] = [];
+    const grid: DashboardCardKey[] = [];
+    for (const key of cardKeys) {
+      const w = getWidget(key);
+      if (w && isWideWidget(w.defaultSize)) wide.push(key);
+      else grid.push(key);
+    }
+    return { wideCardKeys: wide, gridCardKeys: grid };
+  }, [cardKeys]);
+
+  const [quickActionsCollapsed, setQuickActionsCollapsed] = useState(false);
+
+  useEffect(() => {
+    AsyncStorage.getItem(QUICK_ACTIONS_COLLAPSED_KEY).then((v) => {
+      if (v === "1") setQuickActionsCollapsed(true);
+    });
+  }, []);
+
+  const toggleQuickActions = useCallback(() => {
+    setQuickActionsCollapsed((prev) => {
+      const next = !prev;
+      void AsyncStorage.setItem(QUICK_ACTIONS_COLLAPSED_KEY, next ? "1" : "0");
+      return next;
+    });
+  }, []);
 
   const handleReorder = useCallback(
     (nextVisible: DashboardCardKey[]) => {
@@ -554,44 +615,40 @@ export default function DashboardScreen() {
     [layout, saveProfile],
   );
 
-  const summaryCards = useMemo(() => {
-    const ts = tasksSummary.data;
-    const inboxData = inbox.data;
-    return [
-      {
-        icon: "checkbox-outline" as const,
-        label: "My Open Tasks",
-        count: ts?.total_open ?? 0,
-        color: colors.primary,
-        route: "/(tabs)/tasks",
-      },
-      {
-        icon: "folder-outline" as const,
-        label: "My Projects",
-        count: (projects.data as number) ?? 0,
-        color: "#0284C7",
-        route: "/(tabs)/projects",
-      },
-      {
-        icon: "mail-outline" as const,
-        label: "Pending Approvals",
-        count: inboxData?.summary?.approvals ?? 0,
-        color: "#7C3AED",
-        route: "/(tabs)/erp/index",
-      },
-      {
-        icon: "document-text-outline" as const,
-        label: "Today's Reports",
-        count: 0,
-        color: "#16A34A",
-        route: "/(tabs)/reports",
-      },
-    ];
-  }, [tasksSummary.data, inbox.data, projects.data]);
-
   const dueTasksList = useMemo(() => {
     return (dueTasks.data || []).slice(0, 5);
   }, [dueTasks.data]);
+
+  const insightSegments = useMemo(() => {
+    const ts = tasksSummary.data;
+    const overdue = dueTasksList.length;
+    return [
+      {
+        label: "open tasks",
+        value: ts?.total_open ?? 0,
+        color: colors.primary,
+        onPress: () => router.push("/(tabs)/tasks" as any),
+      },
+      {
+        label: "approvals",
+        value: inbox.data?.summary?.approvals ?? 0,
+        color: "#7C3AED",
+        onPress: () => router.push("/(tabs)/approvals" as any),
+      },
+      {
+        label: "due/overdue",
+        value: overdue,
+        color: "#DC2626",
+        onPress: () => router.push("/(tabs)/tasks" as any),
+      },
+      {
+        label: "projects",
+        value: (projects.data as number) ?? 0,
+        color: "#0284C7",
+        onPress: () => router.push("/(tabs)/projects" as any),
+      },
+    ];
+  }, [tasksSummary.data, inbox.data, dueTasksList.length, projects.data]);
 
   const activityItems = useMemo(() => {
     return (activity.data || []).slice(0, 10);
@@ -623,90 +680,32 @@ export default function DashboardScreen() {
         </View>
       </View>
 
-      {/* A. Summary Cards Row */}
-      <View className="px-4">
-        <SectionHeader title="At a Glance" icon="analytics-outline" />
+      {/* A. Insight strip (replaces bulky At a Glance) */}
+      <View className="mt-3">
+        <InsightStrip segments={insightSegments} />
       </View>
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={{ paddingHorizontal: 16 }}
-      >
-        {summaryCards.map((card) => (
-          <SummaryCard
-            key={card.label}
-            icon={card.icon}
-            label={card.label}
-            count={card.count}
-            color={card.color}
-            onPress={() => router.push(card.route as any)}
-          />
-        ))}
-      </ScrollView>
 
-      {/* B. Quick Actions Grid */}
+      {/* B. Quick Actions — compact 4-column grid, collapsible */}
       <View className="px-4">
-        <SectionHeader title="Quick Actions" icon="flash-outline" />
-        <View className="flex-row gap-3 mb-3">
-          <QuickAction
-            icon="camera-outline"
-            label="Quick Expense"
-            color="#EA580C"
-            onPress={() => router.push("/(tabs)/quick-expense" as any)}
-          />
-          <QuickAction
-            icon="time-outline"
-            label="Timesheets"
-            color="#0369A1"
-            onPress={() => router.push("/(tabs)/timesheets" as any)}
-          />
-          <QuickAction
-            icon="checkbox-outline"
-            label="New Task"
-            color="#F59E0B"
-            onPress={() => router.push("/(tabs)/tasks/new" as any)}
-          />
-        </View>
-        <View className="flex-row gap-3">
-          <QuickAction
-            icon="document-text-outline"
-            label="New Report"
-            color="#16A34A"
-            onPress={() => router.push("/(tabs)/reports/new" as any)}
-          />
-          <QuickAction
-            icon="receipt-outline"
-            label="My Expenses"
-            color={colors.primary}
-            onPress={() => router.push("/(tabs)/expenses-mine" as any)}
-          />
-          <QuickAction
-            icon="calendar-outline"
-            label="Leave"
-            color="#7C3AED"
-            onPress={() => router.push("/(tabs)/leave" as any)}
-          />
-        </View>
-        <View className="flex-row gap-3 mt-3">
-          <QuickAction
-            icon="calendar-outline"
-            label="Calendar"
-            color="#0284C7"
-            onPress={() => router.push("/(tabs)/calendar" as any)}
-          />
-          <QuickAction
-            icon="book-outline"
-            label="Knowledge Base"
-            color="#CA8A04"
-            onPress={() => router.push("/(tabs)/knowledge" as any)}
-          />
-          <QuickAction
-            icon="search-outline"
-            label="Search"
-            color="#6366F1"
-            onPress={() => router.push("/(tabs)/search" as any)}
-          />
-        </View>
+        <SectionHeader
+          title="Quick Actions"
+          icon="flash-outline"
+          actionLabel={quickActionsCollapsed ? "Show" : "Hide"}
+          onAction={toggleQuickActions}
+        />
+        {!quickActionsCollapsed ? (
+          <View className="flex-row flex-wrap bg-white rounded-2xl shadow-sm mb-2">
+            <QuickAction compact icon="camera-outline" label="Quick Expense" color="#EA580C" onPress={() => router.push("/(tabs)/quick-expense" as any)} />
+            <QuickAction compact icon="time-outline" label="Timesheets" color="#0369A1" onPress={() => router.push("/(tabs)/timesheets" as any)} />
+            <QuickAction compact icon="checkbox-outline" label="New Task" color="#F59E0B" onPress={() => router.push("/(tabs)/tasks/new" as any)} />
+            <QuickAction compact icon="document-text-outline" label="New Report" color="#16A34A" onPress={() => router.push("/(tabs)/reports/new" as any)} />
+            <QuickAction compact icon="receipt-outline" label="My Expenses" color={colors.primary} onPress={() => router.push("/(tabs)/expenses-mine" as any)} />
+            <QuickAction compact icon="calendar-outline" label="Leave" color="#7C3AED" onPress={() => router.push("/(tabs)/leave" as any)} />
+            <QuickAction compact icon="calendar-outline" label="Calendar" color="#0284C7" onPress={() => router.push("/(tabs)/calendar" as any)} />
+            <QuickAction compact icon="book-outline" label="Knowledge" color="#CA8A04" onPress={() => router.push("/(tabs)/knowledge" as any)} />
+            <QuickAction compact icon="search-outline" label="Search" color="#6366F1" onPress={() => router.push("/(tabs)/search" as any)} />
+          </View>
+        ) : null}
       </View>
 
       {/* C. Stat Tiles (draggable) */}
@@ -718,11 +717,21 @@ export default function DashboardScreen() {
             actionLabel="Customize"
             onAction={() => router.push("/(tabs)/dashboard-customize" as any)}
           />
-          <DraggableDashboardGrid<DashboardCardKey>
-            items={cardKeys}
-            renderItem={renderCard}
-            onReorder={handleReorder}
-          />
+          {wideCardKeys.map((key) => (
+            <View key={`wide-${key}`} className="mb-2">
+              {renderCard(key, false)}
+            </View>
+          ))}
+          {gridCardKeys.length > 0 ? (
+            <DraggableDashboardGrid<DashboardCardKey>
+              items={gridCardKeys}
+              renderItem={renderCard}
+              onReorder={(nextGrid) => {
+                const merged = [...wideCardKeys, ...nextGrid];
+                handleReorder(merged);
+              }}
+            />
+          ) : null}
         </View>
       ) : null}
 

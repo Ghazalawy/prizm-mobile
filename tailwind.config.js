@@ -29,6 +29,12 @@ module.exports = {
         warning: "#F59E0B",
         destructive: "#EF4444",
       },
+      spacing: {
+        "compact-1": "4px",
+        "compact-2": "8px",
+        "compact-3": "12px",
+        "compact-4": "16px",
+      },
     },
   },
   plugins: [],

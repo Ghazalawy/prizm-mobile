@@ -16,6 +16,7 @@ export type LineItem = {
 type Props = {
   items: LineItem[];
   currency?: string;
+  variant?: "default" | "compact";
 };
 
 function num(v: number | string | undefined | null): number {
@@ -32,7 +33,11 @@ function fmtMoney(v: number | string | undefined | null, currency?: string): str
   return currency ? `${currency} ${formatted}` : formatted;
 }
 
-export const LineItemsTable = memo(function LineItemsTable({ items, currency }: Props) {
+export const LineItemsTable = memo(function LineItemsTable({ items, currency, variant = "default" }: Props) {
+  const compact = variant === "compact";
+  const rowPy = compact ? "py-2" : "py-3";
+  const headerPy = compact ? "py-1.5" : "py-2.5";
+  const fontSize = compact ? "text-xs" : "text-sm";
   if (!items || items.length === 0) {
     return (
       <View className="px-4 py-6 items-center">
@@ -50,7 +55,7 @@ export const LineItemsTable = memo(function LineItemsTable({ items, currency }: 
   return (
     <View className="overflow-hidden">
       {/* Header */}
-      <View className="flex-row bg-slate-50 px-4 py-2.5 border-b border-slate-200">
+      <View className={`flex-row bg-slate-50 px-3 ${headerPy} border-b border-slate-200`}>
         <Text className="flex-1 text-[10px] font-semibold uppercase text-muted tracking-wide">
           Item
         </Text>
@@ -76,11 +81,11 @@ export const LineItemsTable = memo(function LineItemsTable({ items, currency }: 
         return (
           <View
             key={`item-${idx}`}
-            className={`flex-row px-4 py-3 border-b border-slate-100 ${isAlt ? "bg-slate-50/50" : "bg-white"}`}
+            className={`flex-row px-3 ${rowPy} border-b border-slate-100 ${isAlt ? "bg-slate-50/50" : "bg-white"}`}
           >
             <View className="flex-1 pr-2">
               <Text
-                className="text-sm text-foreground"
+                className={`${fontSize} text-foreground`}
                 style={rtlTextStyle(desc)}
                 numberOfLines={3}
               >

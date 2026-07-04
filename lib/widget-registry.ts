@@ -39,7 +39,7 @@ export const WIDGET_REGISTRY: Record<string, WidgetDef> = {
     icon: "checkbox-outline",
     color: "#F59E0B",
     componentType: "stat",
-    defaultSize: "1x1",
+    defaultSize: "2x1",
     sizes: ["1x1", "2x1"],
     permissionFeature: "tasks",
     module: "tasks",

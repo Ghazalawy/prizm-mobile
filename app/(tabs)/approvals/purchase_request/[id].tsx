@@ -26,6 +26,11 @@ import {
   type PurchaseApprovalKind,
 } from "@/lib/queries/purchase-request";
 import { ApprovalActionPanel } from "@/components/approvals/ApprovalActionPanel";
+import { WorkflowDetailHero } from "@/components/approvals/WorkflowDetailHero";
+import { WorkflowDetailLayout } from "@/components/approvals/WorkflowDetailLayout";
+import { WorkflowLineItemsTable } from "@/components/finance/WorkflowLineItemsTable";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { DenseCard } from "@/components/ui/DenseCard";
 import { FilePreview, type PreviewFile } from "@/components/FilePreview";
 import { rtlTextStyle } from "@/lib/rtl";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
@@ -77,33 +82,37 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
 }> = {
   purchase_request: {
     fallbackPrefix: "PR-",
-    label: "request",
+    label: "Purchase Request",
     endpointBase: "purchase_api/requests",
     moduleKey: "purchase_requests",
     webPath: (id) => `przpurchase/ag_view_purchase_request/${id}`,
   },
   purchase_order: {
     fallbackPrefix: "PO-",
-    label: "purchase order",
+    label: "Purchase Order",
     endpointBase: "purchase_api/orders",
     moduleKey: "purchase_orders",
     webPath: (id) => `przpurchase/PurOrder/ag_view_purchase_order/${id}`,
   },
   payment_request: {
     fallbackPrefix: "MT-",
-    label: "payment request",
+    label: "Payment Request",
     endpointBase: "purchase_api/payment_requests",
     moduleKey: "purchase_payment_requests",
     webPath: (id) => `przpurchase/Payment_Request/view_payment_request/${id}`,
   },
   expense_request: {
     fallbackPrefix: "ER-",
-    label: "expense request",
+    label: "Expense Request",
     endpointBase: "purchase_api/expense_requests",
     moduleKey: "purchase_expense_requests",
     webPath: (id) => `przpurchase/Expense_Request/view_expense_request/${id}`,
   },
 };
+
+function entityTypeLabel(kind: PurchaseApprovalKind): string {
+  return APPROVAL_CONFIG[kind].label;
+}
 
 export function PurchaseWorkflowApprovalScreen({
   kind = "purchase_request",
@@ -197,25 +206,16 @@ export function PurchaseWorkflowApprovalScreen({
     <>
       {stackHeaderHidden}
       <View className="flex-1 bg-surface">
-        {/* Slim inline header — back / code / share */}
-        <View
-          className="flex-row items-center px-2 py-2 bg-surface"
-          style={{ minHeight: 44 }}
-        >
-          <TouchableOpacity onPress={() => router.back()} hitSlop={10} className="p-2">
-            <Ionicons name="chevron-back" size={22} color="#0F172A" />
-          </TouchableOpacity>
-          <Text
-            className="text-base font-bold text-foreground flex-1"
-            numberOfLines={1}
-            style={rtlTextStyle(code)}
-          >
-            {code}
-          </Text>
-          <TouchableOpacity onPress={handleShare} hitSlop={10} className="p-2" accessibilityLabel="Share">
-            <Ionicons name="share-social-outline" size={20} color="#0F172A" />
-          </TouchableOpacity>
-        </View>
+        <ScreenHeader
+          title={entityTypeLabel(kind)}
+          subtitle={code}
+          onBack={() => router.back()}
+          rightAction={
+            <TouchableOpacity onPress={handleShare} hitSlop={10} className="p-2" accessibilityLabel="Share">
+              <Ionicons name="share-social-outline" size={20} color="#0F172A" />
+            </TouchableOpacity>
+          }
+        />
 
         {/* Tabs — Info / Attachments / Comparison / Activity. Counts on
             each chip give an at-a-glance "is this section worth opening". */}
@@ -317,153 +317,65 @@ function InfoTab({
     : "In approval workflow";
 
   return (
-    <>
-      {/* Hero */}
-      <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
-        <Text
-          className="text-lg font-bold text-foreground"
-          numberOfLines={3}
-          style={rtlTextStyle(request.title)}
-        >
-          {request.title || "Untitled request"}
-        </Text>
-        <Pill tone={tone} label={statusLabel} className="mt-2 self-start" />
-
-        {/* Requester row with avatar */}
-        <View className="flex-row items-center mt-3">
-          <Avatar
-            staffid={request.staff_id}
-            profileImage={request.requester_profile_image}
-            name={request.requester_name || ""}
-            size={32}
-          />
-          <View className="ml-2 flex-1">
-            <Text className="text-[10px] uppercase text-muted">Requested by</Text>
-            <Text className="text-sm font-semibold text-foreground" numberOfLines={1}>
-              {request.requester_name?.trim() || `Staff #${request.staff_id}`}
-            </Text>
-          </View>
-          {requestedAt ? (
-            <Text className="text-xs text-muted" numberOfLines={1}>
-              {requestedAt}
-            </Text>
-          ) : null}
-        </View>
-
-        {/* Department + cost-center chips */}
-        {(request.department_name || (request.cost_centers && request.cost_centers.length > 0)) ? (
-          <View className="flex-row flex-wrap mt-2 -mr-1">
-            {request.department_name ? (
-              <Chip
-                icon="business-outline"
-                label={request.department_name}
-                color="#0369A1"
-                bg="#E0F2FE"
-              />
-            ) : null}
-            {(request.cost_centers || []).map((cc) => (
-              <Chip
-                key={cc.id}
-                icon="cube-outline"
-                label={`${cc.code || ""}${cc.code && cc.title ? " · " : ""}${cc.title || ""}`.trim()}
-                color="#7C3AED"
-                bg="#EDE9FE"
-              />
-            ))}
-          </View>
-        ) : null}
-
-        {/* Total — currency-aware */}
-        <View className="flex-row items-baseline mt-3 pt-3 border-t border-slate-100">
-          <Text className="text-[10px] uppercase text-muted">Total</Text>
-          <Text className="text-xl font-bold text-foreground ml-2">
-            {formatCurrency(displayedTotal, request.currency_symbol) || "—"}
+    <WorkflowDetailLayout
+      hero={
+        <WorkflowDetailHero
+          request={request}
+          statusLabel={statusLabel}
+          tone={tone}
+          requestedAt={requestedAt}
+          displayedTotal={displayedTotal}
+          totalMismatch={totalMismatch}
+          formatCurrency={formatCurrency}
+        />
+      }
+      approvers={<ApproversGrid rows={approval_rows} />}
+      actions={
+        <ApprovalActionPanel
+          isCurrentApprover={viewer.is_current_approver}
+          statusDetailID={viewer.actionable_status_detail_id}
+          requestId={request.id}
+          endpointBase={request.approval_endpoint || config.endpointBase}
+          entityLabel={config.label}
+          queryKey={["purchase_approval", kind, request.id]}
+        />
+      }
+      resubmit={
+        viewer.is_submitter && rejected ? (
+          <TouchableOpacity
+            onPress={() => {
+              const editRoute = routeForModuleEdit(config.moduleKey, request.id);
+              if (editRoute) router.push(editRoute as any);
+            }}
+            activeOpacity={0.85}
+            className="bg-amber-500 rounded-2xl p-4 flex-row items-center justify-center shadow-sm"
+          >
+            <Ionicons name="refresh-outline" size={18} color="#FFFFFF" />
+            <Text className="text-white font-semibold ml-2">Edit and resubmit</Text>
+          </TouchableOpacity>
+        ) : null
+      }
+      lineItems={
+        <DenseCard>
+          <Text className="text-xs uppercase tracking-wide text-muted mb-2">
+            Line items ({line_items.length})
           </Text>
-          {totalMismatch ? (
-            <View
-              className="ml-2"
-              style={{
-                paddingHorizontal: 6,
-                paddingVertical: 1,
-                borderRadius: 4,
-                backgroundColor: "#FEF3C7",
-              }}
-            >
-              <Text style={{ fontSize: 9, fontWeight: "700", color: "#B45309" }}>
-                MISMATCH
-              </Text>
-            </View>
-          ) : null}
-        </View>
-      </View>
-
-      {/* Approvers grid — grouped by stage */}
-      <ApproversGrid rows={approval_rows} />
-
-      {/* Action panel — only renders Approve/Reject when the viewer has
-          an actionable row; otherwise it's null (the grid above already
-          says "view only" via stamps). */}
-      <ApprovalActionPanel
-        isCurrentApprover={viewer.is_current_approver}
-        statusDetailID={viewer.actionable_status_detail_id}
-        requestId={request.id}
-        endpointBase={request.approval_endpoint || config.endpointBase}
-        entityLabel={config.label}
-        queryKey={["purchase_approval", kind, request.id]}
-      />
-
-      {/* Resubmit button — only when the viewer is the requester AND
-          there's a rejected row. Keep it inside mobile; the edit screen
-          is the native replacement for the old web-admin handoff. */}
-      {viewer.is_submitter && rejected ? (
-        <TouchableOpacity
-          onPress={() => {
-            const editRoute = routeForModuleEdit(config.moduleKey, request.id);
-            if (editRoute) router.push(editRoute as any);
-          }}
-          activeOpacity={0.85}
-          className="bg-amber-500 rounded-2xl p-4 mb-3 flex-row items-center justify-center shadow-sm"
-        >
-          <Ionicons name="refresh-outline" size={18} color="#FFFFFF" />
-          <Text className="text-white font-semibold ml-2">Edit and resubmit</Text>
-        </TouchableOpacity>
-      ) : null}
-
-      {/* Line items — collapsible per row */}
-      <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm">
-        <Text className="text-xs uppercase tracking-wide text-muted mb-2">
-          Line items ({line_items.length})
-        </Text>
-        {line_items.length === 0 ? (
-          <Text className="text-sm text-muted py-2">No items on this request.</Text>
-        ) : (
-          line_items.map((li, idx) => (
-            <LineItemRow
-              key={li.id ?? idx}
-              item={li}
-              currencySymbol={request.currency_symbol}
-              isLast={idx === line_items.length - 1}
-            />
-          ))
-        )}
-        {line_items.length > 0 ? (
-          <View className="flex-row items-center pt-2 mt-2 border-t border-slate-200">
-            <Text className="text-xs uppercase text-muted">Sum of items</Text>
-            <Text className="text-base font-bold text-foreground ml-auto">
-              {formatCurrency(sumItems, request.currency_symbol) || "—"}
-            </Text>
+          <WorkflowLineItemsTable
+            items={line_items}
+            currencySymbol={request.currency_symbol}
+            formatCurrency={formatCurrency}
+          />
+        </DenseCard>
+      }
+      notes={
+        request.notes?.trim() ? (
+          <View className="bg-white rounded-2xl px-4 py-3 shadow-sm">
+            <Text className="text-xs uppercase tracking-wide text-muted mb-2">Notes</Text>
+            <NotesText raw={request.notes} />
           </View>
-        ) : null}
-      </View>
-
-      {/* Notes — preserves line breaks + links */}
-      {request.notes?.trim() ? (
-        <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm">
-          <Text className="text-xs uppercase tracking-wide text-muted mb-2">Notes</Text>
-          <NotesText raw={request.notes} />
-        </View>
-      ) : null}
-    </>
+        ) : null
+      }
+    />
   );
 }
 
@@ -663,10 +575,25 @@ function ApproversGrid({ rows }: { rows: PRApprovalRow[] }) {
   }
 
   return (
-    <View className="bg-white rounded-2xl px-4 py-3 mb-3 shadow-sm">
-      <Text className="text-xs uppercase tracking-wide text-muted mb-2">
+    <View className="bg-white rounded-2xl px-3 py-3 mb-3 shadow-sm">
+      <Text className="text-xs uppercase tracking-wide text-muted mb-1.5">
         Approvers
       </Text>
+      <View className="flex-row flex-wrap mb-2">
+        {grouped.map((group, idx) => {
+          const approved = group.rows.every((r) => (r.status || "").toLowerCase() === "approved");
+          const rejected = group.rows.some((r) => (r.status || "").toLowerCase() === "rejected");
+          const active = group.rows.some((r) => r.is_current_status === 1);
+          const symbol = rejected ? "✗" : approved ? "✓" : active ? "⏳" : "○";
+          const color = rejected ? "#DC2626" : approved ? "#16A34A" : active ? "#0284C7" : "#94A3B8";
+          return (
+            <Text key={group.statusID} className="text-xs font-medium mr-2" style={{ color }}>
+              {group.name} {symbol}
+              {idx < grouped.length - 1 ? "" : ""}
+            </Text>
+          );
+        })}
+      </View>
       {grouped.map((group, gIdx) => {
         // The "active" stage is the one where any row has
         // is_current_status=1 — we mark it visually.

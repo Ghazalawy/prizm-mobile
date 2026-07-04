@@ -370,6 +370,7 @@ export default function SettingsScreen() {
 
         <AdminSection />
 
+        {__DEV__ ? <DevToolsSection /> : null}
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">About</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
@@ -524,6 +525,27 @@ function AdminSection() {
             </Text>
           </View>
           <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+        </TouchableOpacity>
+      </View>
+    </>
+  );
+}
+
+function DevToolsSection() {
+  return (
+    <>
+      <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">Developer</Text>
+      <View className="bg-white rounded-xl overflow-hidden mb-6">
+        <TouchableOpacity
+          onPress={() => router.push("/dev/ui-gallery" as any)}
+          className="flex-row items-center px-4 py-4"
+          activeOpacity={0.7}
+        >
+          <Ionicons name="color-palette-outline" size={22} color={colors.primary} />
+          <Text className="text-foreground font-medium ml-3">UI component gallery</Text>
+          <View className="ml-auto">
+            <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+          </View>
         </TouchableOpacity>
       </View>
     </>

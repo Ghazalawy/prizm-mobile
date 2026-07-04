@@ -18,6 +18,7 @@ import {
 } from "@/lib/queries/opportunities";
 import { usePermissions } from "@/lib/permission-context";
 import { colors } from "@/lib/theme";
+import { DenseListRow } from "@/components/ui/DenseListRow";
 
 // ─── Perfix filter system ──────────────────────────────────────────────
 import { useFilterState } from "@/lib/hooks/useFilterState";
@@ -62,6 +63,12 @@ export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { 
   const q = useOpportunitiesList({
     search: queryParams.search ? String(queryParams.search) : undefined,
     stage: queryParams.stage ? String(queryParams.stage) : undefined,
+    status: queryParams.opportunity_status
+      ? String(queryParams.opportunity_status)
+      : queryParams.status
+        ? String(queryParams.status)
+        : undefined,
+    client_id: queryParams.client ? String(queryParams.client) : undefined,
     limit: 200,
   });
 
@@ -179,6 +186,13 @@ export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { 
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name="trending-up-outline" size={48} color="#94A3B8" />
           <Text className="text-slate-900 font-semibold mt-3">No opportunities found</Text>
+          {filter.hasActiveFilters ? (
+            <TouchableOpacity onPress={filter.clearAll} className="mt-3">
+              <Text className="text-sm font-medium" style={{ color: ACCENT }}>
+                Clear filters
+              </Text>
+            </TouchableOpacity>
+          ) : null}
         </View>
       ) : viewMode === "pipeline" ? (
         <PipelineView
@@ -197,41 +211,36 @@ export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { 
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
           renderItem={({ item }) => {
             const st = getOppStatusBadge(item.status || item.stage?.toString() || "");
+            const subtitle = [
+              item.opportunity_code,
+              item.company,
+            ]
+              .filter(Boolean)
+              .join(" · ");
             return (
-              <TouchableOpacity
+              <DenseListRow
+                title={item.opportunity_name || "Untitled"}
+                subtitle={subtitle || undefined}
                 onPress={() => router.push(`${basePath}/${item.opportunity_id}` as any)}
-                className="bg-white rounded-xl p-4 border border-gray-100"
-                activeOpacity={0.7}
-              >
-                <View className="flex-row items-start justify-between">
-                  <View className="flex-1 mr-2">
-                    <Text className="text-base font-semibold text-slate-900" numberOfLines={2}>
-                      {item.opportunity_name || "Untitled"}
-                    </Text>
-                    <Text className="text-xs text-slate-400 mt-1">
-                      {item.opportunity_code}
-                      {item.company ? ` · ${item.company}` : ""}
-                    </Text>
-                  </View>
-                  <View className="rounded-full px-2.5 py-1" style={{ backgroundColor: st.bg }}>
+                badges={
+                  <View className="rounded-full px-2 py-0.5" style={{ backgroundColor: st.bg }}>
                     <Text className="text-[10px] font-semibold" style={{ color: st.color }}>
                       {st.label}
                     </Text>
                   </View>
-                </View>
-                <View className="flex-row items-center mt-2 gap-4">
-                  {item.estimated_price ? (
-                    <Text className="text-sm font-bold text-slate-800">
+                }
+                rightMeta={
+                  item.estimated_price ? (
+                    <Text className="text-xs font-bold text-foreground text-right">
                       {fmtCurrency(item.estimated_price)}
                     </Text>
-                  ) : null}
-                  {item.start_date ? (
-                    <Text className="text-xs text-slate-400">
-                      {item.start_date} → {item.end_date || "—"}
+                  ) : item.start_date ? (
+                    <Text className="text-[10px] text-muted text-right" numberOfLines={2}>
+                      {item.start_date}
                     </Text>
-                  ) : null}
-                </View>
-              </TouchableOpacity>
+                  ) : null
+                }
+              />
             );
           }}
         />

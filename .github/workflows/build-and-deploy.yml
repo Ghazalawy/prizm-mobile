@@ -63,6 +63,9 @@ jobs:
       - name: Validate Expo dependency matrix
         run: npx expo install --check
 
+      - name: Verify release metadata (CHANGELOG + versions)
+        run: node scripts/verify-release-metadata.mjs
+
       - name: TypeScript check
         run: npx tsc --noEmit
 

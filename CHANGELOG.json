@@ -2,6 +2,28 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.13.0",
+      "date": "2026-06-15",
+      "title": "Opportunities — full native Tier C parity",
+      "highlights": [
+        "Native list + pipeline view with Perfix filters; pinnable Opportunities tab.",
+        "17-tab detail: approval workflow, team, milestones, BOQ, notes, tasks, RFQ, TI, and more.",
+        "Create/edit opportunity forms; submit, approve/reject, convert, pin, and archive actions.",
+        "Backed by hardened Opportunities_api on prizm331 (ACL, change_status, sub-resources).",
+        "Flip BUILD_FLAGS.opportunitiesNative — module no longer hidden from native routing."
+      ]
+    },
+    {
+      "version": "1.12.1",
+      "date": "2026-06-07",
+      "title": "File and report uploads use multipart API",
+      "highlights": [
+        "Expense receipts, task attachments, and report images upload via multipart/form-data.",
+        "Fixes large-file failures that occurred with base64 JSON payloads on slow networks.",
+        "No user-facing screen changes — upload reliability only."
+      ]
+    },
+    {
       "version": "1.12.0",
       "date": "2026-05-31",
       "title": "Operations, BD, Admin & System modules — complete mobile API coverage",

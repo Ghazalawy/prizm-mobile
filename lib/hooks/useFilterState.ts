@@ -43,6 +43,14 @@ export function useFilterState(ruleDefs: FilterRuleDef[]) {
 
   const setQuickFilter = useCallback((field: string, value: string) => {
     setQuickFilters((prev) => {
+      if (!value) {
+        if (!(field in prev)) {
+          return prev;
+        }
+        const next = { ...prev };
+        delete next[field];
+        return next;
+      }
       if (prev[field] === value) {
         const next = { ...prev };
         delete next[field];

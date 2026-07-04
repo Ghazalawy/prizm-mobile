@@ -26,6 +26,7 @@ import {
 } from "@/lib/module-registry";
 import { usePermissions } from "@/lib/permission-context";
 import { StatusBadge } from "./StatusBadge";
+import { DenseListRow } from "@/components/ui/DenseListRow";
 import { FilterPanel, activeFilterCount } from "./FilterPanel";
 import { SortPicker, type SortState } from "./SortPicker";
 
@@ -437,38 +438,26 @@ const ListRow = memo(function ListRow({
   const statusValue = module.statusField ? item[module.statusField] : undefined;
 
   return (
-    <TouchableOpacity
-      onPress={() => router.push(`${path}/${encodeURIComponent(moduleId(module, item))}` as any)}
-      activeOpacity={0.72}
-      className="bg-white rounded-xl p-3 shadow-sm"
-    >
-      <View className="flex-row">
-        <View
-          className="w-9 h-9 rounded-lg items-center justify-center"
-          style={{ backgroundColor: `${module.color}14` }}
-        >
-          <Ionicons name={module.icon as any} size={18} color={module.color} />
-        </View>
-        <View className="ml-3 flex-1">
-          <Text className="text-foreground font-semibold" numberOfLines={2}>
-            {moduleTitle(module, item)}
-          </Text>
-          <View className="flex-row items-center mt-1">
-            {statusValue !== undefined && statusValue !== null && String(statusValue) !== "" ? (
-              <View className="mr-2">
-                <StatusBadge value={statusValue} statusOptions={module.statusOptions} />
-              </View>
-            ) : null}
-            {moduleSubtitle(module, item) ? (
-              <Text className="text-xs text-muted flex-1" numberOfLines={1}>
-                {moduleSubtitle(module, item)}
-              </Text>
-            ) : null}
+    <View className="bg-white rounded-xl px-2 shadow-sm">
+      <DenseListRow
+        title={moduleTitle(module, item)}
+        subtitle={moduleSubtitle(module, item) || undefined}
+        onPress={() => router.push(`${path}/${encodeURIComponent(moduleId(module, item))}` as any)}
+        leftAccent={
+          <View
+            className="w-8 h-8 rounded-lg items-center justify-center mr-1"
+            style={{ backgroundColor: `${module.color}14` }}
+          >
+            <Ionicons name={module.icon as any} size={16} color={module.color} />
           </View>
-        </View>
-        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
-      </View>
-    </TouchableOpacity>
+        }
+        badges={
+          statusValue !== undefined && statusValue !== null && String(statusValue) !== "" ? (
+            <StatusBadge value={statusValue} statusOptions={module.statusOptions} size="sm" />
+          ) : undefined
+        }
+      />
+    </View>
   );
 });
 

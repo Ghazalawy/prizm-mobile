@@ -10,7 +10,7 @@
 | Agent / Model | `Codex / GPT-5` |
 | Workspace | `C:\wamp64\www\prizm-mobile` |
 | Branch | `codex/fix-customer-filter` |
-| Duration / Turns | `~1h 05m / 1 active user turn` |
+| Duration / Turns | `~1h 35m / 1 active user turn` |
 | Classification | Internal |
 
 ## 1. Executive Summary
@@ -27,7 +27,7 @@ The reported flow was exercised in an Android emulator against production read-o
 | Customer status | Preserved the string value `0` and mapped all-status selection to `include_inactive=1` |
 | Customer operators | Limited the UI to operators actually implemented by `Customers.php` |
 | Regression coverage | Added assertions for Inactive and all-status query parameters |
-| Release | Prepared patch `1.14.1`, Android versionCode `27` |
+| Release | Deployed patch `1.14.1`, Android versionCode `27` |
 
 Out of scope: backend mutation, database/schema changes, and unrelated mobile pages.
 
@@ -55,6 +55,8 @@ Ground truth: `C:\wamp64\www\prizm331\modules\api\controllers\Customers.php` rea
 | 9 | CRUD contract audit | 303 mutations; 0 skipped | PASS |
 | 10 | List contract audit | 107 searchable; 107 filterable; 59 sortable; 0 skipped | PASS |
 | 11 | Patch integrity and secret review | `git diff --check`; scoped diff reviewed | PASS |
+| 12 | GitHub release pipeline | Run `30491363762`; Android build and Pages deployment | PASS |
+| 13 | Rolling APK publication | `prizm-mobile.apk`; 91,538,044 bytes; refreshed 2026-07-30 01:37 +04:00 | PASS |
 
 ### Acceptance Criteria
 
@@ -83,17 +85,17 @@ Ground truth: `C:\wamp64\www\prizm331\modules\api\controllers\Customers.php` rea
 | Item | Status |
 |---|---|
 | Base commit | `a1d102f03efd8ecace359b94c3e94daa01154662` |
-| Hotfix commit | Pending |
-| GitHub push | Pending QC-gated push |
-| GitHub Actions Android build | Pending |
-| Rolling APK release | Pending |
+| Hotfix commit | `9fc1a03351deb212e21177ddc12bc60d94318ccd` |
+| GitHub push | PASS — commit is on `origin/main` |
+| GitHub Actions Android build | PASS — run `30491363762` |
+| Rolling APK release | PASS — `latest/prizm-mobile.apk`, 91,538,044 bytes, build `9fc1a03` |
 | Rollback | Revert the hotfix commit; no data migration or persisted data change |
 
 ## 7. Sign-off
 
 | Role | Name | Status | Date |
 |---|---|---|---|
-| QA automation | Codex | Local and emulator gate PASS | 2026-07-30 |
+| QA automation | Codex | Local, emulator, build, and deployment gates PASS | 2026-07-30 |
 | Product reviewer | Osama Hassan | Fix and emulator testing requested | 2026-07-30 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

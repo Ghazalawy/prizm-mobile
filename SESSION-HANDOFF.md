@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-07-30 — Customer Status Filter Hotfix
 
-**Status:** Local and Android emulator QC passed. Release `1.14.1` (Android versionCode `27`) is cleared for the push/build protocol; post-deployment evidence is pending.
+**Status:** Release `1.14.1` (Android versionCode `27`) is deployed. Commit `9fc1a03` is on `origin/main`; GitHub Actions run `30491363762` completed successfully and refreshed the rolling APK.
 
 ### Completed
 
@@ -17,11 +17,12 @@
 - Android quick chip: 17 total, eight visible Inactive rows, zero visible Active rows.
 - Android funnel flow: badge 1, 17 total, eight visible Inactive rows, zero visible Active rows.
 - TypeScript, Expo dependencies, release metadata, mobile contracts, 303 mutation contracts, and 107 list contracts pass.
+- GitHub Android build and Pages deployment passed; rolling `prizm-mobile.apk` was refreshed at 2026-07-30 01:37 +04:00.
 
 ### Evidence
 
 - QC report template: `docs/qc/QC-REPORT-TEMPLATE.md`
-- Canonical report after deployment: `PE-QAQC-QC-RPT-26008-R01__customer-filter-emulator-20260730.md/.pdf`
+- Canonical report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26008-R01__customer-filter-emulator-20260730.md/.pdf`
 
 ---
 

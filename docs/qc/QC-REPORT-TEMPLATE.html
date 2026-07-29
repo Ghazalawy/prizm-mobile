@@ -81,7 +81,7 @@
     <tr><td>All statuses lift the active-only API default</td><td class="pass">100% PASS</td></tr>
     <tr><td>Existing build and contract gates remain green</td><td class="pass">100% PASS</td></tr>
   </table>
-  <p class="result">QC gate before push: PASS — no open defects in scope.</p>
+  <p class="result">QC and deployment gates: PASS — no open defects in scope.</p>
 
   <h2>4. Files, Release and Rollback</h2>
   <table>
@@ -90,14 +90,16 @@
     <tr><td>Regression test</td><td><code>scripts/test-mobile-contracts.mjs</code></td></tr>
     <tr><td>Release metadata</td><td class="pass">1.14.1 / Android versionCode 27</td></tr>
     <tr><td>Base commit</td><td><code>a1d102f03efd8ecace359b94c3e94daa01154662</code></td></tr>
-    <tr><td>Hotfix commit / workflow / APK</td><td class="pending">Pending QC-gated push and build</td></tr>
+    <tr><td>Hotfix commit</td><td class="pass"><code>9fc1a03351deb212e21177ddc12bc60d94318ccd</code> on <code>origin/main</code></td></tr>
+    <tr><td>GitHub Actions</td><td class="pass">PASS — run <code>30491363762</code>; Android build and Pages deployment succeeded</td></tr>
+    <tr><td>Rolling APK</td><td class="pass">PASS — <code>prizm-mobile.apk</code>, 91,538,044 bytes, refreshed 2026-07-30 01:37 +04:00</td></tr>
     <tr><td>Rollback</td><td>Revert the hotfix commit; no schema or persisted-data migration</td></tr>
   </table>
 
   <h2>5. Sign-off</h2>
   <table>
     <tr><th>Role</th><th>Name</th><th>Status</th><th>Date</th></tr>
-    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + emulator gate PASS</td><td>2026-07-30</td></tr>
+    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + emulator + deployment gates PASS</td><td>2026-07-30</td></tr>
     <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Fix and emulator test requested</td><td>2026-07-30</td></tr>
   </table>
   <div class="footer">Generated under Prizm QA/QC Policy · Hawiya / Asmaa · Classification: Internal</div>

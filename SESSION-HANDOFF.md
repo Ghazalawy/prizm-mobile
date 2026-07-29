@@ -1,5 +1,31 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-07-30 — Site Report Image Storage Compatibility
+
+**Status:** Local, production-read, and Android emulator QC passed. Release `1.14.2` (Android versionCode `28`) is cleared for the push/build protocol; post-deployment evidence is pending.
+
+### Completed
+
+- Replaced the hardcoded legacy report-image URL with the web UI's current per-report uploads path.
+- Added automatic fallback for legacy and older mobile-uploaded report photos.
+- Made report-image URLs follow the selected production, development, or local environment.
+- Applied the resolver to report detail thumbnails/lightbox and edit/review previews.
+
+### Verified
+
+- Production proof: current URL returned a 148,354-byte JPEG; the released mobile URL returned HTTP 404.
+- Android emulator rendered one real newly stored report photo and one legacy-only photo through fallback.
+- TypeScript, Expo dependencies, release metadata, mobile contracts, 303 mutation contracts, and 107 list contracts pass.
+- Temporary diagnostic login content was removed before commit.
+
+### Evidence
+
+- Emulator screenshot: `C:\Users\osama\AppData\Local\Temp\prizm-mobile-codex-20260730\report-image-test\report-image-qc.png`
+- QC report template: `docs/qc/QC-REPORT-TEMPLATE.md`
+- Canonical report after deployment: `PE-QAQC-QC-RPT-26009-R01__report-image-path-emulator-20260730.md/.pdf`
+
+---
+
 ## Current Session — 2026-07-30 — Customer Status Filter Hotfix
 
 **Status:** Release `1.14.1` (Android versionCode `27`) is deployed. Commit `9fc1a03` is on `origin/main`; GitHub Actions run `30491363762` completed successfully and refreshed the rolling APK.

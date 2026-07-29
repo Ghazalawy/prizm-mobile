@@ -1,4 +1,4 @@
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -16,7 +16,7 @@ import Toast from "react-native-toast-message";
 import {
   useReportDetail,
   useDeleteReport,
-  reportImageUrl,
+  reportImageUrls,
   type ReportDetailRow,
   type ReportImage,
 } from "@/lib/queries/reports";
@@ -253,8 +253,7 @@ export function ReportDetailScreen({ id }: Props) {
                 <PhotoThumb
                   key={img.id}
                   image={img}
-                  onPress={() => {
-                    const url = reportImageUrl(img.image_path);
+                  onPress={(url) => {
                     setLightboxUrl(url);
                     setLightboxFile({
                       id: img.id,
@@ -452,13 +451,28 @@ function PhotoThumb({
   onPress,
 }: {
   image: ReportImage;
-  onPress: () => void;
+  onPress: (url: string) => void;
 }) {
+  const sources = reportImageUrls(image.report_id, image.image_path);
+  const [sourceIndex, setSourceIndex] = useState(0);
   const [broken, setBroken] = useState(false);
-  const uri = reportImageUrl(image.image_path);
+  const uri = sources[sourceIndex] ?? "";
+
+  useEffect(() => {
+    setSourceIndex(0);
+    setBroken(false);
+  }, [image.report_id, image.image_path]);
+
+  const handleError = useCallback(() => {
+    if (sourceIndex + 1 < sources.length) {
+      setSourceIndex(sourceIndex + 1);
+      return;
+    }
+    setBroken(true);
+  }, [sourceIndex, sources.length]);
 
   return (
-    <TouchableOpacity onPress={onPress} activeOpacity={0.85}>
+    <TouchableOpacity onPress={() => onPress(uri)} activeOpacity={0.85} disabled={broken}>
       <View className="rounded-xl overflow-hidden" style={{ width: 140, height: 140 }}>
         {broken ? (
           <View className="flex-1 bg-slate-200 items-center justify-center">
@@ -469,7 +483,7 @@ function PhotoThumb({
             source={{ uri }}
             style={{ width: 140, height: 140 }}
             resizeMode="cover"
-            onError={() => setBroken(true)}
+            onError={handleError}
           />
         )}
         {image.work_image_descriptions ? (

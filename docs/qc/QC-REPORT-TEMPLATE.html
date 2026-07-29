@@ -2,13 +2,13 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>PE-QAQC-QC-RPT-26008-R01 — Customer Status Filter Hotfix</title>
+  <title>PE-QAQC-QC-RPT-26009-R01 — Site Report Image Storage Compatibility</title>
   <style>
     @page { size:A4; margin:15mm 14mm; }
     :root { --navy:#103090; --blue:#1769aa; --green:#087f5b; --pale:#edf6f9; --line:#cbd5e1; --ink:#17212b; }
     * { box-sizing:border-box; }
     body { margin:0; color:var(--ink); font:9.8pt/1.4 Calibri, Arial, sans-serif; }
-    h1 { color:var(--navy); font-size:22pt; margin:0 0 3px; }
+    h1 { color:var(--navy); font-size:21pt; margin:0 0 3px; }
     h2 { color:var(--navy); border-bottom:2px solid var(--blue); font-size:13.5pt; margin:18px 0 8px; padding-bottom:3px; }
     h3 { color:var(--blue); font-size:11pt; margin:13px 0 6px; }
     p { margin:5px 0; }
@@ -31,76 +31,73 @@
 <body>
   <div class="classification">Internal</div>
   <header class="top">
-    <div class="code">PE-QAQC-QC-RPT-26008-R01</div>
-    <h1>Customer Status Filter Hotfix</h1>
+    <div class="code">PE-QAQC-QC-RPT-26009-R01</div>
+    <h1>Site Report Image Storage Compatibility</h1>
     <div>Prizm Mobile · 30 July 2026 · Codex / GPT-5</div>
   </header>
 
   <table>
-    <tr><th>Session ID</th><td><code>customer-filter-emulator-20260730</code></td></tr>
-    <tr><th>Date / Time</th><td>2026-07-30 01:08:21 +04:00</td></tr>
+    <tr><th>Session ID</th><td><code>report-image-path-emulator-20260730</code></td></tr>
+    <tr><th>Date / Time</th><td>2026-07-30 01:52:32 +04:00</td></tr>
     <tr><th>Workspace</th><td><code>C:\wamp64\www\prizm-mobile</code></td></tr>
-    <tr><th>Branch</th><td><code>codex/fix-customer-filter</code></td></tr>
+    <tr><th>Branch</th><td><code>codex/fix-report-image-path</code></td></tr>
   </table>
 
   <h2>1. Executive Summary</h2>
   <div class="summary">
-    <p>The customer funnel recorded Inactive but the released app sent a Perfex web-table JSON payload that <code>Customers.php</code> does not parse. With no direct <code>active</code> parameter, the API silently applied its <code>active=1</code> default.</p>
-    <p>The corrected app sends <code>active=0</code> for Inactive, <code>active=1</code> for Active, and <code>include_inactive=1</code> when both statuses are selected.</p>
-    <p><strong>Android result:</strong> both the quick chip and Funnel → Inactive → Apply returned 17 total; all eight visible rows were Inactive and zero were Active.</p>
+    <p>The web application moved site-report photos to <code>uploads/prizm_reports/{report-id}/images</code>. The released mobile app still used the legacy module-assets folder, so newly stored photos returned HTTP 404.</p>
+    <p>The mobile resolver now tries the current per-report directory first and automatically retries the legacy directory. It also follows the app's selected production, development, or local environment.</p>
+    <p><strong>Android result:</strong> a real newly stored report photo and a legacy-only photo both rendered successfully.</p>
   </div>
 
-  <h2>2. Scope and Root Cause</h2>
+  <h2>2. Root Cause Evidence</h2>
   <table>
-    <tr><th>Area</th><th>Finding / change</th></tr>
-    <tr><td>Released request</td><td><code>filters={...active 0...}</code> → HTTP 200, 168 total, all returned rows Active</td></tr>
-    <tr><td>Supported request</td><td><code>active=0</code> → HTTP 200, 17 total, zero non-Inactive rows</td></tr>
-    <tr><td>Transport fix</td><td>Module-aware direct REST query serialization</td></tr>
-    <tr><td>Status semantics</td><td>Preserve string <code>0</code>; map every-status selection to <code>include_inactive=1</code></td></tr>
-    <tr><td>Operator safety</td><td>Customer UI exposes only operators implemented by the controller</td></tr>
+    <tr><th>Request / source</th><th>Result</th><th>Interpretation</th></tr>
+    <tr><td><code>/uploads/prizm_reports/327/images/dsr_photo_1.jpg</code></td><td class="pass">HTTP 200 · JPEG · 148,354 bytes</td><td>Current web storage</td></tr>
+    <tr><td><code>/modules/prizm_reports/assets/images/dsr_photo_1.jpg</code></td><td>HTTP 404</td><td>Released mobile URL</td></tr>
+    <tr><td>Web MVC</td><td>Uploads first, module assets fallback</td><td>Ground-truth behavior mirrored by mobile</td></tr>
   </table>
 
   <h2>3. Verification</h2>
   <table>
     <tr><th>#</th><th>Check</th><th>Evidence</th><th>Result</th></tr>
-    <tr><td>1</td><td>Android native build</td><td>Gradle <code>app:assembleDebug</code>, x86_64</td><td class="pass">PASS</td></tr>
-    <tr><td>2</td><td>Quick Inactive chip</td><td>17 total; 8 visible Inactive; 0 visible Active</td><td class="pass">PASS</td></tr>
-    <tr><td>3</td><td>Funnel → Inactive → Apply</td><td>Badge 1; 17 total; 8 visible Inactive; 0 visible Active</td><td class="pass">PASS</td></tr>
-    <tr><td>4</td><td>Production read-only API</td><td>HTTP 200; 17 total; 0 non-Inactive</td><td class="pass">PASS</td></tr>
+    <tr><td>1</td><td>New production image</td><td>HTTP 200; 148,354-byte JPEG</td><td class="pass">PASS</td></tr>
+    <tr><td>2</td><td>Released mobile URL</td><td>HTTP 404 reproduced</td><td class="pass">PASS</td></tr>
+    <tr><td>3</td><td>Android — new storage</td><td>Report 327 photo rendered; New path: loaded</td><td class="pass">PASS</td></tr>
+    <tr><td>4</td><td>Android — legacy fallback</td><td>Legacy-only photo rendered after retry</td><td class="pass">PASS</td></tr>
     <tr><td>5</td><td>TypeScript / Expo</td><td><code>tsc</code> and <code>expo install --check</code></td><td class="pass">PASS</td></tr>
-    <tr><td>6</td><td>Release metadata</td><td>1.14.1 / Android 27</td><td class="pass">PASS</td></tr>
-    <tr><td>7</td><td>Regression contracts</td><td>Mobile, 303 mutation, and 107 list/filter contracts</td><td class="pass">PASS</td></tr>
-    <tr><td>8</td><td>Patch integrity / secrets</td><td>Scoped diff reviewed; no credential hook or generated Android tree</td><td class="pass">PASS</td></tr>
+    <tr><td>6</td><td>Regression contracts</td><td>Mobile, 303 mutation, and 107 list contracts</td><td class="pass">PASS</td></tr>
+    <tr><td>7</td><td>Release metadata</td><td>1.14.2 / Android 28</td><td class="pass">PASS</td></tr>
+    <tr><td>8</td><td>Patch integrity</td><td>Diagnostic removed; scoped diff clean</td><td class="pass">PASS</td></tr>
   </table>
 
   <h3>Acceptance Criteria</h3>
   <table>
     <tr><th>Criterion</th><th>Result</th></tr>
-    <tr><td>Inactive never renders an Active customer row</td><td class="pass">100% PASS</td></tr>
-    <tr><td>Funnel and quick-chip paths agree</td><td class="pass">100% PASS</td></tr>
-    <tr><td>All statuses lift the active-only API default</td><td class="pass">100% PASS</td></tr>
-    <tr><td>Existing build and contract gates remain green</td><td class="pass">100% PASS</td></tr>
+    <tr><td>New per-report uploads render on Android</td><td class="pass">100% PASS</td></tr>
+    <tr><td>Legacy report photos remain visible</td><td class="pass">100% PASS</td></tr>
+    <tr><td>Detail, lightbox, edit, and review use one resolver</td><td class="pass">100% PASS</td></tr>
+    <tr><td>Selected environment controls the storage host/root</td><td class="pass">100% PASS</td></tr>
   </table>
-  <p class="result">QC and deployment gates: PASS — no open defects in scope.</p>
+  <p class="result">QC gate before push: PASS — no open defects in scope.</p>
 
   <h2>4. Files, Release and Rollback</h2>
   <table>
     <tr><th>Item</th><th>Status</th></tr>
-    <tr><td>Production code</td><td><code>lib/filters.ts</code>, <code>CrudListScreen.tsx</code>, <code>module-registry.ts</code></td></tr>
+    <tr><td>Resolver</td><td><code>lib/report-images.ts</code></td></tr>
+    <tr><td>Mobile screens</td><td><code>ReportDetailScreen.tsx</code> and <code>ReportEditScreen.tsx</code></td></tr>
     <tr><td>Regression test</td><td><code>scripts/test-mobile-contracts.mjs</code></td></tr>
-    <tr><td>Release metadata</td><td class="pass">1.14.1 / Android versionCode 27</td></tr>
-    <tr><td>Base commit</td><td><code>a1d102f03efd8ecace359b94c3e94daa01154662</code></td></tr>
-    <tr><td>Hotfix commit</td><td class="pass"><code>9fc1a03351deb212e21177ddc12bc60d94318ccd</code> on <code>origin/main</code></td></tr>
-    <tr><td>GitHub Actions</td><td class="pass">PASS — run <code>30491363762</code>; Android build and Pages deployment succeeded</td></tr>
-    <tr><td>Rolling APK</td><td class="pass">PASS — <code>prizm-mobile.apk</code>, 91,538,044 bytes, refreshed 2026-07-30 01:37 +04:00</td></tr>
-    <tr><td>Rollback</td><td>Revert the hotfix commit; no schema or persisted-data migration</td></tr>
+    <tr><td>Release metadata</td><td class="pass">1.14.2 / Android versionCode 28</td></tr>
+    <tr><td>Base commit</td><td><code>298b36b2ea938c5d15a6221a81846c67d48c0e25</code></td></tr>
+    <tr><td>Fix commit / workflow / APK</td><td class="pending">Pending QC-gated push and build</td></tr>
+    <tr><td>Rollback</td><td>Revert the mobile commit; no backend, schema, or data mutation</td></tr>
   </table>
 
   <h2>5. Sign-off</h2>
   <table>
     <tr><th>Role</th><th>Name</th><th>Status</th><th>Date</th></tr>
-    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + emulator + deployment gates PASS</td><td>2026-07-30</td></tr>
-    <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Fix and emulator test requested</td><td>2026-07-30</td></tr>
+    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + production read + emulator PASS</td><td>2026-07-30</td></tr>
+    <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Reported mobile/web image mismatch</td><td>2026-07-30</td></tr>
   </table>
   <div class="footer">Generated under Prizm QA/QC Policy · Hawiya / Asmaa · Classification: Internal</div>
 </body>

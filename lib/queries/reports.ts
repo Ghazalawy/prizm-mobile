@@ -1,7 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, buildAuthHeaders, buildQS, parseApiResponse } from "@/lib/api";
 import { getSessionGeneration } from "@/lib/auth-events";
-import { API_URL, BASE_URL } from "@/lib/config";
+import { API_URL } from "@/lib/config";
+
+export { reportImageUrl, reportImageUrls } from "@/lib/report-images";
 
 // ── Types ──────────────────────────────────────────────────────────────
 
@@ -271,10 +273,4 @@ export function useDeleteReportImage() {
       qc.invalidateQueries({ queryKey: ["report", vars.reportId] });
     },
   });
-}
-
-// ── Image URL builder ──────────────────────────────────────────────────
-
-export function reportImageUrl(imagePath: string): string {
-  return `${BASE_URL}/MS/modules/prizm_reports/assets/images/${imagePath}`;
 }

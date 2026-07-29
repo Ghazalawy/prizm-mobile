@@ -466,9 +466,32 @@ assert.match(eventFormSource, /DateInput/);
 assert.match(eventFormSource, /event\?\._actions\?\.delete !== false/);
 const reportsQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/reports.ts"), "utf8");
 const reportsListSource = fs.readFileSync(path.join(workspace, "components/reports/ReportListScreen.tsx"), "utf8");
+const reportsDetailSource = fs.readFileSync(path.join(workspace, "components/reports/ReportDetailScreen.tsx"), "utf8");
+const reportsEditSource = fs.readFileSync(path.join(workspace, "components/reports/ReportEditScreen.tsx"), "utf8");
+const { reportImageUrl, reportImageUrls } = loadTypeScriptModule("lib/report-images.ts", {
+  "./environment": {
+    getCurrentEnvironment: () => ({ uploadsBase: "https://ms.prizm-energy.com/MS" }),
+  },
+});
 assert.doesNotMatch(reportsQuerySource, /reports_api\/data/, "Reports must use their registered public routes");
 assert.match(reportsListSource, /selectedStatus === "0"/);
 assert.match(reportsListSource, /DateInput/);
+assert.equal(
+  reportImageUrl(327, "dsr_photo_1.jpg"),
+  "https://ms.prizm-energy.com/MS/uploads/prizm_reports/327/images/dsr_photo_1.jpg",
+  "new report images must resolve through the per-report uploads directory",
+);
+assert.deepEqual(reportImageUrls(327, "dsr_photo_1.jpg"), [
+  "https://ms.prizm-energy.com/MS/uploads/prizm_reports/327/images/dsr_photo_1.jpg",
+  "https://ms.prizm-energy.com/MS/modules/prizm_reports/assets/images/dsr_photo_1.jpg",
+]);
+assert.equal(
+  reportImageUrl(327, "uploads/prizm_reports/327/images/dsr_photo_1.jpg"),
+  "https://ms.prizm-energy.com/MS/uploads/prizm_reports/327/images/dsr_photo_1.jpg",
+  "future API responses containing a relative uploads path must not be double-prefixed",
+);
+assert.match(reportsDetailSource, /sourceIndex \+ 1 < sources\.length/, "Report details must fall back for legacy images");
+assert.match(reportsEditSource, /fallbackUris/, "Report editing must fall back for legacy images");
 for (const reportForm of ["components/reports/ReportCreateScreen.tsx", "components/reports/ReportEditScreen.tsx"]) {
   const source = fs.readFileSync(path.join(workspace, reportForm), "utf8");
   assert.match(source, /<DateInput[\s\S]*?mode="date"/, `${reportForm} must use the native date picker`);

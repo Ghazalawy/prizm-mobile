@@ -1,101 +1,88 @@
-# QC Report — Customer Status Filter Hotfix
+# QC Report — Site Report Image Storage Compatibility
 
 ## Report Header
 
 | Field | Value |
 |---|---|
-| Report Code | `PE-QAQC-QC-RPT-26008-R01` |
-| Session ID | `customer-filter-emulator-20260730` |
-| Date / Time | `2026-07-30 01:08:21 +04:00` |
+| Report Code | `PE-QAQC-QC-RPT-26009-R01` |
+| Session ID | `report-image-path-emulator-20260730` |
+| Date / Time | `2026-07-30 01:52:32 +04:00` |
 | Agent / Model | `Codex / GPT-5` |
 | Workspace | `C:\wamp64\www\prizm-mobile` |
-| Branch | `codex/fix-customer-filter` |
-| Duration / Turns | `~1h 35m / 1 active user turn` |
+| Branch | `codex/fix-report-image-path` |
 | Classification | Internal |
 
 ## 1. Executive Summary
 
-Customer status filters were recorded in the funnel UI but ignored by the customer API. The mobile list sent Perfex web-table JSON in a `filters` parameter, while `Customers.php::data_get()` accepts direct query parameters and defaults to `active=1` when no direct `active` parameter exists. The corrected app sends `active=0` for Inactive, `active=1` for Active, and `include_inactive=1` when both statuses are selected.
+The web application moved site-report photos from the module assets directory to the per-report uploads directory. The mobile app still assembled every photo URL with the legacy module path, so newly stored photos returned HTTP 404 even though the web UI displayed them.
 
-The reported flow was exercised in an Android emulator against production read-only data. Both the quick Inactive chip and Funnel → Inactive → Apply returned `17 total`; every visible customer row was Inactive and no visible row was Active.
+The mobile resolver now uses `uploads/prizm_reports/{report-id}/images/{filename}` first and retries `modules/prizm_reports/assets/images/{filename}` for legacy and older mobile-uploaded photos. It also uses the selected environment's upload base instead of hardcoding production.
 
-## 2. Scope
-
-| Area | Change |
-|---|---|
-| Filter transport | Added direct REST query serialization for mobile list controllers |
-| Customer status | Preserved the string value `0` and mapped all-status selection to `include_inactive=1` |
-| Customer operators | Limited the UI to operators actually implemented by `Customers.php` |
-| Regression coverage | Added assertions for Inactive and all-status query parameters |
-| Release | Deployed patch `1.14.1`, Android versionCode `27` |
-
-Out of scope: backend mutation, database/schema changes, and unrelated mobile pages.
-
-## 3. Root Cause Evidence
+## 2. Root Cause Evidence
 
 | Request | Production result | Interpretation |
 |---|---:|---|
-| `customers?filters={...active 0...}&limit=20` | HTTP 200, total 168, returned rows all Active | Broken release payload was ignored; API applied its active-only default |
-| `customers?active=0&limit=20` | HTTP 200, total 17, returned rows all Inactive | Direct parameter is the supported API contract |
+| `/MS/uploads/prizm_reports/327/images/dsr_photo_1.jpg` | HTTP 200, `image/jpeg`, 148,354 bytes | Current web storage location |
+| `/MS/modules/prizm_reports/assets/images/dsr_photo_1.jpg` | HTTP 404 | Mobile's released hardcoded URL |
+| Web MVC | Builds the uploads URL and checks the legacy file as fallback | Ground-truth behavior mirrored by mobile |
 
-Ground truth: `C:\wamp64\www\prizm331\modules\api\controllers\Customers.php` reads direct `active`, `country`, text, date, search, pagination, and sort parameters. It does not parse the Perfex web-table `filters` payload.
+No backend or database change was required.
 
-## 4. Test Results
+## 3. Test Results
 
 | # | Check | Evidence | Result |
 |---|---|---|---|
-| 1 | Android native debug build | Gradle `app:assembleDebug`, x86_64 | PASS |
-| 2 | Quick Inactive chip | 17 total; 8 visible Inactive rows; 0 visible Active rows | PASS |
-| 3 | Funnel → Inactive → Apply | 17 total; badge 1; 8 visible Inactive rows; 0 visible Active rows | PASS |
-| 4 | Direct production read | HTTP 200; 17 total; 0 non-Inactive rows | PASS |
-| 5 | TypeScript | `npx tsc --noEmit -p tsconfig.json` | PASS |
-| 6 | Expo SDK alignment | `npx expo install --check` | PASS |
-| 7 | Release metadata | `npm run verify:release` — 1.14.1 / Android 27 | PASS |
-| 8 | Mobile regression contracts | `npm run test:contracts` | PASS |
+| 1 | New production image URL | HTTP 200; JPEG; 148,354 bytes | PASS |
+| 2 | Released mobile URL | HTTP 404 reproduced | PASS |
+| 3 | Android emulator — new storage | Real report 327 photo rendered; `New path: loaded` | PASS |
+| 4 | Android emulator — legacy fallback | Legacy-only photo rendered after first candidate failed | PASS |
+| 5 | Environment-aware resolution | Uses `getCurrentEnvironment().uploadsBase` | PASS |
+| 6 | TypeScript | `npx tsc --noEmit -p tsconfig.json` | PASS |
+| 7 | Expo SDK alignment | `npx expo install --check` | PASS |
+| 8 | Mobile contracts | `npm run test:contracts` | PASS |
 | 9 | CRUD contract audit | 303 mutations; 0 skipped | PASS |
-| 10 | List contract audit | 107 searchable; 107 filterable; 59 sortable; 0 skipped | PASS |
-| 11 | Patch integrity and secret review | `git diff --check`; scoped diff reviewed | PASS |
-| 12 | GitHub release pipeline | Run `30491363762`; Android build and Pages deployment | PASS |
-| 13 | Rolling APK publication | `prizm-mobile.apk`; 91,538,044 bytes; refreshed 2026-07-30 01:37 +04:00 | PASS |
+| 10 | List contract audit | 107 searchable/filterable; 59 sortable; 0 skipped | PASS |
+| 11 | Release metadata | `1.14.2`, Android versionCode `28` | PASS |
+| 12 | Patch integrity | `git diff --check`; diagnostic login UI removed | PASS |
 
 ### Acceptance Criteria
 
 | Severity | Criterion | Result |
 |---|---|---|
-| S1 | Selecting Inactive never returns an Active customer row | 100% PASS |
-| S1 | Filter value `0` survives serialization and query construction | 100% PASS |
-| S2 | Funnel and quick-chip paths produce the same filtered list | 100% PASS |
-| S2 | Selecting all statuses lifts the API's active-only default | 100% PASS |
-| S3 | Existing contracts, TypeScript, Expo alignment, and release metadata remain green | 100% PASS |
+| S1 | A report photo saved in the new per-report uploads directory renders on Android | 100% PASS |
+| S1 | Existing legacy report photos remain visible | 100% PASS |
+| S2 | Detail thumbnails, lightbox source, edit preview, and review preview use the resolver | 100% PASS |
+| S2 | Development and local environments do not resolve against production storage | 100% PASS |
 
 **QC gate before push: PASS. No open Blocker, Major, or Minor defects in scope.**
 
-## 5. Code Changes
+## 4. Code Changes
 
 | File | Purpose |
 |---|---|
-| `lib/filters.ts` | Direct mobile REST filter serializer with explicit all-status behavior |
-| `components/crud/CrudListScreen.tsx` | Use module-aware direct query parameters |
-| `lib/module-registry.ts` | Declare customer-supported operators and all-status parameter |
-| `scripts/test-mobile-contracts.mjs` | Regression tests for `active=0` and `include_inactive=1` |
-| `CHANGELOG.json`, `package.json`, `package-lock.json`, `app.json` | Patch release metadata |
+| `lib/report-images.ts` | Environment-aware current + legacy report-image candidates |
+| `lib/queries/reports.ts` | Export the shared resolver and remove the hardcoded production URL |
+| `components/reports/ReportDetailScreen.tsx` | Retry legacy storage and open the source that actually loaded |
+| `components/reports/ReportEditScreen.tsx` | Retry legacy storage in edit and review previews |
+| `scripts/test-mobile-contracts.mjs` | Lock the new path, relative-path handling, and fallback behavior |
+| Release metadata | Patch `1.14.2`, Android versionCode `28` |
 
-## 6. Git and Deployment
+## 5. Git and Deployment
 
 | Item | Status |
 |---|---|
-| Base commit | `a1d102f03efd8ecace359b94c3e94daa01154662` |
-| Hotfix commit | `9fc1a03351deb212e21177ddc12bc60d94318ccd` |
-| GitHub push | PASS — commit is on `origin/main` |
-| GitHub Actions Android build | PASS — run `30491363762` |
-| Rolling APK release | PASS — `latest/prizm-mobile.apk`, 91,538,044 bytes, build `9fc1a03` |
-| Rollback | Revert the hotfix commit; no data migration or persisted data change |
+| Base commit | `298b36b2ea938c5d15a6221a81846c67d48c0e25` |
+| Fix commit | Pending |
+| GitHub push | Pending QC-gated push |
+| GitHub Actions Android build | Pending |
+| Rolling APK release | Pending |
+| Rollback | Revert the mobile commit; no backend, schema, or data mutation |
 
-## 7. Sign-off
+## 6. Sign-off
 
 | Role | Name | Status | Date |
 |---|---|---|---|
-| QA automation | Codex | Local, emulator, build, and deployment gates PASS | 2026-07-30 |
-| Product reviewer | Osama Hassan | Fix and emulator testing requested | 2026-07-30 |
+| QA automation | Codex | Local, production-read, and emulator gates PASS | 2026-07-30 |
+| Product reviewer | Osama Hassan | Reported the mobile/web image mismatch | 2026-07-30 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

@@ -22,7 +22,7 @@ import {
   useUpdateReport,
   useUploadReportImages,
   useDeleteReportImage,
-  reportImageUrl,
+  reportImageUrls,
   type CreateReportPayload,
   type ReportProject,
   type ImageUploadItem,
@@ -49,6 +49,7 @@ type WorkItemDraft = {
 type PhotoDraft = {
   key: string;
   uri: string;
+  fallbackUris?: string[];
   description: string;
   isExisting?: boolean;
   existingId?: number;
@@ -146,13 +147,17 @@ export function ReportEditScreen({ id }: Props) {
 
     if (report.images?.length) {
       setPhotos(
-        report.images.map((img) => ({
-          key: genKey(),
-          uri: reportImageUrl(img.image_path),
-          description: img.work_image_descriptions ?? "",
-          isExisting: true,
-          existingId: img.id,
-        }))
+        report.images.map((img) => {
+          const [uri = "", ...fallbackUris] = reportImageUrls(img.report_id, img.image_path);
+          return {
+            key: genKey(),
+            uri,
+            fallbackUris,
+            description: img.work_image_descriptions ?? "",
+            isExisting: true,
+            existingId: img.id,
+          };
+        })
       );
     }
 
@@ -239,6 +244,14 @@ export function ReportEditScreen({ id }: Props) {
 
   const updatePhotoDesc = useCallback((key: string, desc: string) => {
     setPhotos((prev) => prev.map((p) => (p.key === key ? { ...p, description: desc } : p)));
+  }, []);
+
+  const useNextPhotoUrl = useCallback((key: string) => {
+    setPhotos((prev) => prev.map((photo) => {
+      if (photo.key !== key || !photo.fallbackUris?.length) return photo;
+      const [uri, ...fallbackUris] = photo.fallbackUris;
+      return { ...photo, uri, fallbackUris };
+    }));
   }, []);
 
   // Submit
@@ -423,6 +436,7 @@ export function ReportEditScreen({ id }: Props) {
               onGallery={handleGallery}
               onRemove={removePhoto}
               onUpdateDesc={updatePhotoDesc}
+              onImageError={useNextPhotoUrl}
             />
           )}
 
@@ -436,6 +450,7 @@ export function ReportEditScreen({ id }: Props) {
               outstandingIssues={outstandingIssues}
               suggestions={suggestions}
               photos={photos}
+              onImageError={useNextPhotoUrl}
             />
           )}
         </ScrollView>
@@ -858,12 +873,14 @@ function EditStepPhotos({
   onGallery,
   onRemove,
   onUpdateDesc,
+  onImageError,
 }: {
   photos: PhotoDraft[];
   onCamera: () => void;
   onGallery: () => void;
   onRemove: (key: string) => void;
   onUpdateDesc: (key: string, desc: string) => void;
+  onImageError: (key: string) => void;
 }) {
   return (
     <View>
@@ -912,6 +929,7 @@ function EditStepPhotos({
                 source={{ uri: photo.uri }}
                 style={{ width: 100, height: 100 }}
                 resizeMode="cover"
+                onError={() => onImageError(photo.key)}
               />
               <View className="flex-1 p-3">
                 <View className="flex-row items-center justify-between mb-2">
@@ -965,6 +983,7 @@ function EditStepReview({
   outstandingIssues,
   suggestions,
   photos,
+  onImageError,
 }: {
   selectedProject?: ReportProject;
   reportDate: string;
@@ -974,6 +993,7 @@ function EditStepReview({
   outstandingIssues: string;
   suggestions: string;
   photos: PhotoDraft[];
+  onImageError: (key: string) => void;
 }) {
   const validWork = workItems.filter((w) => w.description.trim());
   const validNext = nextItems.filter((n) => n.description.trim());
@@ -1041,6 +1061,7 @@ function EditStepReview({
                 source={{ uri: p.uri }}
                 style={{ width: 64, height: 64, borderRadius: 8 }}
                 resizeMode="cover"
+                onError={() => onImageError(p.key)}
               />
             ))}
           </ScrollView>

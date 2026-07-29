@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.14.2",
+      "date": "2026-07-30",
+      "title": "Site report photos follow the new storage path",
+      "highlights": [
+        "Site report photos saved under the new per-report uploads folder now display in the mobile app.",
+        "Older report photos continue to load automatically from the legacy storage folder.",
+        "Image links now follow the selected production, development, or local environment."
+      ]
+    },
+    {
       "version": "1.14.1",
       "date": "2026-07-30",
       "title": "Customer filters now return the selected status",

@@ -38,7 +38,7 @@
 
   <table>
     <tr><th>Session ID</th><td><code>full-native-parity-DESKTOP-9GO5QC0-20260729</code></td></tr>
-    <tr><th>Date / Time</th><td>2026-07-29 18:14:34 +04:00</td></tr>
+    <tr><th>Date / Time</th><td>2026-07-29 19:41:36 +04:00</td></tr>
     <tr><th>Workspace</th><td><code>C:\wamp64\www\prizm-mobile</code></td></tr>
     <tr><th>Branch</th><td><code>codex/feat/full-native-parity-DESKTOP-9GO5QC0</code></td></tr>
   </table>
@@ -47,7 +47,7 @@
   <div class="summary">
     <p>The mobile parity checkpoint is locally complete for every feature that can be implemented safely against the existing backend contracts. Session handling, biometric re-sign-in, search and filters, native routing, missing screens, permissions, relation fields, and related-record workflows were repaired.</p>
     <p><strong>Verified coverage:</strong> 131 registered resources, 43 action modules, 107 searchable lists, 107 filterable lists, 59 sortable lists, and 303 advertised mutations, with zero skipped contract checks.</p>
-    <p>A local Android production export passed. Release 1.14.0 is cleared for the single authorized GitHub APK workflow; no production API mutation was performed.</p>
+    <p>Release 1.14.0 passed the local export and the single authorized GitHub Android workflow, then published the rolling APK and GitHub Pages. No production API mutation was performed.</p>
   </div>
 
   <h2>2. Scope</h2>
@@ -61,7 +61,7 @@
   </table>
 
   <h2>3. Test Results</h2>
-  <p>No production API mutation or deployment was authorized. Compatibility was verified against the mobile registry and read-only backend controller/web source contracts.</p>
+  <p>No production API mutation was performed. Compatibility was verified against the mobile registry and read-only backend controller/web source contracts; deployment used GitHub Actions only.</p>
   <table>
     <tr><th>#</th><th>Check</th><th>Evidence</th><th>Result</th></tr>
     <tr><td>1</td><td>TypeScript</td><td><code>npx tsc --noEmit -p tsconfig.json</code></td><td class="pass">PASS</td></tr>
@@ -73,6 +73,7 @@
     <tr><td>7</td><td>Patch integrity</td><td><code>git diff --check</code></td><td class="pass">PASS</td></tr>
     <tr><td>8</td><td>Android production export</td><td>1,942 modules; 6.36 MB Hermes bundle</td><td class="pass">PASS</td></tr>
     <tr><td>9</td><td>Dependency security review</td><td>Inherited Expo/React Native toolchain advisories documented; no forced incompatible upgrade</td><td class="review">REVIEWED</td></tr>
+    <tr><td>10</td><td>Production Android workflow</td><td>Run 30464401286; Gradle successful; APK and Pages published</td><td class="pass">PASS</td></tr>
   </table>
 
   <h3>Acceptance Criteria</h3>
@@ -111,20 +112,20 @@
   <h2>6. Git, Deployment and Deliverables</h2>
   <table>
     <tr><th>Item</th><th>Status</th></tr>
-    <tr><td>Mobile commit / backend commit</td><td>Release candidate prepared / none</td></tr>
-    <tr><td>Push and GitHub Actions build</td><td>One rolling APK build authorized after the release commit reaches main</td></tr>
-    <tr><td>Production deployment / public release</td><td>Pending the single GitHub workflow</td></tr>
+    <tr><td>Mobile commit / backend commit</td><td><code>f7cdb5b8d63d7126ed8108b2bd9071158df821a7</code> / none</td></tr>
+    <tr><td>Push and GitHub Actions build</td><td class="pass">PASS — origin/main and run 30464401286 verified</td></tr>
+    <tr><td>Production deployment / public release</td><td class="pass">PASS — rolling latest APK and GitHub Pages published</td></tr>
     <tr><td>Release metadata bump</td><td class="pass">Complete: 1.14.0 / Android 26</td></tr>
     <tr><td>Native implementation and module audit</td><td class="pass">Complete for safe existing contracts</td></tr>
     <tr><td>QC Markdown / HTML / PDF</td><td class="pass">Complete locally in the mobile workspace</td></tr>
-    <tr><td>Canonical audit-store copy and index</td><td>To be finalized with post-deployment evidence</td></tr>
+    <tr><td>Canonical audit-store copy and index</td><td class="pass">Complete</td></tr>
   </table>
 
   <h2>7. Sign-off</h2>
   <table>
     <tr><th>Role</th><th>Name</th><th>Status</th><th>Date</th></tr>
     <tr><td>QA automation</td><td>Codex</td><td class="pass">Completed</td><td>2026-07-29</td></tr>
-    <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Pending</td><td>—</td></tr>
+    <tr><td>Product reviewer</td><td>Osama Hassan</td><td class="pass">Deployment authorized</td><td>2026-07-29</td></tr>
   </table>
   <div class="footer">Generated under Prizm QA/QC Policy · Hawiya / Asmaa · Classification: Internal</div>
 </body>

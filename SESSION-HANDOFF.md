@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-07-29 — Full Native Parity Checkpoint
 
-**Status:** Mobile work is complete for safe existing backend contracts. Release `1.14.0` is authorized and has passed the local gate; the single GitHub APK workflow is the remaining deployment step.
+**Status:** Release `1.14.0` is deployed. Commit `f7cdb5b` is on `origin/main`; GitHub Actions run `30464401286` completed successfully and published the rolling Android APK.
 
 ### Completed
 
@@ -21,6 +21,9 @@
 - Mutations: 303 advertised; zero skipped.
 - Mobile regression contracts and patch integrity: pass.
 - Local Android production export: pass (1,942 modules, 6.36 MB Hermes bundle); no GitHub Actions minutes used.
+- Production Android build: pass (`BUILD SUCCESSFUL` in 25m21s; 88 MB staged APK).
+- Rolling release: `https://github.com/Ghazalawy/prizm-mobile/releases/download/latest/prizm-mobile.apk` (91,536,512 bytes).
+- GitHub Pages deployment: pass in the same workflow.
 
 ### Backend Work Still Required
 
@@ -32,7 +35,7 @@ Task Templates/Task Manage, Product Families, Client Items, Cost Center child al
 - QC report: `docs/qc/PE-QAQC-QC-RPT-26007-R01__full-native-parity-DESKTOP-9GO5QC0-20260729.md`
 - Printable report: `docs/qc/PE-QAQC-QC-RPT-26007-R01__full-native-parity-DESKTOP-9GO5QC0-20260729.pdf`
 
-The canonical audit-store copy and `_INDEX.md` update are deferred to the final release because that store is outside this session’s write boundary.
+The canonical audit-store copy and `_INDEX.md` are updated with the final post-deployment QC evidence.
 
 ---
 

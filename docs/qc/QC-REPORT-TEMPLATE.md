@@ -6,7 +6,7 @@
 |---|---|
 | Report Code | `PE-QAQC-QC-RPT-26007-R01` |
 | Session ID | `full-native-parity-DESKTOP-9GO5QC0-20260729` |
-| Date / Time | `2026-07-29 18:14:34 +04:00` |
+| Date / Time | `2026-07-29 19:41:36 +04:00` |
 | Agent / Model | `Codex / GPT-5` |
 | Workspace | `C:\wamp64\www\prizm-mobile` |
 | Branch | `codex/feat/full-native-parity-DESKTOP-9GO5QC0` |
@@ -14,7 +14,7 @@
 
 ## 1. Executive Summary
 
-The mobile parity release candidate is complete for all features that can be implemented safely against the existing backend contracts. The work repaired session handling, biometric re-sign-in, search and filter behavior, native routing, missing screens, relation fields, permissions, and related-record workflows. Automated contract checks now cover 131 registered resources, 43 action modules, 107 filterable lists, 107 searchable lists, 59 sortable lists, and 303 advertised mutations with zero skipped validations. A local Android production export passed. Release `1.14.0` is cleared for the single authorized GitHub APK workflow; no production API mutation was performed.
+The mobile parity release is deployed for all features that can be implemented safely against the existing backend contracts. The work repaired session handling, biometric re-sign-in, search and filter behavior, native routing, missing screens, relation fields, permissions, and related-record workflows. Automated contract checks cover 131 registered resources, 43 action modules, 107 filterable lists, 107 searchable lists, 59 sortable lists, and 303 advertised mutations with zero skipped validations. Release `1.14.0` was built once by GitHub Actions and published as the rolling Android APK. No production API mutation was performed.
 
 Six web features remain intentionally unavailable because the existing APIs do not safely mirror the web application’s validation or permission rules. Shipping guessed mobile behavior for those pages would create data-integrity or authorization risk.
 
@@ -31,7 +31,7 @@ Six web features remain intentionally unavailable because the existing APIs do n
 
 ## 3. Test Results
 
-No production API mutation or deployment was authorized in this checkpoint. API compatibility was verified against the mobile registry and the read-only backend controller/web source contracts.
+No production API mutation was performed. API compatibility was verified against the mobile registry and the read-only backend controller/web source contracts; deployment used the repository's GitHub Actions release workflow only.
 
 | # | Check | Command / Evidence | Result |
 |---|---|---|---|
@@ -44,6 +44,7 @@ No production API mutation or deployment was authorized in this checkpoint. API 
 | 7 | Patch integrity | `git diff --check` | PASS |
 | 8 | Android production export | Expo local Android export | PASS: 1,942 modules; 6.36 MB Hermes bundle |
 | 9 | Dependency security review | `npm audit --omit=dev --json` | REVIEWED: inherited Expo/React Native toolchain advisories remain; no forced incompatible upgrade applied |
+| 10 | Production Android workflow | GitHub Actions run `30464401286` | PASS: Gradle `BUILD SUCCESSFUL`; APK and Pages published |
 
 ### Acceptance Criteria
 
@@ -97,11 +98,11 @@ These require backend changes in `prizm331`; the current execution boundary perm
 
 | Item | Status |
 |---|---|
-| Mobile commit | Release candidate prepared on `codex/feat/full-native-parity-DESKTOP-9GO5QC0` |
+| Mobile commit | `f7cdb5b8d63d7126ed8108b2bd9071158df821a7` |
 | Backend commit | None |
-| GitHub push / PR | Authorized; pending at pre-deployment QC checkpoint |
-| GitHub Actions build | One rolling APK build authorized after the release commit reaches `main` |
-| Production deployment | Pending the single GitHub workflow |
+| GitHub push / PR | Fast-forward push to `origin/main`; remote verified at `f7cdb5b` |
+| GitHub Actions build | PASS — run `30464401286` |
+| Production deployment | PASS — rolling `latest` release and GitHub Pages published |
 | Release metadata bump | Complete: `1.14.0`, Android versionCode `26` |
 
 ## 8. Deliverables
@@ -113,14 +114,14 @@ These require backend changes in `prizm331`; the current execution boundary perm
 | Automated verification scripts | Complete |
 | Local Android export check | Complete |
 | QC Markdown / HTML / PDF | Complete locally in the mobile workspace |
-| Canonical audit-store copy and index | To be finalized with post-deployment evidence |
-| Final APK/release/deployment | Authorized; awaiting the GitHub workflow |
+| Canonical audit-store copy and index | Complete |
+| Final APK/release/deployment | PASS — `prizm-mobile.apk`, 91,536,512 bytes |
 
 ## 9. Sign-off
 
 | Role | Name | Status | Date |
 |---|---|---|---|
 | QA automation | Codex | Completed | 2026-07-29 |
-| Product reviewer | Osama Hassan | Pending | — |
+| Product reviewer | Osama Hassan | Deployment authorized | 2026-07-29 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

@@ -45,7 +45,7 @@ function loadTypeScriptModule(relativePath, imports = {}) {
 }
 
 const { isInvalidTokenResponse } = loadTypeScriptModule("lib/auth-response.ts");
-const { serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
+const { serializeDirectFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
 const authEvents = loadTypeScriptModule("lib/auth-events.ts");
 const routing = loadTypeScriptModule("lib/native-routing.ts", {
   "react-native": { Linking: { openURL: async () => undefined } },
@@ -80,6 +80,30 @@ assert.equal(payload.rules[2].has_dynamic_value, true);
 assert.deepEqual(payload.rules[3].value, ["4", "5"]);
 assert.equal(payload.rules[4].value, "");
 assert.deepEqual(serializePerfexFilterGroup({ match_type: "and", rules: [] }), {});
+
+assert.deepEqual(
+  serializeDirectFilterGroup({
+    match_type: "and",
+    rules: [{ id: "active", type: "MultiSelectRule", operator: "in", value: ["0"] }],
+  }),
+  { active: "0" },
+  "the customer Inactive chip must produce active=0 instead of a web-table filters payload",
+);
+assert.deepEqual(
+  serializeDirectFilterGroup(
+    {
+      match_type: "and",
+      rules: [{ id: "active", type: "MultiSelectRule", operator: "in", value: ["1", "0"] }],
+    },
+    {
+      statusField: "active",
+      statusValues: ["1", "0"],
+      allStatusesParams: { include_inactive: "1" },
+    },
+  ),
+  { include_inactive: "1" },
+  "selecting every customer status must lift the API's active-only default",
+);
 
 let invalidTokenEvents = 0;
 authEvents.setInvalidTokenHandler(() => { invalidTokenEvents += 1; });

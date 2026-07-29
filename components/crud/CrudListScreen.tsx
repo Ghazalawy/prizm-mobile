@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listEntities, normalizeList, type ListParams } from "@/lib/api";
-import { serializePerfexFilterGroup } from "@/lib/filters";
+import { serializeDirectFilterGroup } from "@/lib/filters";
 import {
   getModule,
   getFilterFields,
@@ -62,7 +62,10 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride, initialSear
   const serverSearch = module?.clientSideSearch ? "" : debouncedSearch;
   const awaitingRequiredSearch = Boolean(module?.requiresSearch && !serverSearch);
 
-  const filterParams = useMemo(() => filterGroupToParams(filterGroup), [filterGroup]);
+  const filterParams = useMemo(
+    () => filterGroupToParams(filterGroup, module),
+    [filterGroup, module],
+  );
 
   useEffect(() => {
     setSearch(requestedSearch);
@@ -527,8 +530,15 @@ const ListSeparator = memo(function ListSeparator() {
  * Convert FilterGroup rules to API query params for server-side filtering.
  * Maps operators to query param formats the PHP API controller understands.
  */
-export function filterGroupToParams(group: FilterGroup): Record<string, string> {
-  return serializePerfexFilterGroup(group);
+export function filterGroupToParams(
+  group: FilterGroup,
+  module?: ModuleDefinition,
+): Record<string, string> {
+  return serializeDirectFilterGroup(group, {
+    statusField: module?.statusField,
+    statusValues: module?.statusOptions?.map((option) => option.value),
+    allStatusesParams: module?.allStatusesParams,
+  });
 }
 
 function clientSideSort(

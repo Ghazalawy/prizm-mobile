@@ -253,6 +253,73 @@ export function serializePerfexFilterGroup(
   };
 }
 
+type DirectFilterOptions = {
+  statusField?: string;
+  statusValues?: Array<string | number>;
+  /** Extra query parameters needed when every status is selected and the
+   * endpoint otherwise applies a restrictive default (customers defaults to
+   * active=1, for example). */
+  allStatusesParams?: Record<string, string | number>;
+};
+
+/**
+ * Serialize filters for the mobile REST controllers. These controllers accept
+ * ordinary query parameters (`active=0`, `city=Dubai`, …), not Perfex's web
+ * table `filters` JSON payload.
+ */
+export function serializeDirectFilterGroup(
+  group: { match_type: MatchType; rules: SerializableFilterRule[] },
+  options: DirectFilterOptions = {},
+): Record<string, string> {
+  const params: Record<string, string> = {};
+
+  for (const rule of group.rules) {
+    const values = Array.isArray(rule.value)
+      ? rule.value.map(String).filter((value) => value !== "")
+      : String(rule.value ?? "") === ""
+        ? []
+        : [String(rule.value)];
+
+    if (values.length === 0) continue;
+
+    if (
+      rule.id === options.statusField &&
+      rule.operator === "in" &&
+      options.statusValues?.length
+    ) {
+      const supported = new Set(options.statusValues.map(String));
+      const selected = new Set(values);
+      if ([...supported].every((value) => selected.has(value))) {
+        for (const [key, value] of Object.entries(options.allStatusesParams ?? {})) {
+          params[key] = String(value);
+        }
+        continue;
+      }
+    }
+
+    switch (rule.operator) {
+      case "equal":
+      case "in":
+      case "contains":
+      case "begins_with":
+      case "ends_with":
+      case "between":
+      case "not_between":
+      case "dynamic":
+        params[rule.id] = values.join(",");
+        break;
+      default:
+        // The REST list endpoints do not have a shared encoding for negative,
+        // empty, or comparison operators. Modules only expose operators their
+        // endpoint supports, so an unsupported rule must not be inverted into
+        // an apparently valid query.
+        break;
+    }
+  }
+
+  return params;
+}
+
 // ─── Helper: build human-readable filter summary ──────────────────────────
 
 export function describeRule(

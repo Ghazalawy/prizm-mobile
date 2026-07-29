@@ -1,5 +1,30 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-07-30 — Customer Status Filter Hotfix
+
+**Status:** Local and Android emulator QC passed. Release `1.14.1` (Android versionCode `27`) is cleared for the push/build protocol; post-deployment evidence is pending.
+
+### Completed
+
+- Traced the released customer filter request to an unsupported Perfex web-table JSON payload.
+- Restored direct mobile REST filter parameters, including `active=0` for Inactive.
+- Added correct all-status behavior through `include_inactive=1` and limited customer operators to the controller contract.
+- Added regression checks for Inactive and all-status serialization.
+
+### Verified
+
+- Production read-only comparison: broken payload returned 168 Active customers; `active=0` returned 17 Inactive customers.
+- Android quick chip: 17 total, eight visible Inactive rows, zero visible Active rows.
+- Android funnel flow: badge 1, 17 total, eight visible Inactive rows, zero visible Active rows.
+- TypeScript, Expo dependencies, release metadata, mobile contracts, 303 mutation contracts, and 107 list contracts pass.
+
+### Evidence
+
+- QC report template: `docs/qc/QC-REPORT-TEMPLATE.md`
+- Canonical report after deployment: `PE-QAQC-QC-RPT-26008-R01__customer-filter-emulator-20260730.md/.pdf`
+
+---
+
 ## Current Session — 2026-07-29 — Full Native Parity Checkpoint
 
 **Status:** Release `1.14.0` is deployed. Commit `f7cdb5b` is on `origin/main`; GitHub Actions run `30464401286` completed successfully and published the rolling Android APK.

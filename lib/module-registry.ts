@@ -379,6 +379,9 @@ export type ModuleDefinition = {
   statusField?: string;
   /** Status options with optional color for StatusBadge rendering. */
   statusOptions?: StatusOption[];
+  /** Extra params used when every status is selected but the server's default
+   * list scope would otherwise hide records. */
+  allStatusesParams?: Record<string, string | number>;
   /**
    * Perfix filter rule definitions — maps field keys to explicit filter rule
    * types and operator allowlists. When set, this overrides auto-inference
@@ -635,9 +638,16 @@ export const MODULES: ModuleDefinition[] = [
       { label: "Active", value: "1", color: "#16A34A" },
       { label: "Inactive", value: "0", color: "#DC2626" },
     ],
+    allStatusesParams: { include_inactive: "1" },
     filterRules: {
-      active: { ruleType: "MultiSelectRule" },
-      country: { operators: ["equal", "not_equal"] },
+      active: { ruleType: "MultiSelectRule", operators: ["in"] },
+      country: { operators: ["equal"] },
+      city: { operators: ["contains"] },
+      state: { operators: ["contains"] },
+      phonenumber: { operators: ["contains"] },
+      website: { operators: ["contains"] },
+      vat: { operators: ["contains"] },
+      datecreated: { ruleType: "DateRule", operators: ["equal", "between"] },
     },
     fields: [
       { key: "company", label: "Company", section: "Customer", required: true },

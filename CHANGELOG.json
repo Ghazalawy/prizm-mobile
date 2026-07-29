@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.14.1",
+      "date": "2026-07-30",
+      "title": "Customer filters now return the selected status",
+      "highlights": [
+        "Selecting Inactive customers now returns only inactive records.",
+        "The funnel filter and quick status chips use the customer API's supported query format.",
+        "Selecting both Active and Inactive correctly shows all customers."
+      ]
+    },
+    {
       "version": "1.14.0",
       "date": "2026-07-29",
       "title": "Reliable sign-in and expanded native parity",

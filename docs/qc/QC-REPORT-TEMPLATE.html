@@ -2,130 +2,103 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
-  <title>PE-QAQC-QC-RPT-26007-R01 — Full Native Parity Checkpoint</title>
+  <title>PE-QAQC-QC-RPT-26008-R01 — Customer Status Filter Hotfix</title>
   <style>
-    @page { size: A4; margin: 16mm 14mm; }
-    :root { --navy:#102a43; --blue:#1769aa; --teal:#0f766e; --pale:#edf6f9; --line:#cbd5e1; --ink:#17212b; }
+    @page { size:A4; margin:15mm 14mm; }
+    :root { --navy:#103090; --blue:#1769aa; --green:#087f5b; --pale:#edf6f9; --line:#cbd5e1; --ink:#17212b; }
     * { box-sizing:border-box; }
-    body { margin:0; color:var(--ink); font:10.2pt/1.45 Arial, sans-serif; }
-    h1 { color:var(--navy); font-size:23pt; margin:0 0 4px; }
-    h2 { color:var(--navy); border-bottom:2px solid var(--teal); font-size:14pt; margin:22px 0 9px; padding-bottom:4px; }
-    h3 { color:var(--blue); font-size:11.5pt; margin:15px 0 7px; }
-    p { margin:6px 0; }
-    .top { border-left:7px solid var(--teal); padding:4px 0 7px 14px; margin-bottom:18px; }
+    body { margin:0; color:var(--ink); font:9.8pt/1.4 Calibri, Arial, sans-serif; }
+    h1 { color:var(--navy); font-size:22pt; margin:0 0 3px; }
+    h2 { color:var(--navy); border-bottom:2px solid var(--blue); font-size:13.5pt; margin:18px 0 8px; padding-bottom:3px; }
+    h3 { color:var(--blue); font-size:11pt; margin:13px 0 6px; }
+    p { margin:5px 0; }
+    .top { border-left:7px solid var(--navy); padding:4px 0 7px 13px; margin-bottom:14px; }
     .code { color:var(--blue); font-weight:bold; letter-spacing:.04em; }
-    .classification { float:right; color:#475569; font-size:8.5pt; text-transform:uppercase; letter-spacing:.09em; }
-    .summary { background:var(--pale); border:1px solid #b6dce5; border-radius:8px; padding:12px 14px; }
-    .result { color:var(--teal); font-weight:bold; font-size:12pt; }
-    table { width:100%; border-collapse:collapse; margin:7px 0 12px; page-break-inside:auto; }
+    .classification { float:right; color:#475569; font-size:8pt; text-transform:uppercase; letter-spacing:.09em; }
+    .summary { background:var(--pale); border:1px solid #b6dce5; border-radius:7px; padding:10px 12px; }
+    .result { color:var(--green); font-weight:bold; font-size:11pt; }
+    table { width:100%; border-collapse:collapse; margin:6px 0 10px; page-break-inside:auto; }
     tr { page-break-inside:avoid; }
-    th, td { border:1px solid var(--line); padding:5px 7px; vertical-align:top; }
+    th, td { border:1px solid var(--line); padding:4px 6px; vertical-align:top; }
     th { background:var(--navy); color:#fff; text-align:left; }
     tbody tr:nth-child(even) td { background:#f8fafc; }
-    code { font:8.8pt Consolas, monospace; overflow-wrap:anywhere; }
-    .pass { color:#087f5b; font-weight:bold; }
-    .review { color:#9a6700; font-weight:bold; }
-    .footer { margin-top:24px; padding-top:8px; border-top:1px solid var(--line); color:#64748b; font-size:8.5pt; }
+    code { font:8.2pt Consolas, monospace; overflow-wrap:anywhere; }
+    .pass { color:var(--green); font-weight:bold; }
+    .pending { color:#9a6700; font-weight:bold; }
+    .footer { margin-top:20px; padding-top:7px; border-top:1px solid var(--line); color:#64748b; font-size:8pt; }
   </style>
 </head>
 <body>
   <div class="classification">Internal</div>
   <header class="top">
-    <div class="code">PE-QAQC-QC-RPT-26007-R01</div>
-    <h1>Full Native Parity Checkpoint</h1>
-    <div>Prizm Mobile · 29 July 2026 · Codex / GPT-5</div>
+    <div class="code">PE-QAQC-QC-RPT-26008-R01</div>
+    <h1>Customer Status Filter Hotfix</h1>
+    <div>Prizm Mobile · 30 July 2026 · Codex / GPT-5</div>
   </header>
 
   <table>
-    <tr><th>Session ID</th><td><code>full-native-parity-DESKTOP-9GO5QC0-20260729</code></td></tr>
-    <tr><th>Date / Time</th><td>2026-07-29 19:41:36 +04:00</td></tr>
+    <tr><th>Session ID</th><td><code>customer-filter-emulator-20260730</code></td></tr>
+    <tr><th>Date / Time</th><td>2026-07-30 01:08:21 +04:00</td></tr>
     <tr><th>Workspace</th><td><code>C:\wamp64\www\prizm-mobile</code></td></tr>
-    <tr><th>Branch</th><td><code>codex/feat/full-native-parity-DESKTOP-9GO5QC0</code></td></tr>
+    <tr><th>Branch</th><td><code>codex/fix-customer-filter</code></td></tr>
   </table>
 
   <h2>1. Executive Summary</h2>
   <div class="summary">
-    <p>The mobile parity checkpoint is locally complete for every feature that can be implemented safely against the existing backend contracts. Session handling, biometric re-sign-in, search and filters, native routing, missing screens, permissions, relation fields, and related-record workflows were repaired.</p>
-    <p><strong>Verified coverage:</strong> 131 registered resources, 43 action modules, 107 searchable lists, 107 filterable lists, 59 sortable lists, and 303 advertised mutations, with zero skipped contract checks.</p>
-    <p>Release 1.14.0 passed the local export and the single authorized GitHub Android workflow, then published the rolling APK and GitHub Pages. No production API mutation was performed.</p>
+    <p>The customer funnel recorded Inactive but the released app sent a Perfex web-table JSON payload that <code>Customers.php</code> does not parse. With no direct <code>active</code> parameter, the API silently applied its <code>active=1</code> default.</p>
+    <p>The corrected app sends <code>active=0</code> for Inactive, <code>active=1</code> for Active, and <code>include_inactive=1</code> when both statuses are selected.</p>
+    <p><strong>Android result:</strong> both the quick chip and Funnel → Inactive → Apply returned 17 total; all eight visible rows were Inactive and zero were Active.</p>
   </div>
 
-  <h2>2. Scope</h2>
+  <h2>2. Scope and Root Cause</h2>
   <table>
-    <tr><th>Area</th><th>Work completed</th></tr>
-    <tr><td>Authentication</td><td>401-only sign-out, generation-safe session clearing, CSRF/403 handling, biometric credential vault and re-sign-in</td></tr>
-    <tr><td>Search and filters</td><td>Correct query keys, declared server/client search, required-search support, capability-driven filter and sort controls</td></tr>
-    <tr><td>Native pages</td><td>Custom Statuses, Advance Leads, Prizm Documents, DEWA Contacts, Resource Kits, Calculation Sheets, Material Categories, UNSPSC, Survey Send History, Timesheet History, leave approval, calendar edit</td></tr>
-    <tr><td>Related workflows</td><td>Inline child create/edit/delete, route-record edit mode, relation pickers, Technical Inquiry items, Budget and UNSPSC specifications</td></tr>
-    <tr><td>Validation</td><td>TypeScript, Expo alignment, release metadata, list and mutation contracts, regressions, Android production export</td></tr>
+    <tr><th>Area</th><th>Finding / change</th></tr>
+    <tr><td>Released request</td><td><code>filters={...active 0...}</code> → HTTP 200, 168 total, all returned rows Active</td></tr>
+    <tr><td>Supported request</td><td><code>active=0</code> → HTTP 200, 17 total, zero non-Inactive rows</td></tr>
+    <tr><td>Transport fix</td><td>Module-aware direct REST query serialization</td></tr>
+    <tr><td>Status semantics</td><td>Preserve string <code>0</code>; map every-status selection to <code>include_inactive=1</code></td></tr>
+    <tr><td>Operator safety</td><td>Customer UI exposes only operators implemented by the controller</td></tr>
   </table>
 
-  <h2>3. Test Results</h2>
-  <p>No production API mutation was performed. Compatibility was verified against the mobile registry and read-only backend controller/web source contracts; deployment used GitHub Actions only.</p>
+  <h2>3. Verification</h2>
   <table>
     <tr><th>#</th><th>Check</th><th>Evidence</th><th>Result</th></tr>
-    <tr><td>1</td><td>TypeScript</td><td><code>npx tsc --noEmit -p tsconfig.json</code></td><td class="pass">PASS</td></tr>
-    <tr><td>2</td><td>Expo SDK alignment</td><td><code>npx expo install --check</code></td><td class="pass">PASS</td></tr>
-    <tr><td>3</td><td>Release metadata</td><td><code>npm run verify:release</code> — 1.14.0 / Android 26</td><td class="pass">PASS</td></tr>
-    <tr><td>4</td><td>List/search/filter/sort</td><td>105 server + 2 client searchable; 107 filterable; 59 sortable; 0 skipped</td><td class="pass">PASS</td></tr>
-    <tr><td>5</td><td>Mutation contracts</td><td>303 advertised mutations; 0 skipped</td><td class="pass">PASS</td></tr>
-    <tr><td>6</td><td>Mobile regression contracts</td><td><code>npm run test:contracts</code></td><td class="pass">PASS</td></tr>
-    <tr><td>7</td><td>Patch integrity</td><td><code>git diff --check</code></td><td class="pass">PASS</td></tr>
-    <tr><td>8</td><td>Android production export</td><td>1,942 modules; 6.36 MB Hermes bundle</td><td class="pass">PASS</td></tr>
-    <tr><td>9</td><td>Dependency security review</td><td>Inherited Expo/React Native toolchain advisories documented; no forced incompatible upgrade</td><td class="review">REVIEWED</td></tr>
-    <tr><td>10</td><td>Production Android workflow</td><td>Run 30464401286; Gradle successful; APK and Pages published</td><td class="pass">PASS</td></tr>
+    <tr><td>1</td><td>Android native build</td><td>Gradle <code>app:assembleDebug</code>, x86_64</td><td class="pass">PASS</td></tr>
+    <tr><td>2</td><td>Quick Inactive chip</td><td>17 total; 8 visible Inactive; 0 visible Active</td><td class="pass">PASS</td></tr>
+    <tr><td>3</td><td>Funnel → Inactive → Apply</td><td>Badge 1; 17 total; 8 visible Inactive; 0 visible Active</td><td class="pass">PASS</td></tr>
+    <tr><td>4</td><td>Production read-only API</td><td>HTTP 200; 17 total; 0 non-Inactive</td><td class="pass">PASS</td></tr>
+    <tr><td>5</td><td>TypeScript / Expo</td><td><code>tsc</code> and <code>expo install --check</code></td><td class="pass">PASS</td></tr>
+    <tr><td>6</td><td>Release metadata</td><td>1.14.1 / Android 27</td><td class="pass">PASS</td></tr>
+    <tr><td>7</td><td>Regression contracts</td><td>Mobile, 303 mutation, and 107 list/filter contracts</td><td class="pass">PASS</td></tr>
+    <tr><td>8</td><td>Patch integrity / secrets</td><td>Scoped diff reviewed; no credential hook or generated Android tree</td><td class="pass">PASS</td></tr>
   </table>
 
   <h3>Acceptance Criteria</h3>
   <table>
-    <tr><th>Severity</th><th>Passed</th><th>Total</th><th>Result</th></tr>
-    <tr><td>S1 — authentication, authorization, session integrity</td><td>8</td><td>8</td><td class="pass">100% PASS</td></tr>
-    <tr><td>S2 — API, mutation, search and filter contracts</td><td>6</td><td>6</td><td class="pass">100% PASS</td></tr>
-    <tr><td>S3 — navigation, native UI and Android export</td><td>5</td><td>5</td><td class="pass">100% PASS</td></tr>
-    <tr><td>S4 — documentation and risk disclosure</td><td>4</td><td>4</td><td class="pass">PASS</td></tr>
+    <tr><th>Criterion</th><th>Result</th></tr>
+    <tr><td>Inactive never renders an Active customer row</td><td class="pass">100% PASS</td></tr>
+    <tr><td>Funnel and quick-chip paths agree</td><td class="pass">100% PASS</td></tr>
+    <tr><td>All statuses lift the active-only API default</td><td class="pass">100% PASS</td></tr>
+    <tr><td>Existing build and contract gates remain green</td><td class="pass">100% PASS</td></tr>
   </table>
-  <p class="result">Overall checkpoint: PASS WITH DOCUMENTED BACKEND BLOCKERS</p>
+  <p class="result">QC gate before push: PASS — no open defects in scope.</p>
 
-  <h2>4. Defects Fixed</h2>
-  <table>
-    <tr><th>Severity</th><th>Defect</th><th>Resolution</th></tr>
-    <tr><td>S1</td><td>Authenticated 403/CSRF responses could be treated as expired sessions</td><td>Only HTTP 401 can clear authentication</td></tr>
-    <tr><td>S1</td><td>An older request could clear a newly established session</td><td>Added session-generation protection</td></tr>
-    <tr><td>S2</td><td>Biometric unlock lacked dependable re-sign-in</td><td>Added secure credential vault and biometric reauthentication</td></tr>
-    <tr><td>S2</td><td>Some search, filter and sort controls sent ignored parameters</td><td>Corrected module contracts and removed unsupported controls</td></tr>
-    <tr><td>S2</td><td>Related queries and native routes were incomplete</td><td>Centralized safe querying and added native route/page coverage</td></tr>
-    <tr><td>S2</td><td>Cost Center and Technical Inquiry children used wrong permissions/contracts</td><td>Corrected permission features and definitions</td></tr>
-  </table>
-
-  <h2>5. Intentionally Blocked Features</h2>
-  <table>
-    <tr><th>Web feature</th><th>Backend blocker</th></tr>
-    <tr><td>Task Templates / Task Manage</td><td>Direct-table API writes bypass web model/permissions; search field names are invalid</td></tr>
-    <tr><td>Product Families</td><td>No API equivalent for tree validation, linked-item protection, propagation, or unlink confirmation</td></tr>
-    <tr><td>Client Items</td><td>No API equivalent for composition review</td></tr>
-    <tr><td>Cost Center child allocations</td><td>Child contracts are incomplete/unsafe</td></tr>
-    <tr><td>Survey Results</td><td>No safe API equivalent of the web results workflow</td></tr>
-    <tr><td>Knowledge article CRUD</td><td>API calls nonexistent backend methods; publish/unpublish remains available</td></tr>
-  </table>
-  <p>These require changes in <code>prizm331</code>. This session had read-only access to that repository.</p>
-
-  <h2>6. Git, Deployment and Deliverables</h2>
+  <h2>4. Files, Release and Rollback</h2>
   <table>
     <tr><th>Item</th><th>Status</th></tr>
-    <tr><td>Mobile commit / backend commit</td><td><code>f7cdb5b8d63d7126ed8108b2bd9071158df821a7</code> / none</td></tr>
-    <tr><td>Push and GitHub Actions build</td><td class="pass">PASS — origin/main and run 30464401286 verified</td></tr>
-    <tr><td>Production deployment / public release</td><td class="pass">PASS — rolling latest APK and GitHub Pages published</td></tr>
-    <tr><td>Release metadata bump</td><td class="pass">Complete: 1.14.0 / Android 26</td></tr>
-    <tr><td>Native implementation and module audit</td><td class="pass">Complete for safe existing contracts</td></tr>
-    <tr><td>QC Markdown / HTML / PDF</td><td class="pass">Complete locally in the mobile workspace</td></tr>
-    <tr><td>Canonical audit-store copy and index</td><td class="pass">Complete</td></tr>
+    <tr><td>Production code</td><td><code>lib/filters.ts</code>, <code>CrudListScreen.tsx</code>, <code>module-registry.ts</code></td></tr>
+    <tr><td>Regression test</td><td><code>scripts/test-mobile-contracts.mjs</code></td></tr>
+    <tr><td>Release metadata</td><td class="pass">1.14.1 / Android versionCode 27</td></tr>
+    <tr><td>Base commit</td><td><code>a1d102f03efd8ecace359b94c3e94daa01154662</code></td></tr>
+    <tr><td>Hotfix commit / workflow / APK</td><td class="pending">Pending QC-gated push and build</td></tr>
+    <tr><td>Rollback</td><td>Revert the hotfix commit; no schema or persisted-data migration</td></tr>
   </table>
 
-  <h2>7. Sign-off</h2>
+  <h2>5. Sign-off</h2>
   <table>
     <tr><th>Role</th><th>Name</th><th>Status</th><th>Date</th></tr>
-    <tr><td>QA automation</td><td>Codex</td><td class="pass">Completed</td><td>2026-07-29</td></tr>
-    <tr><td>Product reviewer</td><td>Osama Hassan</td><td class="pass">Deployment authorized</td><td>2026-07-29</td></tr>
+    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + emulator gate PASS</td><td>2026-07-30</td></tr>
+    <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Fix and emulator test requested</td><td>2026-07-30</td></tr>
   </table>
   <div class="footer">Generated under Prizm QA/QC Policy · Hawiya / Asmaa · Classification: Internal</div>
 </body>

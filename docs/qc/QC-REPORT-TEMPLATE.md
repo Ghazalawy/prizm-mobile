@@ -1,127 +1,99 @@
-# QC Report — Full Native Parity Checkpoint
+# QC Report — Customer Status Filter Hotfix
 
 ## Report Header
 
 | Field | Value |
 |---|---|
-| Report Code | `PE-QAQC-QC-RPT-26007-R01` |
-| Session ID | `full-native-parity-DESKTOP-9GO5QC0-20260729` |
-| Date / Time | `2026-07-29 19:41:36 +04:00` |
+| Report Code | `PE-QAQC-QC-RPT-26008-R01` |
+| Session ID | `customer-filter-emulator-20260730` |
+| Date / Time | `2026-07-30 01:08:21 +04:00` |
 | Agent / Model | `Codex / GPT-5` |
 | Workspace | `C:\wamp64\www\prizm-mobile` |
-| Branch | `codex/feat/full-native-parity-DESKTOP-9GO5QC0` |
+| Branch | `codex/fix-customer-filter` |
+| Duration / Turns | `~1h 05m / 1 active user turn` |
 | Classification | Internal |
 
 ## 1. Executive Summary
 
-The mobile parity release is deployed for all features that can be implemented safely against the existing backend contracts. The work repaired session handling, biometric re-sign-in, search and filter behavior, native routing, missing screens, relation fields, permissions, and related-record workflows. Automated contract checks cover 131 registered resources, 43 action modules, 107 filterable lists, 107 searchable lists, 59 sortable lists, and 303 advertised mutations with zero skipped validations. Release `1.14.0` was built once by GitHub Actions and published as the rolling Android APK. No production API mutation was performed.
+Customer status filters were recorded in the funnel UI but ignored by the customer API. The mobile list sent Perfex web-table JSON in a `filters` parameter, while `Customers.php::data_get()` accepts direct query parameters and defaults to `active=1` when no direct `active` parameter exists. The corrected app sends `active=0` for Inactive, `active=1` for Active, and `include_inactive=1` when both statuses are selected.
 
-Six web features remain intentionally unavailable because the existing APIs do not safely mirror the web application’s validation or permission rules. Shipping guessed mobile behavior for those pages would create data-integrity or authorization risk.
+The reported flow was exercised in an Android emulator against production read-only data. Both the quick Inactive chip and Funnel → Inactive → Apply returned `17 total`; every visible customer row was Inactive and no visible row was Active.
 
 ## 2. Scope
 
-| Area | Work completed |
+| Area | Change |
 |---|---|
-| Authentication | 401-only sign-out, generation-safe session clearing, CSRF/403 handling, biometric credential vault and re-sign-in |
-| Search and filters | Correct query keys, server/client search declarations, required-search support, filter and sort capability checks |
-| Native pages | Custom Statuses, Advance Leads, Prizm Documents, DEWA Contacts, Resource Kits, Calculation Sheets, Material Categories, UNSPSC, Survey Send History, Timesheet History, leave approval, calendar edit |
-| Related workflows | Inline child create/edit/delete, route-record edit mode, relation pickers, Technical Inquiry items, Budget specifications, UNSPSC specifications |
-| Routing | Internal ERP links resolve to native screens or the native ERP hub |
-| Validation | TypeScript, Expo alignment, release metadata, list contracts, mutation contracts, mobile regressions, Android production export |
+| Filter transport | Added direct REST query serialization for mobile list controllers |
+| Customer status | Preserved the string value `0` and mapped all-status selection to `include_inactive=1` |
+| Customer operators | Limited the UI to operators actually implemented by `Customers.php` |
+| Regression coverage | Added assertions for Inactive and all-status query parameters |
+| Release | Prepared patch `1.14.1`, Android versionCode `27` |
 
-## 3. Test Results
+Out of scope: backend mutation, database/schema changes, and unrelated mobile pages.
 
-No production API mutation was performed. API compatibility was verified against the mobile registry and the read-only backend controller/web source contracts; deployment used the repository's GitHub Actions release workflow only.
+## 3. Root Cause Evidence
 
-| # | Check | Command / Evidence | Result |
+| Request | Production result | Interpretation |
+|---|---:|---|
+| `customers?filters={...active 0...}&limit=20` | HTTP 200, total 168, returned rows all Active | Broken release payload was ignored; API applied its active-only default |
+| `customers?active=0&limit=20` | HTTP 200, total 17, returned rows all Inactive | Direct parameter is the supported API contract |
+
+Ground truth: `C:\wamp64\www\prizm331\modules\api\controllers\Customers.php` reads direct `active`, `country`, text, date, search, pagination, and sort parameters. It does not parse the Perfex web-table `filters` payload.
+
+## 4. Test Results
+
+| # | Check | Evidence | Result |
 |---|---|---|---|
-| 1 | TypeScript | `npx tsc --noEmit -p tsconfig.json` | PASS (exit 0) |
-| 2 | Expo SDK alignment | `npx expo install --check` | PASS |
-| 3 | Release metadata consistency | `npm run verify:release` | PASS (`1.14.0`, Android `26`) |
-| 4 | List/search/filter/sort contracts | `npm run test:list-contracts` | PASS: 105 server-searchable + 2 client-searchable; 107 filterable; 59 sortable; 0 skipped |
-| 5 | Mutation contracts | `npm run test:crud-contracts` | PASS: 303 advertised mutations; 0 skipped |
-| 6 | Mobile regression contracts | `npm run test:contracts` | PASS |
-| 7 | Patch integrity | `git diff --check` | PASS |
-| 8 | Android production export | Expo local Android export | PASS: 1,942 modules; 6.36 MB Hermes bundle |
-| 9 | Dependency security review | `npm audit --omit=dev --json` | REVIEWED: inherited Expo/React Native toolchain advisories remain; no forced incompatible upgrade applied |
-| 10 | Production Android workflow | GitHub Actions run `30464401286` | PASS: Gradle `BUILD SUCCESSFUL`; APK and Pages published |
+| 1 | Android native debug build | Gradle `app:assembleDebug`, x86_64 | PASS |
+| 2 | Quick Inactive chip | 17 total; 8 visible Inactive rows; 0 visible Active rows | PASS |
+| 3 | Funnel → Inactive → Apply | 17 total; badge 1; 8 visible Inactive rows; 0 visible Active rows | PASS |
+| 4 | Direct production read | HTTP 200; 17 total; 0 non-Inactive rows | PASS |
+| 5 | TypeScript | `npx tsc --noEmit -p tsconfig.json` | PASS |
+| 6 | Expo SDK alignment | `npx expo install --check` | PASS |
+| 7 | Release metadata | `npm run verify:release` — 1.14.1 / Android 27 | PASS |
+| 8 | Mobile regression contracts | `npm run test:contracts` | PASS |
+| 9 | CRUD contract audit | 303 mutations; 0 skipped | PASS |
+| 10 | List contract audit | 107 searchable; 107 filterable; 59 sortable; 0 skipped | PASS |
+| 11 | Patch integrity and secret review | `git diff --check`; scoped diff reviewed | PASS |
 
 ### Acceptance Criteria
 
-| Severity | Passed | Total | Result |
-|---|---:|---:|---|
-| S1 — authentication, authorization, session integrity | 8 | 8 | 100% PASS |
-| S2 — API, mutation, search and filter contracts | 6 | 6 | 100% PASS |
-| S3 — navigation, native UI and Android export | 5 | 5 | 100% PASS |
-| S4 — documentation and known-risk disclosure | 4 | 4 | PASS |
-
-**Overall checkpoint result: PASS WITH DOCUMENTED BACKEND BLOCKERS**
-
-## 4. Defects Fixed
-
-| Severity | Defect | Resolution |
+| Severity | Criterion | Result |
 |---|---|---|
-| S1 | Authenticated HTTP 403/CSRF responses could be treated as expired sessions | Only HTTP 401 can trigger authentication clearing |
-| S1 | An older request could clear a newly established session | Added session-generation protection |
-| S2 | Biometric unlock did not provide dependable re-sign-in | Added secure credential vault and biometric reauthentication flow |
-| S2 | Some search, filter and sort controls sent ignored or incorrect parameters | Corrected per-module contracts; removed unsupported controls |
-| S2 | Related lists used malformed pagination/query separators | Centralized safe entity-list querying |
-| S2 | Several native routes and detail/edit workflows were missing | Added native screens and route mappings |
-| S2 | Cost Center and Technical Inquiry children used incorrect permissions/contracts | Corrected permission features and child definitions |
-| S3 | Some records displayed internal IDs instead of canonical labels/numbers | Added relation display and canonical field mappings |
+| S1 | Selecting Inactive never returns an Active customer row | 100% PASS |
+| S1 | Filter value `0` survives serialization and query construction | 100% PASS |
+| S2 | Funnel and quick-chip paths produce the same filtered list | 100% PASS |
+| S2 | Selecting all statuses lifts the API's active-only default | 100% PASS |
+| S3 | Existing contracts, TypeScript, Expo alignment, and release metadata remain green | 100% PASS |
 
-## 5. Intentionally Blocked Features
+**QC gate before push: PASS. No open Blocker, Major, or Minor defects in scope.**
 
-| Web feature | Reason not shipped |
+## 5. Code Changes
+
+| File | Purpose |
 |---|---|
-| Task Templates / Task Manage | API writes tables directly, bypasses the web model/permission behavior, and searches nonexistent field names |
-| Product Families | API does not mirror tree validation, linked-item protection, propagation, or unlink confirmation |
-| Client Items | API does not expose the web composition-review workflow |
-| Cost Center child allocation APIs | Existing child contracts are incomplete/unsafe |
-| Survey Results | No safe API equivalent of the web results workflow |
-| Knowledge article CRUD | Existing API calls nonexistent backend methods; publish/unpublish remains available |
+| `lib/filters.ts` | Direct mobile REST filter serializer with explicit all-status behavior |
+| `components/crud/CrudListScreen.tsx` | Use module-aware direct query parameters |
+| `lib/module-registry.ts` | Declare customer-supported operators and all-status parameter |
+| `scripts/test-mobile-contracts.mjs` | Regression tests for `active=0` and `include_inactive=1` |
+| `CHANGELOG.json`, `package.json`, `package-lock.json`, `app.json` | Patch release metadata |
 
-These require backend changes in `prizm331`; the current execution boundary permits read-only inspection of that repository.
-
-## 6. Code Changes
-
-| Group | Representative files |
-|---|---|
-| Authentication | `lib/api.ts`, `lib/auth-context.tsx`, `lib/auth.ts`, `lib/biometric.ts`, `lib/auth-response.ts`, `app/login.tsx` |
-| Registry and contracts | `lib/module-registry.ts`, `lib/native-routing.ts`, `lib/filters.ts`, `lib/filter-configs/*` |
-| Native CRUD | `components/crud/*`, including `FieldInput.tsx` and `SignatureInput.tsx` |
-| Feature screens | Approvals, Calendar, Tasks, Tenders, Timesheets, Knowledge, Reports, Opportunities |
-| Verification | `scripts/audit-list-contracts.mjs`, `scripts/audit-crud-contracts.mjs`, `scripts/test-mobile-contracts.mjs` |
-| Documentation | `docs/MODULE_AUDIT.md`, this QC report, `SESSION-HANDOFF.md` |
-
-## 7. Git and Deployment
+## 6. Git and Deployment
 
 | Item | Status |
 |---|---|
-| Mobile commit | `f7cdb5b8d63d7126ed8108b2bd9071158df821a7` |
-| Backend commit | None |
-| GitHub push / PR | Fast-forward push to `origin/main`; remote verified at `f7cdb5b` |
-| GitHub Actions build | PASS — run `30464401286` |
-| Production deployment | PASS — rolling `latest` release and GitHub Pages published |
-| Release metadata bump | Complete: `1.14.0`, Android versionCode `26` |
+| Base commit | `a1d102f03efd8ecace359b94c3e94daa01154662` |
+| Hotfix commit | Pending |
+| GitHub push | Pending QC-gated push |
+| GitHub Actions Android build | Pending |
+| Rolling APK release | Pending |
+| Rollback | Revert the hotfix commit; no data migration or persisted data change |
 
-## 8. Deliverables
-
-| Deliverable | Status |
-|---|---|
-| Native mobile implementation | Complete for safe existing contracts |
-| Module/parity audit | Complete |
-| Automated verification scripts | Complete |
-| Local Android export check | Complete |
-| QC Markdown / HTML / PDF | Complete locally in the mobile workspace |
-| Canonical audit-store copy and index | Complete |
-| Final APK/release/deployment | PASS — `prizm-mobile.apk`, 91,536,512 bytes |
-
-## 9. Sign-off
+## 7. Sign-off
 
 | Role | Name | Status | Date |
 |---|---|---|---|
-| QA automation | Codex | Completed | 2026-07-29 |
-| Product reviewer | Osama Hassan | Deployment authorized | 2026-07-29 |
+| QA automation | Codex | Local and emulator gate PASS | 2026-07-30 |
+| Product reviewer | Osama Hassan | Fix and emulator testing requested | 2026-07-30 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

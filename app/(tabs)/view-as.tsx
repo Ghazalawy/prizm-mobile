@@ -13,7 +13,8 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack, router } from "expo-router";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
-import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { apiRequest, buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { getSessionGeneration } from "@/lib/auth-events";
 import {
   startImpersonation,
   useImpersonation,
@@ -46,10 +47,11 @@ type StaffRow = {
 };
 
 async function fetchStaff(search: string): Promise<StaffRow[]> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const qs = search ? `?q=${encodeURIComponent(search)}` : "";
   const res = await fetch(`${API_URL}/admin/staff${qs}`, { headers });
-  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     const msg = (typeof body === "object" && body?.message) || `HTTP ${res.status}`;
@@ -59,11 +61,9 @@ async function fetchStaff(search: string): Promise<StaffRow[]> {
 }
 
 async function auditStart(staffid: number): Promise<void> {
-  const headers = await buildAuthHeaders();
   // best-effort — failure doesn't block the local impersonation
-  fetch(`${API_URL}/admin/impersonate/start`, {
+  apiRequest("admin/impersonate/start", {
     method: "POST",
-    headers,
     body: JSON.stringify({ staffid }),
   }).catch(() => undefined);
 }

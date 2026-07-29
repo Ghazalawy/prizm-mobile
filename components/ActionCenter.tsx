@@ -18,6 +18,7 @@ import Toast from "react-native-toast-message";
 import { useQueryClient } from "@tanstack/react-query";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { getSessionGeneration } from "@/lib/auth-events";
 import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -147,6 +148,7 @@ function HeaderIcon({
 }
 
 async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number]) {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const url = action.endpoint.startsWith("http")
     ? action.endpoint
@@ -156,7 +158,7 @@ async function runQuickAction(action: NonNullable<InboxItem["actions"]>[number])
     headers,
     body: action.body ? JSON.stringify(action.body) : undefined,
   });
-  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
   if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     const txt = typeof body === "string" ? body : JSON.stringify(body ?? "");

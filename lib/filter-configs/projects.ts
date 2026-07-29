@@ -8,8 +8,6 @@ import type { ModuleFilterConfig } from "@/lib/filters";
 export const PROJECTS_FILTER_CONFIG: ModuleFilterConfig = {
   tableId: "projects",
   rules: [
-    { id: "name", type: "TextRule", label: "Project Name" },
-    { id: "id", type: "NumberRule", label: "Project ID" },
     {
       id: "status",
       type: "MultiSelectRule",
@@ -39,11 +37,5 @@ export const PROJECTS_FILTER_CONFIG: ModuleFilterConfig = {
       type: "SelectRule",
       label: "Client",
     },
-    {
-      id: "projectmanager",
-      type: "SelectRule",
-      label: "Project Manager",
-    },
-    { id: "date_finished", type: "DateRule", label: "Date Finished" },
   ],
 };

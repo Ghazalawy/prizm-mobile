@@ -4,17 +4,14 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { colors } from "@/lib/theme";
 import { rtlTextStyle } from "@/lib/rtl";
-import { useCalendarEvents, type CalendarEvent } from "@/lib/queries/calendar";
+import { useCalendarEvent } from "@/lib/queries/calendar";
 
 export default function EventDetailRoute() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const events = useCalendarEvents();
+  const eventQuery = useCalendarEvent(id);
+  const event = eventQuery.data;
 
-  const event = events.data?.find(
-    (e) => String(e.eventid) === id,
-  );
-
-  if (events.isLoading) {
+  if (eventQuery.isLoading) {
     return (
       <View className="flex-1 bg-surface items-center justify-center">
         <ActivityIndicator color={colors.primary} size="large" />
@@ -49,14 +46,16 @@ export default function EventDetailRoute() {
         <Text className="text-sm font-medium text-muted flex-1 text-center mx-4" numberOfLines={1}>
           Event
         </Text>
-        <TouchableOpacity
-          onPress={() =>
-            router.push(`/(tabs)/calendar/edit?id=${event.eventid}` as any)
-          }
-          hitSlop={8}
-        >
-          <Ionicons name="create-outline" size={22} color={colors.primary} />
-        </TouchableOpacity>
+        {event._actions?.edit !== false ? (
+          <TouchableOpacity
+            onPress={() =>
+              router.push(`/(tabs)/calendar/edit?id=${event.eventid}` as any)
+            }
+            hitSlop={8}
+          >
+            <Ionicons name="create-outline" size={22} color={colors.primary} />
+          </TouchableOpacity>
+        ) : <View className="w-6" />}
       </View>
 
       <ScrollView

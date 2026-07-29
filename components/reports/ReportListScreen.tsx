@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -18,6 +18,7 @@ import {
   type ReportFilters,
 } from "@/lib/queries/reports";
 import { usePermissions } from "@/lib/permission-context";
+import { DateInput } from "@/components/crud/DateInput";
 
 const ACCENT = "#E65100";
 
@@ -35,6 +36,7 @@ function statusBadge(status: string | number) {
 export function ReportListScreen() {
   const router = useRouter();
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
   const [selectedProject, setSelectedProject] = useState<number | undefined>();
   const [selectedStatus, setSelectedStatus] = useState<string | undefined>();
   const [dateFrom, setDateFrom] = useState("");
@@ -42,22 +44,33 @@ export function ReportListScreen() {
   const [showProjectPicker, setShowProjectPicker] = useState(false);
   const { canCreate: canCreatePerm, isAdmin, hasAnyPermission } = usePermissions();
   const canCreateReport = isAdmin || canCreatePerm("prizm_reports") || hasAnyPermission("prizm_reports");
+  const dateRangeInvalid = Boolean(dateFrom && dateTo && dateFrom > dateTo);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const filters: ReportFilters = useMemo(
     () => ({
-      search: search || undefined,
+      search: debouncedSearch || undefined,
       project_id: selectedProject,
-      status: selectedStatus,
-      date_from: dateFrom || undefined,
-      date_to: dateTo || undefined,
-      limit: 100,
+      // PHP treats the string "0" as false, so the API cannot apply Draft.
+      // Fetch the scoped result and enforce status 0 locally below.
+      status: selectedStatus === "0" ? undefined : selectedStatus,
+      date_from: dateRangeInvalid ? undefined : dateFrom || undefined,
+      date_to: dateRangeInvalid ? undefined : dateTo || undefined,
+      limit: 500,
     }),
-    [search, selectedProject, selectedStatus, dateFrom, dateTo]
+    [debouncedSearch, selectedProject, selectedStatus, dateFrom, dateTo, dateRangeInvalid]
   );
 
   const { data, isLoading, isError, refetch, isRefetching } = useReportsList(filters);
   const { data: projects } = useReportProjects();
-  const items = data?.items ?? [];
+  const rawItems = data?.items ?? [];
+  const items = selectedStatus === "0"
+    ? rawItems.filter((item) => String(item.status) === "0")
+    : rawItems;
 
   const selectedProjectName = useMemo(() => {
     if (!selectedProject) return "All Projects";
@@ -247,23 +260,26 @@ export function ReportListScreen() {
 
         {/* Date range */}
         <View className="flex-row gap-2 mt-2">
-          <TextInput
-            className="flex-1 bg-slate-100 rounded-lg px-3 py-2 text-xs text-slate-700"
-            placeholder="From (YYYY-MM-DD)"
-            placeholderTextColor="#94A3B8"
+          <View className="flex-1">
+            <DateInput
             value={dateFrom}
-            onChangeText={setDateFrom}
-            keyboardType="numbers-and-punctuation"
-          />
-          <TextInput
-            className="flex-1 bg-slate-100 rounded-lg px-3 py-2 text-xs text-slate-700"
-            placeholder="To (YYYY-MM-DD)"
-            placeholderTextColor="#94A3B8"
+              onChange={setDateFrom}
+              mode="date"
+              placeholder="From date"
+            />
+          </View>
+          <View className="flex-1">
+            <DateInput
             value={dateTo}
-            onChangeText={setDateTo}
-            keyboardType="numbers-and-punctuation"
-          />
+              onChange={setDateTo}
+              mode="date"
+              placeholder="To date"
+            />
+          </View>
         </View>
+        {dateRangeInvalid ? (
+          <Text className="text-xs text-red-600 mt-1">The “From” date must be before the “To” date.</Text>
+        ) : null}
       </View>
 
       {/* List */}

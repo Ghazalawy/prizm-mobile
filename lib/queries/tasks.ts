@@ -67,7 +67,7 @@ function useTaskQueryScope(): string {
 
 // ─── List queries ────────────────────────────────────────────────────────
 
-export function useMyTasks(filters?: { status?: string; search?: string; assigned?: number; limit?: number }) {
+export function useMyTasks(filters?: { status?: string; search?: string; assigned?: number; filters?: string; limit?: number }) {
   const scope = useTaskQueryScope();
   return useQuery({
     queryKey: ["tasks", "mine", scope, filters],
@@ -76,6 +76,7 @@ export function useMyTasks(filters?: { status?: string; search?: string; assigne
       if (filters?.status) params.status = filters.status;
       if (filters?.search) params.search = filters.search;
       if (filters?.assigned) params.assigned = filters.assigned;
+      if (filters?.filters) params.filters = filters.filters;
       const qs = Object.entries(params)
         .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
         .join("&");

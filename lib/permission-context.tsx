@@ -12,19 +12,21 @@ type PermissionHelpers = {
   canDelete: (feature: string) => boolean;
   hasPermission: (feature: string, capability: string) => boolean;
   hasAnyPermission: (feature: string) => boolean;
+  retry: () => void;
 };
 
 const PermissionContext = createContext<PermissionHelpers>({
   isAdmin: false,
   isLoaded: false,
   isFailed: false,
-  canView: () => true,
-  canViewOwn: () => true,
-  canCreate: () => true,
-  canEdit: () => true,
-  canDelete: () => true,
-  hasPermission: () => true,
-  hasAnyPermission: () => true,
+  canView: () => false,
+  canViewOwn: () => false,
+  canCreate: () => false,
+  canEdit: () => false,
+  canDelete: () => false,
+  hasPermission: () => false,
+  hasAnyPermission: () => false,
+  retry: () => undefined,
 });
 
 type Props = {
@@ -43,13 +45,13 @@ export function PermissionProvider({ children, isAuthenticated }: Props) {
     const perms = data?.permissions ?? {};
 
     function hasPermission(feature: string, capability: string): boolean {
-      if (!isLoaded || isFailed) return true;
+      if (!isLoaded || isFailed) return false;
       if (isAdmin) return true;
       return !!perms[feature]?.[capability];
     }
 
     function hasAnyPermission(feature: string): boolean {
-      if (!isLoaded || isFailed) return true;
+      if (!isLoaded || isFailed) return false;
       if (isAdmin) return true;
       const featurePerms = perms[feature];
       if (!featurePerms) return false;
@@ -67,8 +69,9 @@ export function PermissionProvider({ children, isAuthenticated }: Props) {
       canDelete: (feature) => hasPermission(feature, "delete"),
       hasPermission,
       hasAnyPermission,
+      retry: () => { void query.refetch(); },
     };
-  }, [data, isFailed]);
+  }, [data, isFailed, query.refetch]);
 
   return (
     <PermissionContext.Provider value={helpers}>

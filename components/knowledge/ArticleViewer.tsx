@@ -11,7 +11,13 @@ import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { colors } from "@/lib/theme";
 import { rtlTextStyle, isArabic } from "@/lib/rtl";
-import { useKBArticle, type KBArticle } from "@/lib/queries/knowledge";
+import Toast from "react-native-toast-message";
+import {
+  useKBArticle,
+  usePublishKBArticle,
+  useUnpublishKBArticle,
+} from "@/lib/queries/knowledge";
+import { usePermissions } from "@/lib/permission-context";
 
 // ─── Simple HTML → Text/RN renderer ─────────────────────────────────────
 
@@ -43,6 +49,9 @@ function stripHtml(html: string): string {
 
 export function ArticleViewer({ id }: { id: string | number }) {
   const { data: article, isLoading, isError } = useKBArticle(id);
+  const permissions = usePermissions();
+  const publish = usePublishKBArticle();
+  const unpublish = useUnpublishKBArticle();
   const { width } = useWindowDimensions();
 
   const handleShare = async () => {
@@ -54,6 +63,17 @@ export function ArticleViewer({ id }: { id: string | number }) {
       });
     } catch {
       // User cancelled
+    }
+  };
+
+  const handlePublication = async () => {
+    if (!article) return;
+    try {
+      if (Number(article.active) === 1) await unpublish.mutateAsync(article.articleid);
+      else await publish.mutateAsync(article.articleid);
+      Toast.show({ type: "success", text1: Number(article.active) === 1 ? "Article unpublished" : "Article published" });
+    } catch (error: any) {
+      Toast.show({ type: "error", text1: error?.message || "Couldn’t update article" });
     }
   };
 
@@ -165,6 +185,19 @@ export function ArticleViewer({ id }: { id: string | number }) {
             {content}
           </Text>
         </View>
+
+        {permissions.canEdit("knowledge_base") ? (
+          <TouchableOpacity
+            onPress={handlePublication}
+            disabled={publish.isPending || unpublish.isPending}
+            className="mt-4 rounded-xl items-center py-3"
+            style={{ backgroundColor: isActive ? colors.slate100 : colors.primaryBg }}
+          >
+            <Text className="font-semibold" style={{ color: isActive ? colors.slate700 : colors.primary }}>
+              {isActive ? "Unpublish article" : "Publish article"}
+            </Text>
+          </TouchableOpacity>
+        ) : null}
       </ScrollView>
     </View>
   );

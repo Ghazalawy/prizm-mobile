@@ -1,5 +1,5 @@
 import * as SecureStore from "expo-secure-store";
-import { ADMIN_URL, MOBILE_AUTH_URL } from "./config";
+import { ADMIN_URL, API_URL, MOBILE_AUTH_URL } from "./config";
 
 const TOKEN_KEY = "prizm_auth_token";
 const SESSION_KEY = "prizm_session_cookie";
@@ -80,11 +80,8 @@ export async function login(
 
     const data = await res.json();
 
-    if (data.status === true || data.success === true) {
-      // Store token if returned
-      if (data.token) {
-        await setAuthToken(data.token);
-      }
+    if ((data.status === true || data.success === true) && data.token) {
+      await setAuthToken(data.token);
       // Store the staff profile (mobile_auth.php returns it under `staff`).
       // The Action Center, My Activity feed, and any feature that needs the
       // current staffid reads this via getStaffProfile() / useCurrentUser().
@@ -108,7 +105,11 @@ export async function login(
 
     return {
       success: false,
-      message: data.message || "Invalid email or password",
+      message:
+        data.message ||
+        (data.status === true
+          ? "The server signed in but did not issue a mobile access token."
+          : "Invalid email or password"),
     };
   } catch (err: any) {
     return {
@@ -118,84 +119,57 @@ export async function login(
   }
 }
 
-// --- Session-based login (admin panel) ---
+// --- REST login fallback -------------------------------------------------
 
-export async function loginViaAdmin(
+/**
+ * Authenticate through the CSRF-exempt REST namespace. Mobile must never
+ * depend on an admin-panel session POST: that flow needs a browser cookie +
+ * CSRF pair and can report success without issuing the JWT required by every
+ * native data request.
+ */
+export async function loginViaApi(
   email: string,
   password: string
 ): Promise<{ success: boolean; message?: string }> {
   try {
-    // Step 1: Get CSRF token from login page
-    const pageRes = await fetch(`${ADMIN_URL}/authentication`);
-    const html = await pageRes.text();
-
-    const csrfMatch = html.match(
-      /name="csrf_token_name"\s+value="([^"]+)"/
-    );
-    const csrf = csrfMatch?.[1] || "";
-
-    // Capture cookies from the page load
-    const pageCookies = pageRes.headers.get("set-cookie") || "";
-
-    // Step 2: POST login
-    const formData = new URLSearchParams();
-    formData.append("csrf_token_name", csrf);
-    formData.append("email", email);
-    formData.append("password", password);
-
-    const loginRes = await fetch(`${ADMIN_URL}/authentication`, {
+    const res = await fetch(`${API_URL}/login/auth`, {
       method: "POST",
       headers: {
-        "Content-Type": "application/x-www-form-urlencoded",
-        Cookie: pageCookies,
+        "Content-Type": "application/json",
       },
-      body: formData.toString(),
-      redirect: "manual",
+      body: JSON.stringify({ email, password }),
     });
+    const data = await res.json().catch(() => null);
+    const token = data?.token || data?.result?.token;
 
-    const sessionCookie = loginRes.headers.get("set-cookie");
-
-    // 302/307 redirect to dashboard = success
-    if (loginRes.status >= 300 && loginRes.status < 400) {
-      const location = loginRes.headers.get("location") || "";
-      if (
-        location.includes("dashboard") ||
-        (location.includes("admin") &&
-        !location.includes("authentication"))
-      ) {
-        if (sessionCookie) {
-          await setSessionCookie(sessionCookie);
-        }
-        // Session login succeeded — also try to get a JWT token via mobile_auth
-        // so REST API calls work (session cookies don't help there).
-        try {
-          const formData2 = new FormData();
-          formData2.append("email", email);
-          formData2.append("password", password);
-          const authRes = await fetch(MOBILE_AUTH_URL, { method: "POST", body: formData2 });
-          const authData = await authRes.json();
-          if (authData.token) {
-            await setAuthToken(authData.token);
-            if (authData.staff && typeof authData.staff.staffid === "number") {
-              await setStaffProfile({
-                staffid: authData.staff.staffid,
-                email: authData.staff.email,
-                firstname: authData.staff.firstname || "",
-                lastname: authData.staff.lastname || "",
-                profile_image: authData.staff.profile_image || null,
-                phonenumber: authData.staff.phonenumber || null,
-              });
-            }
-          }
-        } catch { /* JWT token is optional if session works */ }
-        return { success: true };
-      }
+    if (!res.ok || data?.status !== true || !token) {
+      return {
+        success: false,
+        message: data?.message || `Sign-in failed (HTTP ${res.status})`,
+      };
     }
 
-    return {
-      success: false,
-      message: "Invalid email or password",
-    };
+    await setAuthToken(token);
+
+    // The REST login response is deliberately small; hydrate the staff profile
+    // through the normal authenticated self-service endpoint.
+    const profileRes = await fetch(`${API_URL}/my/profile`, {
+      headers: { "Content-Type": "application/json", authtoken: token },
+    });
+    const profileBody = await profileRes.json().catch(() => null);
+    const profile = profileBody?.data;
+    if (profile && Number(profile.staffid) > 0) {
+      await setStaffProfile({
+        staffid: Number(profile.staffid),
+        email: profile.email || email,
+        firstname: profile.firstname || "",
+        lastname: profile.lastname || "",
+        profile_image: profile.profile_image || null,
+        phonenumber: profile.phonenumber || null,
+      });
+    }
+
+    return { success: true };
   } catch (err: any) {
     return {
       success: false,
@@ -207,16 +181,6 @@ export async function loginViaAdmin(
 // --- Logout ---
 
 export async function logout(): Promise<void> {
-  try {
-    const cookie = await getSessionCookie();
-    if (cookie) {
-      await fetch(`${ADMIN_URL}/authentication/logout`, {
-        headers: { Cookie: cookie },
-      });
-    }
-  } catch {
-    // Ignore logout errors
-  }
   await clearSession();
 }
 

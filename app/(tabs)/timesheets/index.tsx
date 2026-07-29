@@ -20,6 +20,14 @@ export default function TimesheetsScreen() {
           </View>
           <View className="flex-row items-center gap-2">
             <TouchableOpacity
+              onPress={() => router.push("/(tabs)/timesheets/entries" as any)}
+              hitSlop={8}
+              className="w-10 h-10 rounded-xl items-center justify-center bg-slate-100"
+              accessibilityLabel="Search and filter timesheet entries"
+            >
+              <Ionicons name="list-outline" size={20} color={colors.primary} />
+            </TouchableOpacity>
+            <TouchableOpacity
               onPress={() => router.push("/(tabs)/timesheets/weekly" as any)}
               hitSlop={8}
               className="w-10 h-10 rounded-xl items-center justify-center bg-slate-100"

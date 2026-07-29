@@ -31,6 +31,7 @@ import {
   updateEntity,
 } from "@/lib/api";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
+import { getSessionGeneration } from "@/lib/auth-events";
 import Toast from "react-native-toast-message";
 import { FilesTab } from "@/components/crud/FilesTab";
 import { rtlTextStyle } from "@/lib/rtl";
@@ -1101,6 +1102,7 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
 
   const toggle = useMutation({
     mutationFn: async (item: any) => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(
         `${API_URL}/tasks/checklist/${encodeURIComponent(item.id)}`,
@@ -1110,7 +1112,7 @@ function ChecklistPanel({ taskId }: { taskId: string }) {
           body: JSON.stringify({ finished: isTruthy(item.finished) ? 0 : 1 }),
         }
       );
-      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) {
         const msg = typeof body === "string" ? body : body?.message || `HTTP ${res.status}`;
@@ -1584,6 +1586,7 @@ async function quickTaskAction(
   successMessage: string
 ): Promise<boolean> {
   try {
+    const gen = getSessionGeneration();
     const headers = await buildAuthHeaders();
     const res = await fetch(`${API_URL}/tasks/${encodeURIComponent(id)}/${endpoint}`, {
       method,
@@ -1591,7 +1594,7 @@ async function quickTaskAction(
       // mark_complete/reopen don't need a body; Perfex accepts an empty {}.
       body: JSON.stringify({}),
     });
-    const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+    const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
     if (invalidToken) throw new Error("Session expired");
     if (!res.ok) {
       const msg = typeof body === "string" ? body : JSON.stringify(body ?? "");

@@ -8,8 +8,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { memo, useCallback, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import {
   useOpportunitiesList,
   useOpportunityStages,
@@ -56,7 +56,12 @@ export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { 
 
   // ─── Perfix filter state ──────────────────────────────────────────────
   const filter = useFilterState(OPPORTUNITIES_FILTER_CONFIG.rules);
+  const routeParams = useLocalSearchParams<{ q?: string }>();
   const stages = useOpportunityStages();
+
+  useEffect(() => {
+    if (routeParams.q) filter.setSearch(routeParams.q);
+  }, [routeParams.q, filter.setSearch]);
 
   // ─── API query ────────────────────────────────────────────────────────
   const queryParams = filter.toQueryParams();
@@ -69,6 +74,7 @@ export function OpportunityListScreen({ basePath = "/(tabs)/opportunities" }: { 
         ? String(queryParams.status)
         : undefined,
     client_id: queryParams.client ? String(queryParams.client) : undefined,
+    filters: queryParams.filters ? String(queryParams.filters) : undefined,
     limit: 200,
   });
 

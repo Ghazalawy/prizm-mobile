@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { API_URL } from "../config";
-import { buildAuthHeaders } from "../api";
+import { buildAuthHeaders, parseApiResponse } from "../api";
+import { getSessionGeneration } from "../auth-events";
 
 /**
  * Perfex custom fields per entity. Each ERP install can define arbitrary
@@ -55,6 +56,7 @@ export type CustomFieldRow = {
 };
 
 async function fetchCustomFields(perfexType: string, id?: string | number): Promise<CustomFieldRow[]> {
+  const gen = getSessionGeneration();
   const headers = await buildAuthHeaders();
   const url = id
     ? `${API_URL}/custom_fields/${encodeURIComponent(perfexType)}/${encodeURIComponent(String(id))}`
@@ -62,13 +64,15 @@ async function fetchCustomFields(perfexType: string, id?: string | number): Prom
   const res = await fetch(url, {
     headers,
   });
+  const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
+  if (invalidToken) throw new Error("Session expired");
   if (!res.ok) {
     // 404 here usually means "no custom fields defined for this type" —
     // that's not an error, just an empty result.
     if (res.status === 404) return [];
     throw new Error(`HTTP ${res.status}`);
   }
-  const j = await res.json();
+  const j = body;
   // Perfex returns the array directly OR wrapped in { status, data }
   if (Array.isArray(j)) return j;
   if (j && Array.isArray(j.data)) return j.data;

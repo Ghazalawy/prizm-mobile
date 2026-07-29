@@ -158,6 +158,7 @@ export interface PerfixFilterPayload {
     match_type: MatchType;
     rules: Array<{
       id: string;
+      type: FilterRuleType;
       value: string | string[];
       operator: string;
       has_dynamic_value?: boolean;
@@ -199,74 +200,57 @@ export interface ModuleFilterConfig {
 
 export function rulesToQueryParams(
   rules: FilterRuleInstance[],
-  ruleDefs: FilterRuleDef[]
+  ruleDefs: FilterRuleDef[],
+  matchType: MatchType = "and",
 ): Record<string, string | number> {
-  const params: Record<string, string | number> = {};
+  return serializePerfexFilterGroup({ match_type: matchType, rules }, ruleDefs);
+}
 
-  for (const rule of rules) {
-    const def = ruleDefs.find((d) => d.id === rule.id);
-    if (!def) continue;
+type SerializableFilterRule = {
+  id: string;
+  type?: FilterRuleType;
+  operator: FilterOperator;
+  value: string | string[];
+  hasDynamicValue?: boolean;
+};
 
-    switch (def.type) {
-      case "TextRule":
-      case "SelectRule":
-      case "BooleanRule":
-        if (rule.operator === "equal" && typeof rule.value === "string") {
-          params[rule.id] = rule.value;
-        } else if (rule.operator === "contains" && typeof rule.value === "string") {
-          params[rule.id] = rule.value; // API may use LIKE internally
-        } else if (rule.operator === "is_empty") {
-          params[rule.id] = "";
-        }
-        break;
+/** Serialize without losing negative operators, ranges, or AND/OR grouping. */
+export function serializePerfexFilterGroup(
+  group: { match_type: MatchType; rules: SerializableFilterRule[] },
+  ruleDefs: FilterRuleDef[] = [],
+): Record<string, string> {
+  const rules = group.rules.flatMap((rule) => {
+    const definition = ruleDefs.find((candidate) => candidate.id === rule.id);
+    const type = rule.type ?? definition?.type;
+    if (!type) return [];
 
-      case "NumberRule":
-        if (rule.operator === "equal" && typeof rule.value === "string") {
-          params[rule.id] = rule.value;
-        } else if (
-          (rule.operator === "less" || rule.operator === "less_or_equal") &&
-          typeof rule.value === "string"
-        ) {
-          params[`${rule.id}_max`] = rule.value;
-        } else if (
-          (rule.operator === "greater" || rule.operator === "greater_or_equal") &&
-          typeof rule.value === "string"
-        ) {
-          params[`${rule.id}_min`] = rule.value;
-        }
-        break;
+    const needsNoValue = rule.operator === "is_empty" || rule.operator === "is_not_empty";
+    const rawValue = Array.isArray(rule.value)
+      ? rule.value.map(String)
+      : (rule.operator === "between" || rule.operator === "not_between")
+        ? String(rule.value).split("..").map((value) => value.trim())
+        : String(rule.value ?? "");
+    const hasValue = Array.isArray(rawValue)
+      ? rawValue.length > 0 && rawValue.every((value) => value !== "")
+      : rawValue !== "";
+    if (!needsNoValue && !hasValue) return [];
 
-      case "DateRule":
-        if (rule.operator === "equal" && typeof rule.value === "string") {
-          params[rule.id] = rule.value;
-        } else if (rule.operator === "dynamic" && typeof rule.value === "string") {
-          params[rule.id] = rule.value; // "today", "this_week", etc.
-        } else if (rule.operator === "between" && Array.isArray(rule.value)) {
-          params[`${rule.id}_from`] = rule.value[0];
-          params[`${rule.id}_to`] = rule.value[1];
-        } else if (
-          (rule.operator === "less" || rule.operator === "less_or_equal") &&
-          typeof rule.value === "string"
-        ) {
-          params[`${rule.id}_before`] = rule.value;
-        } else if (
-          (rule.operator === "greater" || rule.operator === "greater_or_equal") &&
-          typeof rule.value === "string"
-        ) {
-          params[`${rule.id}_after`] = rule.value;
-        }
-        break;
+    return [{
+      id: rule.id,
+      type,
+      operator: rule.operator,
+      value: needsNoValue ? "" : rawValue,
+      has_dynamic_value: Boolean(rule.hasDynamicValue || rule.operator === "dynamic"),
+    }];
+  });
 
-      case "MultiSelectRule":
-      case "CheckboxRule":
-        if (rule.operator === "in" && Array.isArray(rule.value)) {
-          params[rule.id] = rule.value.join(",");
-        }
-        break;
-    }
-  }
-
-  return params;
+  if (rules.length === 0) return {};
+  return {
+    filters: JSON.stringify({
+      match_type: group.match_type === "or" ? "or" : "and",
+      rules,
+    }),
+  };
 }
 
 // ─── Helper: build human-readable filter summary ──────────────────────────

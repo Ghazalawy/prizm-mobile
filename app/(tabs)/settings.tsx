@@ -1,4 +1,4 @@
-import { View, Text, TouchableOpacity, ScrollView, Alert, Switch, Image } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ScrollView, Alert, Switch, Image, Modal, KeyboardAvoidingView, Platform, ActivityIndicator } from "react-native";
 import { useEffect, useState, useCallback, useMemo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
@@ -38,7 +38,6 @@ import {
   isBiometricAvailable,
   isBiometricEnabled,
   setBiometricEnabled,
-  promptBiometric,
 } from "@/lib/biometric";
 import { CheckinCard } from "@/components/CheckinCard";
 import { useMyProfile } from "@/lib/queries/my";
@@ -46,6 +45,7 @@ import { useEffectiveUser } from "@/lib/effective-user";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { getSessionGeneration } from "@/lib/auth-events";
 import { clearSession } from "@/lib/auth";
 
 /**
@@ -153,11 +153,14 @@ function ProfileHero() {
 }
 
 export default function SettingsScreen() {
-  const { logout } = useAuth();
+  const { logout, enableBiometric } = useAuth();
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
+  const [biometricModalVisible, setBiometricModalVisible] = useState(false);
+  const [biometricPassword, setBiometricPassword] = useState("");
+  const [biometricSaving, setBiometricSaving] = useState(false);
   const env = useEnvironment();
 
   useEffect(() => {
@@ -176,14 +179,29 @@ export default function SettingsScreen() {
     async (next: boolean) => {
       if (!bioAvailable) return;
       if (next) {
-        const ok = await promptBiometric("Confirm to enable fingerprint login");
-        if (!ok) return;
+        setBiometricPassword("");
+        setBiometricModalVisible(true);
+        return;
       }
       await setBiometricEnabled(next);
       setBioOn(next);
     },
     [bioAvailable]
   );
+
+  const confirmBiometric = useCallback(async () => {
+    if (!biometricPassword || biometricSaving) return;
+    setBiometricSaving(true);
+    const result = await enableBiometric(biometricPassword);
+    setBiometricSaving(false);
+    if (!result.success) {
+      Alert.alert("Fingerprint not enabled", result.message || "Password verification failed.");
+      return;
+    }
+    setBioOn(true);
+    setBiometricPassword("");
+    setBiometricModalVisible(false);
+  }, [biometricPassword, biometricSaving, enableBiometric]);
 
   const handleLogout = () => {
     Alert.alert("Sign Out", "Are you sure you want to sign out?", [
@@ -236,6 +254,7 @@ export default function SettingsScreen() {
   };
 
   return (
+    <>
     <ScrollView className="flex-1 bg-surface">
       <ProfileHero />
       <CheckinCard />
@@ -256,7 +275,7 @@ export default function SettingsScreen() {
                   </Text>
                 ) : (
                   <Text className="text-muted text-xs mt-1">
-                    Use your fingerprint to unlock the app
+                    Sign in again securely after logout or session expiry
                   </Text>
                 )}
               </View>
@@ -425,6 +444,63 @@ export default function SettingsScreen() {
         </View>
       </View>
     </ScrollView>
+    <Modal
+      visible={biometricModalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setBiometricModalVisible(false)}
+    >
+      <KeyboardAvoidingView
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        className="flex-1 justify-center bg-black/40 px-5"
+      >
+        <View className="bg-white rounded-2xl p-5">
+          <View className="flex-row items-center">
+            <View className="w-11 h-11 rounded-xl bg-primary/10 items-center justify-center">
+              <Ionicons name="finger-print" size={24} color={colors.primary} />
+            </View>
+            <View className="ml-3 flex-1">
+              <Text className="text-lg font-bold text-foreground">Enable fingerprint sign-in</Text>
+              <Text className="text-xs text-muted mt-1">
+                Confirm your password once. It will be stored in the device-protected biometric vault.
+              </Text>
+            </View>
+          </View>
+          <TextInput
+            value={biometricPassword}
+            onChangeText={setBiometricPassword}
+            secureTextEntry
+            autoFocus
+            placeholder="Current password"
+            placeholderTextColor={colors.slate400}
+            className="mt-5 bg-slate-50 border border-slate-200 rounded-xl px-4 py-3 text-foreground"
+            onSubmitEditing={confirmBiometric}
+          />
+          <View className="flex-row justify-end mt-5">
+            <TouchableOpacity
+              onPress={() => setBiometricModalVisible(false)}
+              className="px-4 py-3"
+              disabled={biometricSaving}
+            >
+              <Text className="font-semibold text-muted">Cancel</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={confirmBiometric}
+              className="bg-primary rounded-xl px-5 py-3 ml-2 min-w-24 items-center"
+              disabled={!biometricPassword || biometricSaving}
+              style={{ opacity: !biometricPassword || biometricSaving ? 0.6 : 1 }}
+            >
+              {biometricSaving ? (
+                <ActivityIndicator color="#FFFFFF" />
+              ) : (
+                <Text className="font-semibold text-white">Enable</Text>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
+      </KeyboardAvoidingView>
+    </Modal>
+    </>
   );
 }
 
@@ -440,9 +516,10 @@ function AdminSection() {
   const q = useQuery({
     queryKey: ["admin", "can_impersonate"],
     queryFn: async () => {
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(`${API_URL}/admin/me/can_impersonate`, { headers });
-      const { body } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (!res.ok || body?.status !== true) return { can_impersonate: false };
       return body.data as { can_impersonate: boolean };
     },

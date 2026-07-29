@@ -41,7 +41,11 @@ const MODULE_ICONS: Record<
   contracts: { icon: "document-outline", color: "#7C3AED" },
   proposals: { icon: "newspaper-outline", color: "#0369A1" },
   credit_note: { icon: "card-outline", color: "#DC2626" },
+  credit_notes: { icon: "card-outline", color: "#DC2626" },
+  payments: { icon: "cash-outline", color: "#059669" },
+  subscriptions: { icon: "repeat-outline", color: "#7C3AED" },
   knowledge_base: { icon: "book-outline", color: "#CA8A04" },
+  knowledge: { icon: "book-outline", color: "#CA8A04" },
 };
 
 function moduleIcon(type: string) {
@@ -68,6 +72,20 @@ function navigateToResult(item: SearchResultItem) {
     moduleKey: item.type,
     fallbackRoute: routeForModuleList(item.type) ?? "/(tabs)/erp",
   });
+}
+
+const SEARCH_LIST_ALIASES: Record<string, string> = {
+  credit_note: "credit_notes",
+  knowledge_base: "knowledge",
+  knowledge_base_articles: "knowledge",
+  clients: "customers",
+  invoice_payment_records: "payments",
+};
+
+function navigateToAllResults(type: string, query: string) {
+  const moduleKey = SEARCH_LIST_ALIASES[type] ?? type;
+  const path = routeForModuleList(moduleKey) ?? "/(tabs)/erp";
+  router.push({ pathname: path as any, params: { q: query } });
 }
 
 // ─── Main Component ──────────────────────────────────────────────────────
@@ -119,7 +137,7 @@ export function GlobalSearch() {
     (recentSearches.data?.length ?? 0) > 0;
   const showResults = debouncedQuery.length >= 2;
   const noResults =
-    showResults && !searchResults.isLoading && groups.length === 0;
+    showResults && !searchResults.isLoading && !searchResults.isError && groups.length === 0;
 
   return (
     <View className="flex-1 bg-surface">
@@ -171,6 +189,24 @@ export function GlobalSearch() {
             color={colors.primary}
             style={{ marginTop: 24 }}
           />
+        )}
+
+        {searchResults.isError && showResults && (
+          <View className="items-center py-12 px-8">
+            <Ionicons name="cloud-offline-outline" size={44} color="#EF4444" />
+            <Text className="text-sm font-semibold text-foreground mt-3">
+              Search could not be completed
+            </Text>
+            <Text className="text-xs text-muted text-center mt-1">
+              Check your connection, then try again.
+            </Text>
+            <TouchableOpacity
+              onPress={() => searchResults.refetch()}
+              className="mt-4 rounded-xl bg-slate-100 px-5 py-2.5"
+            >
+              <Text className="text-sm font-semibold text-foreground">Try again</Text>
+            </TouchableOpacity>
+          </View>
         )}
 
         {/* Recent searches */}
@@ -253,7 +289,7 @@ export function GlobalSearch() {
                   </Text>
                   <View className="px-1.5 py-0.5 rounded ml-2 bg-slate-100">
                     <Text className="text-[10px] font-semibold text-muted">
-                      {group.result.length}
+                      {group.result.length}{group.result.length >= 5 ? "+" : ""}
                     </Text>
                   </View>
                 </View>
@@ -292,7 +328,8 @@ export function GlobalSearch() {
                 {hasMore && (
                   <TouchableOpacity
                     onPress={() => {
-                      // Could navigate to a filtered module list in the future
+                      submitSearch(query);
+                      navigateToAllResults(group.type, debouncedQuery);
                     }}
                     className="py-2 items-center"
                   >
@@ -300,7 +337,7 @@ export function GlobalSearch() {
                       className="text-xs font-medium"
                       style={{ color: colors.primary }}
                     >
-                      View all {group.result.length} results
+                      View all matching {moduleName(group.type)}
                     </Text>
                   </TouchableOpacity>
                 )}

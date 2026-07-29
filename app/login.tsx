@@ -13,7 +13,7 @@ import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
-import { setBiometricEnabled, markBiometricAsked } from "@/lib/biometric";
+import { markBiometricAsked, saveBiometricCredentials } from "@/lib/biometric";
 import { useEnvironment } from "@/lib/environment";
 import { colors } from "@/lib/theme";
 
@@ -72,7 +72,14 @@ export default function LoginScreen() {
           {
             text: "Enable",
             onPress: async () => {
-              await setBiometricEnabled(true);
+              try {
+                await saveBiometricCredentials(email.trim(), password);
+              } catch {
+                Alert.alert(
+                  "Fingerprint not enabled",
+                  "The protected credential could not be saved. You can try again from Settings.",
+                );
+              }
             },
           },
         ]

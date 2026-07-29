@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.14.0",
+      "date": "2026-07-29",
+      "title": "Reliable sign-in and expanded native parity",
+      "highlights": [
+        "Fingerprint can securely sign you back in from the main login screen.",
+        "CSRF and permission responses no longer cause unexpected sign-outs.",
+        "Search, advanced filters, sorting, and relation fields now follow each API contract.",
+        "More ERP pages and related-record workflows now open as native mobile screens.",
+        "Automated checks cover 107 searchable lists and 303 advertised mutations."
+      ]
+    },
+    {
       "version": "1.13.0",
       "date": "2026-06-15",
       "title": "Opportunities — full native Tier C parity",

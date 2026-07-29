@@ -1,9 +1,9 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest, normalizeList } from "../api";
 
-export type FixedEquipment = { id: number; name: string; category_id?: number; location_id?: number; manufacturer_id?: number; status?: string; serial_number?: string; assigned_to?: number; date_created?: string; };
-export type EquipmentCategory = { id: number; name: string; };
-export type EquipmentLocation = { id: number; name: string; };
+export type FixedEquipment = { id: number; assets_name: string; series: string; model_id?: number; category_id?: number; asset_location?: number; manufacturer_id?: number; status?: number; status_name?: string; checkin_out?: number; date_creator?: string; };
+export type EquipmentCategory = { id: number; category_name: string; };
+export type EquipmentLocation = { id: number; location_name: string; };
 export type EquipmentManufacturer = { id: number; name: string; };
 
 export function useFixedEquipmentList(filters?: { search?: string; limit?: number; category_id?: number }) {
@@ -19,8 +19,8 @@ export function useFixedEquipmentDetail(id: string|number|undefined) {
 export function useCreateFixedEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async (d: Record<string,unknown>) => apiRequest("fixed_equipment_api",{method:"POST",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); } }); }
 export function useUpdateFixedEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async ({id,...d}:{id:string|number}&Record<string,unknown>) => apiRequest(`fixed_equipment_api/${id}`,{method:"PUT",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); } }); }
 export function useDeleteFixedEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async (id:string|number) => apiRequest(`fixed_equipment_api/${id}`,{method:"DELETE"}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); } }); }
-export function useAllocateEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async ({id,...d}:{id:string|number}&Record<string,unknown>) => apiRequest(`fixed_equipment_api/${id}/allocate`,{method:"PUT",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); } }); }
-export function useReturnEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async (id:string|number) => apiRequest(`fixed_equipment_api/${id}/return`,{method:"PUT"}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); } }); }
+export function useCheckoutEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async ({id,...d}:{id:string|number}&Record<string,unknown>) => apiRequest(`fixed_equipment_api/${id}/checkout`,{method:"POST",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); qc.invalidateQueries({queryKey:["crud","fixed_equipment"]}); } }); }
+export function useCheckinEquipment() { const qc = useQueryClient(); return useMutation({ mutationFn: async ({id,...d}:{id:string|number}&Record<string,unknown>) => apiRequest(`fixed_equipment_api/${id}/checkin`,{method:"POST",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment"]}); qc.invalidateQueries({queryKey:["crud","fixed_equipment"]}); } }); }
 
 export function useEquipmentCategories() { return useQuery({ queryKey: ["fixed-equipment","categories"], queryFn: async () => normalizeList(await apiRequest("fixed_equipment_api/categories")).items as EquipmentCategory[], staleTime: 300_000 }); }
 export function useCreateEquipmentCategory() { const qc = useQueryClient(); return useMutation({ mutationFn: async (d: Record<string,unknown>) => apiRequest("fixed_equipment_api/categories",{method:"POST",body:JSON.stringify(d)}), onSuccess: ()=>{ qc.invalidateQueries({queryKey:["fixed-equipment","categories"]}); } }); }

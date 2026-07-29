@@ -17,39 +17,9 @@ export const LEADS_FILTER_CONFIG: ModuleFilterConfig = {
     { id: "phonenumber", type: "TextRule", label: "Phone" },
     { id: "country", type: "SelectRule", label: "Country" },
     { id: "city", type: "TextRule", label: "City" },
-    { id: "state", type: "TextRule", label: "State" },
-    { id: "zip", type: "TextRule", label: "ZIP" },
-    {
-      id: "is_public",
-      type: "BooleanRule",
-      label: "Public",
-      options: [
-        { value: "1", label: "Public" },
-        { value: "0", label: "Private" },
-      ],
-    },
-    {
-      id: "lost",
-      type: "BooleanRule",
-      label: "Lost",
-      options: [
-        { value: "1", label: "Lost" },
-        { value: "0", label: "Not Lost" },
-      ],
-    },
-    {
-      id: "junk",
-      type: "BooleanRule",
-      label: "Junk",
-      options: [
-        { value: "1", label: "Junk" },
-        { value: "0", label: "Not Junk" },
-      ],
-    },
-    { id: "lastcontact", type: "DateRule", label: "Last Contact" },
     { id: "dateadded", type: "DateRule", label: "Date Created" },
-    { id: "dateassigned", type: "DateRule", label: "Date Assigned" },
-    { id: "lead_value", type: "NumberRule", label: "Lead Value" },
+    { id: "company", type: "TextRule", label: "Company" },
+    { id: "email", type: "TextRule", label: "Email" },
     {
       id: "status",
       type: "MultiSelectRule",
@@ -57,7 +27,7 @@ export const LEADS_FILTER_CONFIG: ModuleFilterConfig = {
     },
     {
       id: "source",
-      type: "MultiSelectRule",
+      type: "SelectRule",
       label: "Source",
     },
     {

@@ -1,6 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, normalizeList, buildAuthHeaders, parseApiResponse } from "../api";
-import { API_URL } from "../config";
+import { apiRequest, normalizeList } from "../api";
 import { useImpersonation } from "../impersonation";
 
 // ─── Types ───────────────────────────────────────────────────────────────
@@ -14,6 +13,8 @@ export type TimesheetEntry = {
   note: string | null;
   task_name?: string;
   project_name?: string;
+  staff_name?: string;
+  _actions?: { edit?: boolean; delete?: boolean };
 };
 
 export type TimesheetDaySummary = {
@@ -45,6 +46,10 @@ function useTimesheetQueryScope(): string {
 export function useTimesheetEntries(opts?: {
   staffId?: number;
   taskId?: number;
+  projectId?: number;
+  startDate?: string;
+  endDate?: string;
+  search?: string;
   limit?: number;
 }) {
   const scope = useTimesheetQueryScope();
@@ -56,11 +61,16 @@ export function useTimesheetEntries(opts?: {
       };
       if (opts?.staffId) params.staff_id = opts.staffId;
       if (opts?.taskId) params.task_id = opts.taskId;
+      if (opts?.projectId) params.project_id = opts.projectId;
+      if (opts?.startDate || opts?.endDate) {
+        params.start_time = `${opts?.startDate ?? ""}..${opts?.endDate ?? ""}`;
+      }
+      if (opts?.search) params.search = opts.search;
       const qs = Object.entries(params)
         .map(([k, v]) => `${k}=${encodeURIComponent(v)}`)
         .join("&");
       const data = await apiRequest(`timesheets_api?${qs}`);
-      return (data?.data || []) as TimesheetEntry[];
+      return normalizeList(data).items as TimesheetEntry[];
     },
     staleTime: 30 * 1000,
   });
@@ -93,8 +103,10 @@ export function useTimesheetSummary(date?: string) {
   return useQuery({
     queryKey: ["timesheets", "summary", targetDate, scope],
     queryFn: async () => {
-      const data = await apiRequest(`timesheets_api?limit=200`);
-      const entries = (data?.data || []) as TimesheetEntry[];
+      const data = await apiRequest(
+        `timesheets_api?limit=500&start_time=${encodeURIComponent(`${targetDate}..${targetDate}`)}`
+      );
+      const entries = normalizeList(data).items as TimesheetEntry[];
       return entriesToDaySummary(entries, targetDate);
     },
     staleTime: 30 * 1000,
@@ -119,9 +131,12 @@ export function useWeeklyTimesheet(weekStart: string) {
   return useQuery({
     queryKey: ["timesheets", "weekly", weekStart, scope],
     queryFn: async () => {
-      const data = await apiRequest(`timesheets_api?limit=500`);
-      const entries = (data?.data || []) as TimesheetEntry[];
       const dates = getWeekDates(weekStart);
+      const range = `${dates[0]}..${dates[6]}`;
+      const data = await apiRequest(
+        `timesheets_api?limit=500&start_time=${encodeURIComponent(range)}`
+      );
+      const entries = normalizeList(data).items as TimesheetEntry[];
       const days = dates.map((date) => entriesToDaySummary(entries, date));
       const weekTotal = days.reduce((sum, d) => sum + d.totalSeconds, 0);
       return { days, weekTotal };
@@ -137,11 +152,8 @@ export function useActiveTimers() {
   return useQuery({
     queryKey: ["timesheets", "active", scope],
     queryFn: async () => {
-      const data = await apiRequest(`timesheets_api?limit=50`);
-      const entries = (data?.data || []) as TimesheetEntry[];
-      return entries.filter(
-        (e) => !e.end_time || e.end_time === "0000-00-00 00:00:00"
-      ) as ActiveTimer[];
+      const data = await apiRequest(`timesheets_api?limit=50&active=1`);
+      return normalizeList(data).items as ActiveTimer[];
     },
     staleTime: 15 * 1000,
     refetchInterval: 30 * 1000,
@@ -159,7 +171,7 @@ export function useLogTimeEntry() {
   return useMutation({
     mutationFn: async (body: {
       task_id: number;
-      staff_id: number;
+      staff_id?: number;
       start_time: string;
       end_time: string;
       note?: string;
@@ -173,6 +185,27 @@ export function useLogTimeEntry() {
       qc.invalidateQueries({ queryKey: ["timesheets"] });
       qc.invalidateQueries({ queryKey: ["my", "dashboard"] });
     },
+  });
+}
+
+export function useUpdateTimeEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...body }: Partial<TimesheetEntry> & { id: number }) =>
+      apiRequest(`timesheets_api/${encodeURIComponent(String(id))}`, {
+        method: "PUT",
+        body: JSON.stringify(body),
+      }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["timesheets"] }),
+  });
+}
+
+export function useDeleteTimeEntry() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: number) =>
+      apiRequest(`timesheets_api/${encodeURIComponent(String(id))}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["timesheets"] }),
   });
 }
 

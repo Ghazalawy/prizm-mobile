@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest, buildAuthHeaders, buildQS } from "@/lib/api";
+import { apiRequest, buildAuthHeaders, buildQS, parseApiResponse } from "@/lib/api";
+import { getSessionGeneration } from "@/lib/auth-events";
 import { API_URL, BASE_URL } from "@/lib/config";
 
 // ── Types ──────────────────────────────────────────────────────────────
@@ -75,7 +76,7 @@ export function useReportsList(filters: ReportFilters) {
     queryKey: ["reports", filters],
     queryFn: async () => {
       const qs = buildQS(filters as Record<string, string | number | undefined>);
-      const res = await apiRequest(`reports_api/data${qs}`);
+      const res = await apiRequest(`reports_api${qs}`);
       return {
         items: (res?.data ?? []) as ReportListItem[],
         total: res?.total ?? (res?.data?.length ?? 0),
@@ -88,7 +89,7 @@ export function useReportDetail(id: number | null) {
   return useQuery({
     queryKey: ["report", id],
     queryFn: async () => {
-      const res = await apiRequest(`reports_api/data/${id}`);
+      const res = await apiRequest(`reports_api/${id}`);
       return (res?.data ?? null) as ReportFull | null;
     },
     enabled: !!id,
@@ -155,7 +156,7 @@ export function useCreateReport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (payload: CreateReportPayload) => {
-      const res = await apiRequest("reports_api/data", {
+      const res = await apiRequest("reports_api", {
         method: "POST",
         body: JSON.stringify(payload),
       });
@@ -177,7 +178,7 @@ export function useUpdateReport() {
       id: number;
       payload: Partial<CreateReportPayload>;
     }) => {
-      const res = await apiRequest(`reports_api/data/${id}`, {
+      const res = await apiRequest(`reports_api/${id}`, {
         method: "PUT",
         body: JSON.stringify(payload),
       });
@@ -194,7 +195,7 @@ export function useDeleteReport() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: async (id: number) => {
-      const res = await apiRequest(`reports_api/data/${id}`, { method: "DELETE" });
+      const res = await apiRequest(`reports_api/${id}`, { method: "DELETE" });
       return res?.data;
     },
     onSuccess: () => {
@@ -220,6 +221,7 @@ export function useUploadReportImages() {
       reportId: number;
       images: ImageUploadItem[];
     }) => {
+      const gen = getSessionGeneration();
       const tokenHeaders = await buildAuthHeaders();
       const { "Content-Type": _drop, ...headers } = tokenHeaders as Record<string, string>;
       const uploaded: unknown[] = [];
@@ -241,7 +243,8 @@ export function useUploadReportImages() {
           headers,
           body: form,
         });
-        const json = await res.json();
+        const { body: json, invalidToken } = await parseApiResponse(res, !!tokenHeaders["authtoken"], gen);
+        if (invalidToken) throw new Error("Session expired");
         if (!res.ok) {
           throw new Error(json?.message || `HTTP ${res.status}`);
         }

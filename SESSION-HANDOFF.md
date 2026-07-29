@@ -1,5 +1,41 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-07-29 — Full Native Parity Checkpoint
+
+**Status:** Mobile work is complete for safe existing backend contracts. Release `1.14.0` is authorized and has passed the local gate; the single GitHub APK workflow is the remaining deployment step.
+
+### Completed
+
+- Repaired 401/403 session behavior, stale-request logout protection, CSRF handling, and biometric re-sign-in.
+- Corrected search, filter, sort, permissions, canonical labels, relation pickers, and related-record query contracts.
+- Added or completed native pages and workflows for Custom Statuses, Advance Leads, Prizm Documents, DEWA Contacts, Resource Kits, Calculation Sheets, Material Categories, UNSPSC, Survey Send History, Timesheet History, leave approval, calendar edit, Technical Inquiry items, and Budget/UNSPSC specifications.
+- Centralized native routing so internal ERP links remain in the app.
+- Added automated list and mutation contract audits plus targeted regression guards.
+
+### Verified
+
+- TypeScript: pass.
+- Expo dependency alignment: pass after updating Expo to `~54.0.36`.
+- Release metadata consistency: pass at `1.14.0`, Android versionCode `26`.
+- Lists: 105 server-searchable + 2 client-searchable; 107 filterable; 59 sortable; zero skipped.
+- Mutations: 303 advertised; zero skipped.
+- Mobile regression contracts and patch integrity: pass.
+- Local Android production export: pass (1,942 modules, 6.36 MB Hermes bundle); no GitHub Actions minutes used.
+
+### Backend Work Still Required
+
+Task Templates/Task Manage, Product Families, Client Items, Cost Center child allocations, Survey Results, and Knowledge article CRUD do not have safe API contracts matching the web application. Their false or unsafe mobile capabilities are disabled and regression-guarded. Completing them requires write access and QA in `prizm331`.
+
+### Evidence
+
+- Module audit: `docs/MODULE_AUDIT.md`
+- QC report: `docs/qc/PE-QAQC-QC-RPT-26007-R01__full-native-parity-DESKTOP-9GO5QC0-20260729.md`
+- Printable report: `docs/qc/PE-QAQC-QC-RPT-26007-R01__full-native-parity-DESKTOP-9GO5QC0-20260729.pdf`
+
+The canonical audit-store copy and `_INDEX.md` update are deferred to the final release because that store is outside this session’s write boundary.
+
+---
+
 **Date:** 2026-05-30  
 **From:** Brother Whale (DeepSeek V4 Pro)  
 **To:** Next intelligence (human or machine)  

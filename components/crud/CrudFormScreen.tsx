@@ -16,13 +16,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createEntity, getEntity, updateEntity } from "@/lib/api";
 import {
   getModule,
+  getModuleMutationCapability,
   getModulePermissionFeatures,
   ModuleDefinition,
   ModuleField,
   moduleTitle,
 } from "@/lib/module-registry";
 import { usePermissions } from "@/lib/permission-context";
-import { RelationPicker } from "./RelationPicker";
+import { FieldInput } from "./FieldInput";
 import { DateInput } from "./DateInput";
 import {
   useCustomFields,
@@ -42,44 +43,30 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   const params = useLocalSearchParams<Record<string, string | string[]>>();
   const queryClient = useQueryClient();
   const isEdit = !!id;
+  const useRouteRecord = isEdit && firstParam(params._use_route_record) === "1";
   const [values, setValues] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
   const permissions = usePermissions();
 
   // Permission gate: block access if user lacks create/edit permission
   const features = module ? getModulePermissionFeatures(module) : [];
+  const formCapability = module
+    ? getModuleMutationCapability(module, isEdit ? "edit" : "create")
+    : (isEdit ? "edit" : "create");
   const hasFormPermission =
-    features.length === 0 ||
-    features.some((f) =>
-      isEdit ? permissions.canEdit(f) : permissions.canCreate(f),
-    );
-
-  if (module && !hasFormPermission) {
-    return (
-      <View className="flex-1 bg-surface items-center justify-center px-8">
-        <Ionicons name="lock-closed-outline" size={48} color="#94A3B8" />
-        <Text className="text-foreground font-semibold mt-3">Access Denied</Text>
-        <Text className="text-muted text-sm mt-1 text-center">
-          You don&apos;t have permission to {isEdit ? "edit" : "create"} {module.plural.toLowerCase()}.
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.back()}
-          className="mt-4 bg-primary px-5 py-2 rounded-lg"
-          activeOpacity={0.75}
-        >
-          <Text className="text-white font-medium">Go Back</Text>
-        </TouchableOpacity>
-      </View>
-    );
-  }
+    (!module?.adminOnlyMutations || permissions.isAdmin) &&
+    (features.length === 0 ||
+      features.some((f) =>
+        permissions.hasPermission(f, formCapability),
+      ));
 
   const detail = useQuery({
     queryKey: ["crud", moduleKey, "detail", id],
     queryFn: () => (module && id ? getEntity(module.endpoint, id, module.detailEndpoint) : Promise.resolve(null)),
-    enabled: !!module && !!id,
+    enabled: !!module && !!id && !useRouteRecord,
   });
 
-  const row = useMemo(() => unwrapRow(detail.data), [detail.data]);
+  const row = useMemo(() => unwrapRow(detail.data, module), [detail.data, module]);
   const fields = useMemo(() => (module ? editableFields(module, isEdit) : []), [module, isEdit]);
   const sections = useMemo(() => groupFields(fields), [fields]);
 
@@ -103,7 +90,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
   useEffect(() => {
     if (!module) return;
-    if (isEdit && !row) return;
+    if (isEdit && !row && !useRouteRecord) return;
     const next: Record<string, string> = {};
     fields.forEach((field) => {
       const paramValue = firstParam(params[field.key]);
@@ -118,7 +105,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
     });
     setValues(next);
     setTouched(false);
-  }, [fields, isEdit, module, params, row]);
+  }, [fields, isEdit, module, params, row, useRouteRecord]);
 
   const saveMutation = useMutation({
     mutationFn: async () => {
@@ -141,10 +128,19 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
       if (isEdit && id) {
         return updateEntity(module.endpoint, id, payload);
       }
-      return createEntity(module.endpoint, payload);
+      return createEntity(firstParam(params._mutation_endpoint) || module.endpoint, payload);
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ["crud", moduleKey] });
+      const invalidateModule = firstParam(params._invalidate_module);
+      const invalidateId = firstParam(params._invalidate_id);
+      if (invalidateModule) {
+        await queryClient.invalidateQueries({
+          queryKey: invalidateId
+            ? ["crud", invalidateModule, "detail", invalidateId]
+            : ["crud", invalidateModule],
+        });
+      }
       if (basePath && !isEdit) {
         router.replace(basePath as any);
       } else {
@@ -156,6 +152,25 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
     },
   });
 
+  if (module && !hasFormPermission) {
+    return (
+      <View className="flex-1 bg-surface items-center justify-center px-8">
+        <Ionicons name="lock-closed-outline" size={48} color="#94A3B8" />
+        <Text className="text-foreground font-semibold mt-3">Access Denied</Text>
+        <Text className="text-muted text-sm mt-1 text-center">
+          You don&apos;t have permission to {isEdit ? "edit" : "create"} {module.plural.toLowerCase()}.
+        </Text>
+        <TouchableOpacity
+          onPress={() => router.back()}
+          className="mt-4 bg-primary px-5 py-2 rounded-lg"
+          activeOpacity={0.75}
+        >
+          <Text className="text-white font-medium">Go Back</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (!module) {
     return (
       <View className="flex-1 bg-surface items-center justify-center px-8">
@@ -165,7 +180,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
     );
   }
 
-  if (isEdit && detail.isLoading && !row) {
+  if (isEdit && !useRouteRecord && detail.isLoading && !row) {
     return (
       <View className="flex-1 bg-surface items-center justify-center">
         <ActivityIndicator size="large" color={module.color} />
@@ -173,7 +188,9 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
     );
   }
 
-  const title = isEdit && row ? moduleTitle(module, row) : `New ${module.title}`;
+  const title = isEdit
+    ? moduleTitle(module, row || routeRecord(module, params))
+    : `New ${module.title}`;
 
   return (
     <KeyboardAvoidingView
@@ -399,112 +416,10 @@ function CustomFieldInput({
   );
 }
 
-function FieldInput({
-  field,
-  value,
-  onChange,
-}: {
-  field: ModuleField;
-  value: string;
-  onChange: (value: string) => void;
-}) {
-  // Relation-typed fields get a searchable modal picker instead of a raw
-  // numeric TextInput. Hooks into the same /api/<table> endpoints the
-  // CrudDetailScreen uses for FK resolution, so view ↔ edit stays consistent.
-  if (field.relation) {
-    return <RelationPicker relation={field.relation} value={value} onChange={onChange} placeholder={field.placeholder || field.label} />;
-  }
-
-  // Date / datetime fields use the native picker. Output matches Perfex's
-  // expected string format ("YYYY-MM-DD" / "YYYY-MM-DD HH:MM:SS").
-  if (field.type === "date" || field.type === "datetime") {
-    return (
-      <DateInput
-        value={value}
-        onChange={onChange}
-        mode={field.type === "datetime" ? "datetime" : "date"}
-        placeholder={field.placeholder}
-      />
-    );
-  }
-
-  if (field.type === "boolean") {
-    const active = ["1", "on", "true", "yes"].includes(value.toLowerCase());
-    return (
-      <TouchableOpacity
-        onPress={() => onChange(active ? "" : "on")}
-        className={`self-start rounded-full px-3 py-1.5 ${active ? "bg-primary" : "bg-gray-100"}`}
-      >
-        <Text className={`font-medium ${active ? "text-white" : "text-foreground"}`}>
-          {active ? "Yes" : "No"}
-        </Text>
-      </TouchableOpacity>
-    );
-  }
-
-  if (field.type === "select" && field.options?.length) {
-    return (
-      <View className="flex-row flex-wrap">
-        {field.options.map((option) => {
-          const selected = String(option.value) === String(value);
-          return (
-            <TouchableOpacity
-              key={String(option.value)}
-              onPress={() => onChange(String(option.value))}
-              className={`rounded-full px-3 py-1.5 mr-2 mb-2 ${
-                selected ? "bg-primary" : "bg-gray-100"
-              }`}
-            >
-              <Text className={`font-medium ${selected ? "text-white" : "text-foreground"}`}>
-                {option.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
-    );
-  }
-
-  const multiline = field.type === "multiline" || field.type === "json";
-
-  return (
-    <TextInput
-      value={value}
-      onChangeText={onChange}
-      placeholder={field.placeholder || field.label}
-      placeholderTextColor="#94A3B8"
-      multiline={multiline}
-      textAlignVertical={multiline ? "top" : "center"}
-      autoCapitalize={field.type === "email" || field.type === "url" ? "none" : "sentences"}
-      autoCorrect={field.type !== "email" && field.type !== "url"}
-      keyboardType={keyboardType(field)}
-      className={`text-foreground bg-gray-50 rounded-xl px-3 ${
-        multiline ? "min-h-[104px] py-3" : "h-11"
-      }`}
-    />
-  );
-}
-
-function keyboardType(field: ModuleField) {
-  switch (field.type) {
-    case "email":
-      return "email-address";
-    case "phone":
-      return "phone-pad";
-    case "url":
-      return "url";
-    case "number":
-      return "numeric";
-    case "money":
-      return "decimal-pad";
-    default:
-      return "default";
-  }
-}
-
 function editableFields(module: ModuleDefinition, isEdit: boolean): ModuleField[] {
   return module.fields.filter((field) => {
     if (field.readOnly) return false;
+    if (isEdit && field.createOnly) return false;
     if (isEdit && field.key === "password") return false;
     return true;
   });
@@ -534,6 +449,14 @@ function buildPayload(
     const raw = values[field.key] ?? "";
     const value = raw.trim();
     if (!isEdit && !field.required && value === "") return;
+
+    if (field.submitAsArray) {
+      payload[field.key] = value
+        .split(",")
+        .map((part) => part.trim())
+        .filter(Boolean);
+      return;
+    }
 
     if (field.type === "boolean") {
       payload[field.key] = ["1", "on", "true", "yes"].includes(value.toLowerCase()) ? "on" : "";
@@ -568,16 +491,32 @@ function parseJsonish(value: string): any {
   }
 }
 
-function unwrapRow(data: any): any {
+function unwrapRow(data: any, module?: ModuleDefinition): any {
   if (!data) return data;
-  if (data.status === true && data.data) return Array.isArray(data.data) ? data.data[0] : data.data;
-  if (Array.isArray(data)) return data[0];
-  return data;
+  const value = data.status === true && data.data
+    ? (Array.isArray(data.data) ? data.data[0] : data.data)
+    : (Array.isArray(data) ? data[0] : data);
+  if (module?.detailRootKey && value?.[module.detailRootKey] && typeof value[module.detailRootKey] === "object") {
+    return { ...value[module.detailRootKey], ...value };
+  }
+  return value;
 }
 
 function firstParam(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
   return value;
+}
+
+function routeRecord(
+  module: ModuleDefinition,
+  params: Record<string, string | string[]>,
+): Record<string, string> {
+  const row: Record<string, string> = {};
+  [...module.titleFields, ...module.fields.map((field) => field.key)].forEach((key) => {
+    const value = firstParam(params[key]);
+    if (value !== undefined) row[key] = value;
+  });
+  return row;
 }
 
 function confirmLeave(touched: boolean, onLeave: () => void) {

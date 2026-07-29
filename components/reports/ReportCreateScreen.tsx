@@ -27,6 +27,7 @@ import {
 import { takePhoto, pickImage } from "@/lib/files";
 import { colors } from "@/lib/theme";
 import { rtlTextStyle, isArabic } from "@/lib/rtl";
+import { DateInput } from "@/components/crud/DateInput";
 
 const ACCENT = colors.primary;
 const TOTAL_STEPS = 6;
@@ -514,15 +515,12 @@ function StepHeader({
 
       {/* Date */}
       <FieldLabel label="Report Date" required />
-      <View className="bg-white border border-slate-200 rounded-xl px-4 py-3.5 flex-row items-center mb-4">
-        <Ionicons name="calendar-outline" size={18} color={colors.slate500} />
-        <TextInput
-          className="flex-1 ml-2.5 text-sm text-slate-900"
+      <View className="mb-4">
+        <DateInput
           value={reportDate}
-          onChangeText={onDateChange}
-          placeholder="YYYY-MM-DD"
-          placeholderTextColor={colors.slate400}
-          keyboardType="numbers-and-punctuation"
+          onChange={onDateChange}
+          mode="date"
+          placeholder="Pick report date"
         />
       </View>
 

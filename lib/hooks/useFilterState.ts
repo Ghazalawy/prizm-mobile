@@ -14,7 +14,7 @@
 //   // Render chips:
 //   filter.activeChips.map(chip => <FilterChip ... />);
 
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import type {
   FilterRuleDef,
   FilterRuleInstance,
@@ -35,6 +35,12 @@ export function useFilterState(ruleDefs: FilterRuleDef[]) {
   const [rules, setRules] = useState<FilterRuleInstance[]>([]);
   const [matchType, setMatchType] = useState<MatchType>("and");
   const [search, setSearch] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   // ─── Quick filters (chips) ──────────────────────────────────────────
 
@@ -142,16 +148,16 @@ export function useFilterState(ruleDefs: FilterRuleDef[]) {
     }
 
     // Search
-    if (search.trim()) {
-      params.search = search.trim();
+    if (debouncedSearch) {
+      params.search = debouncedSearch;
     }
 
     // Advanced rules
-    const ruleParams = rulesToQueryParams(rules, ruleDefs);
+    const ruleParams = rulesToQueryParams(rules, ruleDefs, matchType);
     Object.assign(params, ruleParams);
 
     return params;
-  }, [quickFilters, search, rules, ruleDefs]);
+  }, [quickFilters, debouncedSearch, rules, ruleDefs, matchType]);
 
   // ─── Counts ─────────────────────────────────────────────────────────
 

@@ -27,16 +27,33 @@ export type KBGroup = {
 
 // ─── Article list ────────────────────────────────────────────────────────
 
-export function useKBArticles(search?: string, groupId?: string | number) {
+export type KBArticleFilters = {
+  search?: string;
+  groupId?: string | number;
+  active?: string | number;
+  filters?: string;
+  sort?: string;
+  sort_dir?: "asc" | "desc";
+  limit?: number;
+};
+
+export function useKBArticles(filters: KBArticleFilters = {}) {
   return useQuery({
-    queryKey: ["kb-articles", search, groupId],
+    queryKey: ["kb-articles", filters],
     queryFn: async () => {
-      const qs = buildQS({ search, limit: 200 });
+      const qs = buildQS({
+        search: filters.search,
+        active: filters.active,
+        filters: filters.filters,
+        sort: filters.sort,
+        sort_dir: filters.sort_dir,
+        limit: filters.limit ?? 200,
+      });
       const res = await apiRequest(`knowledge_api${qs}`);
       let articles: KBArticle[] = res?.data ?? (Array.isArray(res) ? res : []);
-      if (groupId) {
+      if (filters.groupId !== undefined && filters.groupId !== "") {
         articles = articles.filter(
-          (a) => String(a.article_group_id) === String(groupId),
+          (a) => String(a.article_group_id ?? (a as any).articlegroup) === String(filters.groupId),
         );
       }
       return articles;
@@ -69,53 +86,6 @@ export function useKBGroups() {
       return (res?.data ?? (Array.isArray(res) ? res : [])) as KBGroup[];
     },
     staleTime: 300_000,
-  });
-}
-
-// ─── CRUD Mutations ─────────────────────────────────────────────────────────
-
-export function useCreateKBArticle() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (data: Record<string, unknown>) => {
-      return apiRequest("knowledge_api", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kb-articles"] });
-    },
-  });
-}
-
-export function useUpdateKBArticle() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) => {
-      return apiRequest(`knowledge_api/${id}`, {
-        method: "PUT",
-        body: JSON.stringify(data),
-      });
-    },
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ["kb-article", String(vars.id)] });
-      qc.invalidateQueries({ queryKey: ["kb-articles"] });
-    },
-  });
-}
-
-export function useDeleteKBArticle() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (id: string | number) => {
-      return apiRequest(`knowledge_api/${id}`, {
-        method: "DELETE",
-      });
-    },
-    onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["kb-articles"] });
-    },
   });
 }
 

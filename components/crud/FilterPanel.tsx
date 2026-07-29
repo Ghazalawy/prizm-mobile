@@ -17,6 +17,8 @@ import type {
   FilterOperator,
   FilterRuleType,
 } from "@/lib/module-registry";
+import { FieldInput } from "./FieldInput";
+import { DateInput } from "./DateInput";
 import {
   getFilterFields,
   getFieldFilterRuleType,
@@ -632,15 +634,20 @@ function RuleBuilder({ module, fields, editingRule, onAdd, onCancel }: RuleBuild
     });
   }, [selectedField, selectedOperator, value, fieldDef, fields, module, onAdd]);
 
-  const canAdd = selectedField && selectedOperator;
-
   // Determine value input type based on operator
   const needsValue = !(
     selectedOperator === "is_empty" || selectedOperator === "is_not_empty"
   );
+  const rangeParts = value.split("..").map((part) => part.trim());
+  const hasRequiredValue = !needsValue
+    || (selectedOperator === "between" || selectedOperator === "not_between"
+      ? rangeParts.length === 2 && rangeParts.every(Boolean)
+      : value.trim().length > 0);
+  const canAdd = Boolean(selectedField && selectedOperator && hasRequiredValue);
   const isMulti = selectedOperator === "in" || selectedOperator === "not_in";
   const isRange = selectedOperator === "between" || selectedOperator === "not_between";
   const isSelectField = fieldDef?.options?.length || fieldDef?.type === "select";
+  const multiValues = value.split(",").map((part) => part.trim()).filter(Boolean);
 
   return (
     <View className="bg-white rounded-xl p-4 mb-5 border border-primary/20">
@@ -750,7 +757,30 @@ function RuleBuilder({ module, fields, editingRule, onAdd, onCancel }: RuleBuild
         <View className="mb-4">
           <Text className="text-xs text-muted mb-1">Value</Text>
 
-          {isSelectField && (selectedOperator === "equal" || selectedOperator === "not_equal") ? (
+          {isMulti && fieldDef?.options?.length ? (
+            <View className="flex-row flex-wrap">
+              {fieldDef.options.map((opt) => {
+                const optionValue = String(opt.value);
+                const active = multiValues.includes(optionValue);
+                return (
+                  <TouchableOpacity
+                    key={optionValue}
+                    onPress={() => {
+                      const next = active
+                        ? multiValues.filter((item) => item !== optionValue)
+                        : [...multiValues, optionValue];
+                      setValue(next.join(","));
+                    }}
+                    className={`rounded-full mr-2 mb-2 px-4 py-2 border ${active ? "border-transparent bg-primary" : "border-gray-200 bg-white"}`}
+                  >
+                    <Text className={`text-sm font-medium ${active ? "text-white" : "text-foreground"}`}>
+                      {opt.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
+          ) : isSelectField && (selectedOperator === "equal" || selectedOperator === "not_equal") ? (
             // Select field with equal/not_equal: render options as chips
             <View className="flex-row flex-wrap">
               {(fieldDef?.options || []).map((opt) => {
@@ -785,6 +815,31 @@ function RuleBuilder({ module, fields, editingRule, onAdd, onCancel }: RuleBuild
               autoCorrect={false}
               autoCapitalize="none"
             />
+          ) : isRange && fieldDef?.type === "date" ? (
+            <View className="flex-row">
+              <View className="flex-1 mr-2">
+                <DateInput
+                  value={value.split("..")[0]?.trim() || ""}
+                  onChange={(v) => {
+                    const [, to] = value.split("..");
+                    setValue(`${v}..${to?.trim() || ""}`);
+                  }}
+                  mode="date"
+                  placeholder="From"
+                />
+              </View>
+              <View className="flex-1">
+                <DateInput
+                  value={value.split("..")[1]?.trim() || ""}
+                  onChange={(v) => {
+                    const [from] = value.split("..");
+                    setValue(`${from?.trim() || ""}..${v}`);
+                  }}
+                  mode="date"
+                  placeholder="To"
+                />
+              </View>
+            </View>
           ) : isRange ? (
             <View className="flex-row">
               <TextInput
@@ -808,6 +863,8 @@ function RuleBuilder({ module, fields, editingRule, onAdd, onCancel }: RuleBuild
                 className="flex-1 bg-gray-100 rounded-xl px-4 py-3 text-foreground"
               />
             </View>
+          ) : fieldDef && selectedOperator !== "dynamic" ? (
+            <FieldInput field={fieldDef} value={value} onChange={setValue} />
           ) : (
             <TextInput
               value={value}

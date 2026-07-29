@@ -402,7 +402,7 @@ function BOQTab({ oppId }: { oppId: string }) {
     );
   }
 
-  const total = items.reduce((sum, i) => sum + parseFloat(i.amount || "0"), 0);
+  const total = items.reduce((sum, i) => sum + parseFloat(i.total_amount || "0"), 0);
 
   return (
     <View className="bg-white rounded-xl overflow-hidden">
@@ -419,16 +419,19 @@ function BOQTab({ oppId }: { oppId: string }) {
           className={`flex-row px-3 py-2.5 ${idx < items.length - 1 ? "border-b border-slate-50" : ""}`}
         >
           <View className="flex-1 pr-1">
-            {item.item_no ? (
-              <Text className="text-[10px] text-slate-400">{item.item_no}</Text>
+            {item.item_code ? (
+              <Text className="text-[10px] text-slate-400">{item.item_code}</Text>
             ) : null}
-            <Text className="text-xs text-slate-700" numberOfLines={2}>{item.description}</Text>
+            <Text className="text-xs font-medium text-slate-700" numberOfLines={1}>{item.item_name}</Text>
+            {item.description ? (
+              <Text className="text-[11px] text-slate-500" numberOfLines={2}>{item.description}</Text>
+            ) : null}
           </View>
           <Text className="w-12 text-xs text-slate-600 text-right">{item.quantity}</Text>
-          <Text className="w-12 text-xs text-slate-500 text-right">{item.unit}</Text>
-          <Text className="w-16 text-xs text-slate-600 text-right">{parseFloat(item.rate || "0").toLocaleString()}</Text>
+          <Text className="w-12 text-xs text-slate-500 text-right">{item.unit_id ?? "—"}</Text>
+          <Text className="w-16 text-xs text-slate-600 text-right">{parseFloat(item.unit_rate || "0").toLocaleString()}</Text>
           <Text className="w-20 text-xs text-slate-800 font-medium text-right">
-            {parseFloat(item.amount || "0").toLocaleString(undefined, { minimumFractionDigits: 2 })}
+            {parseFloat(item.total_amount || "0").toLocaleString(undefined, { minimumFractionDigits: 2 })}
           </Text>
         </View>
       ))}

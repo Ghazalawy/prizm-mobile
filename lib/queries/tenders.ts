@@ -10,6 +10,7 @@ export type TenderListItem = {
   tenderer_name: string;
   source: string | null;
   tender_status: string;
+  status?: string | number;
   closing_date: string | null;
   opening_date: string | null;
   client_id: number | null;
@@ -62,6 +63,7 @@ export type TenderFilters = {
   search?: string;
   status?: string;
   source?: string;
+  filters?: string;
   limit?: number;
   offset?: number;
 };
@@ -79,9 +81,10 @@ export function useTendersList(filters?: TenderFilters) {
       if (filters?.search) params.search = filters.search;
       if (filters?.status) params.status = filters.status;
       if (filters?.source) params.source = filters.source;
-      const data = await apiRequest(`tenders_api/data${buildQS(params)}`);
+      if (filters?.filters) params.filters = filters.filters;
+      const data = await apiRequest(`tenders_api${buildQS(params)}`);
       if (data?.status === true && Array.isArray(data.data)) {
-        return { items: data.data, total: data.data.length };
+        return { items: data.data, total: Number(data.total) || data.data.length };
       }
       return { items: [], total: 0 };
     },
@@ -95,7 +98,7 @@ export function useTenderDetail(id: string | number) {
   return useQuery({
     queryKey: ["tender", String(id)],
     queryFn: async () => {
-      const data = await apiRequest(`tenders_api/data/${id}`);
+      const data = await apiRequest(`tenders_api/${id}`);
       if (data?.status === true && data.data) {
         return data.data as TenderDetail;
       }
@@ -155,30 +158,6 @@ export function useTenderRisks(tenderId: string | number) {
 
 // ─── Mutations ───────────────────────────────────────────────────────────
 
-export function useMarkTenderWon() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string | number) =>
-      apiRequest(`tenders_api/${id}/mark_won`, { method: "POST" }),
-    onSuccess: (_, id) => {
-      qc.invalidateQueries({ queryKey: ["tender", String(id)] });
-      qc.invalidateQueries({ queryKey: ["tenders"] });
-    },
-  });
-}
-
-export function useMarkTenderLost() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (id: string | number) =>
-      apiRequest(`tenders_api/${id}/mark_lost`, { method: "POST" }),
-    onSuccess: (_, id) => {
-      qc.invalidateQueries({ queryKey: ["tender", String(id)] });
-      qc.invalidateQueries({ queryKey: ["tenders"] });
-    },
-  });
-}
-
 export function useChangeTenderStatus() {
   const qc = useQueryClient();
   return useMutation({
@@ -198,7 +177,7 @@ export function useDeleteTender() {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string | number) =>
-      apiRequest(`tenders_api/data/${id}`, { method: "DELETE" }),
+      apiRequest(`tenders_api/${id}`, { method: "DELETE" }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["tenders"] });
     },

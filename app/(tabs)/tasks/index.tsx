@@ -8,14 +8,18 @@ import {
   RefreshControl,
   ActivityIndicator,
 } from "react-native";
-import { useState, useCallback, useMemo, memo } from "react";
+import { useState, useCallback, useEffect, useMemo, memo } from "react";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useMyTasks, useTasksByStatus, type TaskListItem } from "@/lib/queries/tasks";
+import { useMyTasks, type TaskListItem } from "@/lib/queries/tasks";
 import { useMyTasksSummary } from "@/lib/queries/dashboard";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { colors } from "@/lib/theme";
 import { DenseListRow } from "@/components/ui/DenseListRow";
+import { FilterSheet } from "@/components/ui/FilterSheet";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { TASKS_FILTER_CONFIG } from "@/lib/filter-configs";
+import { useFilterState } from "@/lib/hooks/useFilterState";
 
 const ACCENT = colors.primary;
 
@@ -196,24 +200,38 @@ function StatusStrip({ summary }: { summary: any }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────
 
 export default function TasksScreen() {
-  const { filter } = useLocalSearchParams<{ filter?: string }>();
+  const { filter, q } = useLocalSearchParams<{ filter?: string; q?: string }>();
   const effectiveUser = useEffectiveUser();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
-  const [search, setSearch] = useState("");
+  const [search, setSearch] = useState(q ?? "");
+  const [debouncedSearch, setDebouncedSearch] = useState((q ?? "").trim());
   const [statusFilter, setStatusFilter] = useState<string | undefined>();
   const [assignedOnly, setAssignedOnly] = useState(filter === "mine");
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const advancedFilter = useFilterState(TASKS_FILTER_CONFIG.rules);
+  const advancedParams = advancedFilter.toQueryParams();
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
 
   const assignedStaffId = assignedOnly && effectiveUser?.staffid ? effectiveUser.staffid : undefined;
-  const listQuery = useMyTasks({ search: search || undefined, status: statusFilter, assigned: assignedStaffId, limit: 200 });
-  const boardQuery = useTasksByStatus();
+  const listQuery = useMyTasks({
+    search: debouncedSearch || undefined,
+    status: statusFilter,
+    assigned: assignedStaffId,
+    filters: advancedParams.filters ? String(advancedParams.filters) : undefined,
+    limit: 200,
+  });
   const summary = useMyTasksSummary();
   const [refreshing, setRefreshing] = useState(false);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await Promise.all([listQuery.refetch(), boardQuery.refetch(), summary.refetch()]);
+    await Promise.all([listQuery.refetch(), summary.refetch()]);
     setRefreshing(false);
-  }, [listQuery, boardQuery, summary]);
+  }, [listQuery, summary]);
 
   const listItems = useMemo(() => {
     const raw = (listQuery.data?.items ?? []) as TaskListItem[];
@@ -224,6 +242,15 @@ export default function TasksScreen() {
       return true;
     });
   }, [listQuery.data]);
+
+  const boardItems = useMemo(() => {
+    const grouped: Record<string, TaskListItem[]> = {};
+    for (const task of listItems) {
+      const key = String(task.status ?? "1");
+      (grouped[key] ??= []).push(task);
+    }
+    return grouped;
+  }, [listItems]);
 
   const renderListItem = useCallback(
     ({ item }: { item: TaskListItem }) => <TaskListRow task={item} />,
@@ -297,7 +324,39 @@ export default function TasksScreen() {
             returnKeyType="search"
             clearButtonMode="while-editing"
           />
+          <TouchableOpacity
+            onPress={() => setShowFilterSheet(true)}
+            className="ml-2 w-9 h-9 rounded-lg items-center justify-center"
+            style={{ backgroundColor: advancedFilter.activeFilterCount > 0 ? ACCENT : "#E2E8F0" }}
+            accessibilityRole="button"
+            accessibilityLabel="Open advanced task filters"
+          >
+            <Ionicons
+              name="options-outline"
+              size={18}
+              color={advancedFilter.activeFilterCount > 0 ? "#FFFFFF" : "#64748B"}
+            />
+          </TouchableOpacity>
         </View>
+
+        {advancedFilter.activeChips.length > 0 ? (
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={{ gap: 6, paddingTop: 8 }}
+          >
+            {advancedFilter.activeChips.map((chip) => (
+              <FilterChip
+                key={chip.key}
+                label={`${chip.label}: ${chip.value}`}
+                active
+                onPress={chip.onRemove}
+                color={ACCENT}
+              />
+            ))}
+            <FilterChip label="Clear" active={false} onPress={advancedFilter.clearRules} color="#64748B" />
+          </ScrollView>
+        ) : null}
 
         {/* Filter chips */}
         <ScrollView
@@ -413,7 +472,7 @@ export default function TasksScreen() {
         )
       ) : (
         /* Board View */
-        boardQuery.isLoading ? (
+        listQuery.isLoading && !listQuery.data ? (
           <View className="flex-1 items-center justify-center">
             <ActivityIndicator size="large" color={ACCENT} />
           </View>
@@ -431,7 +490,7 @@ export default function TasksScreen() {
                 key={col.status}
                 label={col.label}
                 color={col.color}
-                tasks={(boardQuery.data?.[col.status] ?? []) as TaskListItem[]}
+                tasks={boardItems[col.status] ?? []}
               />
             ))}
           </ScrollView>
@@ -447,6 +506,18 @@ export default function TasksScreen() {
       >
         <Ionicons name="add" size={28} color="#FFFFFF" />
       </TouchableOpacity>
+
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={TASKS_FILTER_CONFIG.rules}
+        rules={advancedFilter.rules}
+        matchType={advancedFilter.matchType}
+        onAddRule={advancedFilter.addRule}
+        onRemoveRule={advancedFilter.removeRule}
+        onUpdateRule={advancedFilter.updateRule}
+        onSetMatchType={advancedFilter.setMatchType}
+      />
     </View>
   );
 }

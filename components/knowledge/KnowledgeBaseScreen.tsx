@@ -1,7 +1,6 @@
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   ScrollView,
   RefreshControl,
@@ -18,6 +17,11 @@ import {
   type KBArticle,
   type KBGroup,
 } from "@/lib/queries/knowledge";
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { KNOWLEDGE_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterChip } from "@/components/ui/FilterChip";
+import { FilterSheet } from "@/components/ui/FilterSheet";
 
 // ─── Group Section ───────────────────────────────────────────────────────
 
@@ -138,13 +142,22 @@ function ArticleCard({ article }: { article: KBArticle }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────
 
 export function KnowledgeBaseScreen() {
-  const [search, setSearch] = useState("");
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(),
   );
   const [refreshing, setRefreshing] = useState(false);
+  const filter = useFilterState(KNOWLEDGE_FILTER_CONFIG.rules);
+  const queryParams = filter.toQueryParams();
 
-  const articles = useKBArticles(search || undefined);
+  const articles = useKBArticles({
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    active: queryParams.active,
+    filters: queryParams.filters ? String(queryParams.filters) : undefined,
+    sort: "datecreated",
+    sort_dir: "desc",
+    limit: 200,
+  });
   const groups = useKBGroups();
 
   const onRefresh = useCallback(async () => {
@@ -174,7 +187,7 @@ export function KnowledgeBaseScreen() {
     }
 
     for (const a of allArticles) {
-      const gid = String(a.article_group_id ?? "");
+      const gid = String(a.article_group_id ?? (a as any).articlegroup ?? "");
       if (groupMap.has(gid)) {
         groupMap.get(gid)!.articles.push(a);
       } else {
@@ -191,25 +204,34 @@ export function KnowledgeBaseScreen() {
     <View className="flex-1 bg-surface">
       {/* Header */}
       <View className="bg-white border-b border-slate-200 px-4 pt-3 pb-3">
-        <Text className="text-xl font-bold text-foreground mb-3">
-          Knowledge Base
-        </Text>
-        <View className="flex-row items-center bg-slate-100 rounded-xl px-3 py-2.5">
-          <Ionicons name="search" size={18} color="#94A3B8" />
-          <TextInput
-            value={search}
-            onChangeText={setSearch}
-            placeholder="Search articles..."
-            className="flex-1 text-sm text-foreground ml-2"
-            placeholderTextColor="#94A3B8"
-            returnKeyType="search"
-          />
-          {search.length > 0 && (
-            <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-              <Ionicons name="close-circle" size={18} color="#94A3B8" />
-            </TouchableOpacity>
-          )}
-        </View>
+        <Text className="text-xl font-bold text-foreground mb-3">Knowledge Base</Text>
+        <FilterBar
+          search={filter.search}
+          onSearchChange={filter.setSearch}
+          searchPlaceholder="Search subject, content or slug…"
+          activeFilterCount={filter.activeFilterCount}
+          onFilterPress={() => setShowFilterSheet(true)}
+          onClearAll={filter.clearAll}
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ gap: 6, paddingTop: 10 }}
+        >
+          {[
+            { key: "", label: "All" },
+            { key: "1", label: "Published" },
+            { key: "0", label: "Unpublished" },
+          ].map((item) => (
+            <FilterChip
+              key={item.label}
+              label={item.label}
+              active={String(filter.quickFilters.active ?? "") === item.key}
+              onPress={() => filter.setQuickFilter("active", item.key)}
+              color={item.key === "0" ? "#64748B" : colors.primary}
+            />
+          ))}
+        </ScrollView>
       </View>
 
       <ScrollView
@@ -234,13 +256,13 @@ export function KnowledgeBaseScreen() {
           <View className="items-center py-16">
             <Ionicons name="book-outline" size={48} color="#CBD5E1" />
             <Text className="text-sm text-muted mt-3">
-              {search ? "No articles match your search" : "No articles found"}
+              {filter.hasActiveFilters ? "No articles match your search or filters" : "No articles found"}
             </Text>
           </View>
         )}
 
         {grouped.grouped.map(({ group, articles: ga }) => {
-          if (ga.length === 0 && !search) return null;
+          if (ga.length === 0 && !filter.hasActiveFilters) return null;
           return (
             <GroupSection
               key={String(group.groupid)}
@@ -248,7 +270,7 @@ export function KnowledgeBaseScreen() {
               articles={ga}
               expanded={
                 expandedGroups.has(String(group.groupid)) ||
-                search.length > 0
+                filter.hasActiveFilters
               }
               onToggle={() => toggleGroup(String(group.groupid))}
             />
@@ -266,6 +288,17 @@ export function KnowledgeBaseScreen() {
           </View>
         )}
       </ScrollView>
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={KNOWLEDGE_FILTER_CONFIG.rules}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
     </View>
   );
 }

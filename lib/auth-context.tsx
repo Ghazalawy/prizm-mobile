@@ -2,7 +2,7 @@ import React, { createContext, useContext, useEffect, useState, useCallback } fr
 import Toast from "react-native-toast-message";
 import {
   login as authLogin,
-  loginViaAdmin,
+  loginViaApi,
   logout as authLogout,
   getAuthToken,
   clearSession,
@@ -14,6 +14,10 @@ import {
   isBiometricEnabled,
   promptBiometric,
   hasAskedAboutBiometric,
+  hasBiometricCredentials,
+  getBiometricCredentials,
+  saveBiometricCredentials,
+  keepBiometricCredentialsForAccount,
 } from "./biometric";
 import {
   setInvalidTokenHandler,
@@ -21,6 +25,7 @@ import {
 } from "./auth-events";
 import { queryClient } from "./query-client";
 import { API_URL } from "./config";
+import { isInvalidTokenResponse } from "./api";
 
 type LoginResult = {
   success: boolean;
@@ -44,6 +49,9 @@ type AuthState = {
   login: (email: string, password: string) => Promise<LoginResult>;
   /** Re-prompt biometric. Resolves to true on success → user is logged in. */
   retryBiometric: () => Promise<boolean>;
+  /** Verify the current account password and protect it with the OS biometric
+   * vault so fingerprint can obtain a fresh JWT after a real expiry. */
+  enableBiometric: (password: string) => Promise<LoginResult>;
   logout: () => Promise<void>;
 };
 
@@ -64,6 +72,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     (async () => {
       const token = await getAuthToken();
       if (!token) {
+        const biometricReady =
+          (await hasBiometricCredentials()) &&
+          (await isBiometricAvailable()) &&
+          (await isBiometricEnabled());
+        setBiometricPending(biometricReady);
         setIsAuthenticated(false);
         setIsLoading(false);
         return;
@@ -76,23 +89,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const res = await fetch(`${API_URL}/my/tasks-summary`, {
           headers: { "Content-Type": "application/json", authtoken: token },
         });
-        if (res.status === 401) {
-          // Don't clear the stored token — the server might be temporarily
-          // unreachable or the endpoint may be down. The biometric retry
-          // button needs the token to exist in SecureStore.
-          setIsAuthenticated(false);
-          setIsLoading(false);
-          return;
-        }
         const body = await res.json().catch(() => null);
-        if (
-          body &&
-          body.status === false &&
-          typeof body.message === "string" &&
-          /signature verification failed|token expired/i.test(body.message)
-        ) {
+        if (isInvalidTokenResponse(res.status, body, true)) {
           // Token is genuinely expired/invalid — clear it.
           await clearSession();
+          const biometricReady =
+            (await hasBiometricCredentials()) &&
+            (await isBiometricAvailable()) &&
+            (await isBiometricEnabled());
+          setBiometricPending(biometricReady);
           setIsAuthenticated(false);
           setIsLoading(false);
           return;
@@ -140,6 +145,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       queryClient.clear();
       setIsAuthenticated(false);
       setCurrentUser(null);
+      const biometricReady =
+        (await hasBiometricCredentials()) &&
+        (await isBiometricAvailable()) &&
+        (await isBiometricEnabled());
+      setBiometricPending(biometricReady);
       Toast.show({
         type: "info",
         text1: "Session expired",
@@ -153,19 +163,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     async (email: string, password: string): Promise<LoginResult> => {
       setIsLoading(true);
       try {
-        // Try mobile_auth.php first, fall back to admin session auth
+        // Try the standalone mobile endpoint first, then the CSRF-exempt REST
+        // login route. Native authentication never depends on admin cookies.
         let result = await authLogin(email, password);
         if (!result.success) {
-          result = await loginViaAdmin(email, password);
+          result = await loginViaApi(email, password);
         }
 
         if (result.success) {
+          const hadBiometricCredentials = await hasBiometricCredentials();
+          const credentialsMatchAccount = await keepBiometricCredentialsForAccount(email);
           // First-time-only biometric offer
           let shouldOffer = false;
           if (await isBiometricAvailable()) {
             const askedBefore = await hasAskedAboutBiometric();
             const alreadyOn   = await isBiometricEnabled();
-            shouldOffer = !askedBefore && !alreadyOn;
+            shouldOffer =
+              (!askedBefore && !alreadyOn) ||
+              (hadBiometricCredentials && !credentialsMatchAccount);
           }
           // Cancel any in-flight queries from a previous (stale) session
           // so their "Signature verification failed" responses don't arrive
@@ -200,11 +215,27 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    *  Returns true on success → user is logged in. */
   const retryBiometric = useCallback(async (): Promise<boolean> => {
     const token = await getAuthToken();
-    if (!token) return false;
     if (!(await isBiometricAvailable())) return false;
     if (!(await isBiometricEnabled())) return false;
-    const ok = await promptBiometric();
-    if (!ok) return false;
+
+    if (token) {
+      const ok = await promptBiometric();
+      if (!ok) return false;
+    } else {
+      // A fingerprint is useful after a real token expiry only if it can
+      // authenticate again. The OS-gated vault supplies the credentials and
+      // the normal login endpoint issues a fresh JWT.
+      const credentials = await getBiometricCredentials();
+      if (!credentials) return false;
+      let result = await authLogin(credentials.email, credentials.password);
+      if (!result.success) {
+        result = await loginViaApi(credentials.email, credentials.password);
+      }
+      if (!result.success) return false;
+      await queryClient.cancelQueries();
+      queryClient.clear();
+    }
+
     setIsAuthenticated(true);
     setBiometricPending(false);
     resetInvalidTokenDebounce();
@@ -213,15 +244,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return true;
   }, []);
 
+  const enableBiometric = useCallback(async (password: string): Promise<LoginResult> => {
+    const profile = currentUser ?? (await getStaffProfile());
+    if (!profile?.email || !password) {
+      return { success: false, message: "Enter your current password." };
+    }
+
+    let result = await authLogin(profile.email, password);
+    if (!result.success) {
+      result = await loginViaApi(profile.email, password);
+    }
+    if (!result.success) return result;
+
+    try {
+      await saveBiometricCredentials(profile.email, password);
+      setBiometricPending(false);
+      return { success: true };
+    } catch {
+      return { success: false, message: "Fingerprint protection could not be enabled." };
+    }
+  }, [currentUser]);
+
   const logout = useCallback(async () => {
     await authLogout();
     setIsAuthenticated(false);
     setCurrentUser(null);
-    setBiometricPending(false);
+    const biometricReady =
+      (await hasBiometricCredentials()) &&
+      (await isBiometricAvailable()) &&
+      (await isBiometricEnabled());
+    setBiometricPending(biometricReady);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated, isLoading, currentUser, biometricPending, login, retryBiometric, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated, isLoading, currentUser, biometricPending, login, retryBiometric, enableBiometric, logout }}>
       {children}
     </AuthContext.Provider>
   );

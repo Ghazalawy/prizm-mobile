@@ -24,39 +24,16 @@ export const SortPicker = memo(function SortPicker({
   onSort,
 }: SortPickerProps) {
   const sortableFields = useMemo(() => {
-    const keys = new Set<string>();
-    const result: Array<{ key: string; label: string }> = [];
+    const keys = module.sortableFields?.length
+      ? module.sortableFields
+      : module.defaultSort
+        ? [module.defaultSort.field]
+        : [];
 
-    const add = (key: string, label: string) => {
-      if (keys.has(key)) return;
-      keys.add(key);
-      result.push({ key, label });
-    };
-
-    for (const f of module.titleFields) {
-      const field = module.fields.find((mf) => mf.key === f);
-      add(f, field?.label || humanize(f));
-    }
-
-    for (const f of module.fields) {
-      if (
-        f.type === "date" ||
-        f.type === "datetime" ||
-        f.type === "number" ||
-        f.type === "money" ||
-        f.key === "status" ||
-        f.key === module.statusField
-      ) {
-        add(f.key, f.label);
-      }
-    }
-
-    for (const f of module.subtitleFields || []) {
-      const field = module.fields.find((mf) => mf.key === f);
-      add(f, field?.label || humanize(f));
-    }
-
-    return result;
+    return [...new Set(keys)].map((key) => {
+      const field = module.fields.find((candidate) => candidate.key === key);
+      return { key, label: field?.label || humanize(key) };
+    });
   }, [module]);
 
   const handleSelect = useCallback(

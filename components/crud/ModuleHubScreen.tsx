@@ -1,4 +1,4 @@
-import { ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { ActivityIndicator, ScrollView, Text, TextInput, TouchableOpacity, View } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router } from "expo-router";
 import { useMemo, useState, useCallback } from "react";
@@ -12,7 +12,7 @@ const pinnableKeys = new Set(PINNABLE_MODULES.map((m) => m.key));
 export function ModuleHubScreen() {
   const [search, setSearch] = useState("");
   const [, forceUpdate] = useState(0);
-  const { isAdmin, isLoaded, isFailed, hasAnyPermission } = usePermissions();
+  const { isAdmin, isLoaded, isFailed, hasAnyPermission, retry } = usePermissions();
   const pinnedTabs = usePinnedTabs();
 
   const handleTogglePin = useCallback(async (key: string) => {
@@ -23,8 +23,10 @@ export function ModuleHubScreen() {
   const allModules = listVisibleModules();
 
   const modules = useMemo(() => {
-    if (!isLoaded || isFailed || isAdmin) return allModules;
+    if (!isLoaded || isFailed) return [];
+    if (isAdmin) return allModules;
     return allModules.filter((mod) => {
+      if (mod.adminOnlyAccess) return false;
       const features = getModulePermissionFeatures(mod);
       if (features.length === 0) return true;
       return features.some((f) => hasAnyPermission(f));
@@ -41,6 +43,28 @@ export function ModuleHubScreen() {
         .includes(needle)
     );
   }, [modules, search]);
+
+  if (!isLoaded && !isFailed) {
+    return (
+      <View className="flex-1 bg-surface items-center justify-center">
+        <ActivityIndicator size="large" color="#0284C7" />
+        <Text className="text-muted mt-3">Loading your modules…</Text>
+      </View>
+    );
+  }
+
+  if (isFailed) {
+    return (
+      <View className="flex-1 bg-surface items-center justify-center px-8">
+        <Ionicons name="shield-outline" size={48} color="#EF4444" />
+        <Text className="text-foreground font-semibold mt-3">Permissions could not be loaded</Text>
+        <Text className="text-muted text-sm text-center mt-1">Retry before opening ERP modules.</Text>
+        <TouchableOpacity onPress={retry} className="mt-4 bg-primary rounded-xl px-5 py-3">
+          <Text className="text-white font-semibold">Try again</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView className="flex-1 bg-surface" keyboardShouldPersistTaps="handled">

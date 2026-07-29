@@ -3,11 +3,11 @@ import {
   Modal,
   ScrollView,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
 import { useState, useMemo } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import Toast from "react-native-toast-message";
@@ -17,6 +17,7 @@ import {
   ModuleDefinition,
   resolveTemplateValue,
 } from "@/lib/module-registry";
+import { FieldInput } from "./FieldInput";
 
 type ActionRunnerProps = {
   /** The module the actions belong to (for invalidation key naming). */
@@ -42,17 +43,27 @@ type ActionRunnerProps = {
 export function ActionRunner({ module, recordId, actions, open, onClose }: ActionRunnerProps) {
   const [activeAction, setActiveAction] = useState<ModuleAction | null>(null);
   const [values, setValues] = useState<Record<string, string>>({});
+  const [preflight, setPreflight] = useState<any>(null);
+  const [actionResult, setActionResult] = useState<{ action: ModuleAction; data: any } | null>(null);
   const queryClient = useQueryClient();
 
   const runMutation = useMutation({
     mutationFn: async (action: ModuleAction) => {
-      const url = action.endpointTemplate.replace(/\{id\}/g, encodeURIComponent(recordId));
       const body: Record<string, any> = { ...(action.body || {}) };
       // Spread inline form values (e.g. {tender_status: "Awarded"})
       if (action.fields) {
         for (const f of action.fields) {
-          body[f.key] = values[f.key] ?? "";
+          const value = values[f.key] ?? "";
+          body[f.key] = f.submitAsArray
+            ? value.split(",").map((part) => part.trim()).filter(Boolean)
+            : value;
         }
+      }
+      if (action.preflightEndpointTemplate) {
+        const tokenField = action.preflightTokenField || "confirm_token";
+        const token = preflight?.[tokenField];
+        if (!token) throw new Error("Preflight confirmation token is missing. Review the send again.");
+        body[tokenField] = token;
       }
       // Resolve any {id} placeholders in body values
       for (const k of Object.keys(body)) {
@@ -60,6 +71,11 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
           body[k] = resolveTemplateValue(body[k] as string, {}, recordId);
         }
       }
+      const url = (action.endpointTemplate || "").replace(/\{([^}]+)\}/g, (_match, key: string) => {
+        if (key === "id") return encodeURIComponent(recordId);
+        return encodeURIComponent(String(body[key] ?? ""));
+      });
+      if (!url) throw new Error("Action endpoint is not configured");
       return apiRequest(url, {
         method: action.method || "POST",
         body: Object.keys(body).length ? JSON.stringify(body) : undefined,
@@ -70,11 +86,17 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
         type: "success",
         text1: action.successMessage || `${action.title} done`,
       });
-      // Invalidate all queries for this module so the detail screen refreshes
-      await queryClient.invalidateQueries({ queryKey: ["crud", module.key] });
+      // Workflow actions can change parent summaries and related tabs (for
+      // example an inventory check-in changes both the checkout row and its
+      // parent item's available stock), so refresh active CRUD views together.
+      await queryClient.invalidateQueries({ queryKey: ["crud"] });
       setActiveAction(null);
       setValues({});
+      setPreflight(null);
       onClose();
+      if (action.resultFields?.length) {
+        setActionResult({ action, data: _data?.data ?? _data });
+      }
     },
     onError: (err: any, action) => {
       Toast.show({
@@ -85,10 +107,52 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
     },
   });
 
+  const preflightMutation = useMutation({
+    mutationFn: async (action: ModuleAction) => {
+      const url = (action.preflightEndpointTemplate || "").replace(
+        /\{id\}/g,
+        encodeURIComponent(recordId),
+      );
+      if (!url) throw new Error("Preflight endpoint is not configured");
+      const response = await apiRequest(url);
+      return { action, data: response?.data ?? response };
+    },
+    onSuccess: ({ action, data }) => {
+      setPreflight(data);
+      setActiveAction(action);
+    },
+    onError: (err: any, action) => {
+      Toast.show({
+        type: "error",
+        text1: `${action.title} preflight failed`,
+        text2: err?.message || "Unknown error",
+      });
+    },
+  });
+
   const sheetActions = useMemo(() => actions, [actions]);
 
+  const missingRequired = useMemo(() => {
+    const missingField = activeAction?.fields?.some(
+      (field) => field.required && !(values[field.key] ?? "").trim(),
+    ) ?? false;
+    const blockedByPreflight = Boolean(
+      activeAction?.preflightEndpointTemplate && preflight?.can_send === false,
+    );
+    return missingField || blockedByPreflight;
+  }, [activeAction, preflight, values]);
+
   const handleSelect = (action: ModuleAction) => {
-    setValues({});
+    const defaults: Record<string, string> = {};
+    action.fields?.forEach((field) => {
+      defaults[field.key] = String(resolveTemplateValue(String(field.defaultValue ?? ""), {}, recordId));
+    });
+    setValues(defaults);
+    setPreflight(null);
+    if (action.preflightEndpointTemplate) {
+      preflightMutation.mutate(action);
+      return;
+    }
     if (action.fields && action.fields.length > 0) {
       // Action needs input — open the parameter form first
       setActiveAction(action);
@@ -101,6 +165,23 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
     // Plain confirm action — open the confirm dialog (still re-using the modal
     // so the UX stays consistent)
     setActiveAction(action);
+  };
+
+  const executeActiveAction = () => {
+    if (!activeAction) return;
+    if (activeAction.navigateTemplate) {
+      const route = activeAction.navigateTemplate.replace(/\{([^}]+)\}/g, (_match, key: string) => {
+        if (key === "id") return encodeURIComponent(recordId);
+        return encodeURIComponent(values[key] ?? "");
+      });
+      setActiveAction(null);
+      setValues({});
+      setPreflight(null);
+      onClose();
+      router.push(route as any);
+      return;
+    }
+    runMutation.mutate(activeAction);
   };
 
   return (
@@ -149,6 +230,12 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
                   No actions available for this record.
                 </Text>
               ) : null}
+              {preflightMutation.isPending ? (
+                <View className="px-5 py-6 items-center border-t border-gray-100">
+                  <ActivityIndicator color={module.color} />
+                  <Text className="text-muted mt-2">Checking exact recipients…</Text>
+                </View>
+              ) : null}
             </ScrollView>
           </View>
         </View>
@@ -178,19 +265,19 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
                 {activeAction.confirm ? (
                   <Text className="text-muted mb-3">{activeAction.confirm}</Text>
                 ) : null}
+                {activeAction.preflightEndpointTemplate && preflight ? (
+                  <PreflightSummary data={preflight} />
+                ) : null}
                 {activeAction.fields?.map((field) => (
                   <View key={field.key} className="mt-3">
                     <Text className="text-xs text-muted mb-1">
                       {field.label}
                       {field.required ? " *" : ""}
                     </Text>
-                    <TextInput
+                    <FieldInput
+                      field={field}
                       value={values[field.key] ?? ""}
-                      onChangeText={(v) => setValues((cur) => ({ ...cur, [field.key]: v }))}
-                      placeholder={field.placeholder || field.label}
-                      placeholderTextColor="#94A3B8"
-                      keyboardType={field.type === "number" ? "numeric" : "default"}
-                      className="bg-gray-50 rounded-xl px-3 h-11 text-foreground"
+                      onChange={(v) => setValues((cur) => ({ ...cur, [field.key]: v }))}
                     />
                   </View>
                 ))}
@@ -199,17 +286,19 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
                     onPress={() => {
                       setActiveAction(null);
                       setValues({});
+                      setPreflight(null);
                     }}
                     className="flex-1 rounded-xl py-3 items-center bg-gray-100 mr-2"
                   >
                     <Text className="text-foreground font-medium">Cancel</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
-                    onPress={() => runMutation.mutate(activeAction)}
-                    disabled={runMutation.isPending}
+                    onPress={executeActiveAction}
+                    disabled={runMutation.isPending || missingRequired}
                     className={`flex-1 rounded-xl py-3 items-center ${
                       activeAction.destructive ? "bg-red-600" : "bg-primary"
                     }`}
+                    style={{ opacity: missingRequired ? 0.5 : 1 }}
                   >
                     {runMutation.isPending ? (
                       <ActivityIndicator color="#FFFFFF" />
@@ -225,6 +314,74 @@ export function ActionRunner({ module, recordId, actions, open, onClose }: Actio
           </View>
         </View>
       </Modal>
+
+      <Modal visible={!!actionResult} animationType="fade" transparent onRequestClose={() => setActionResult(null)}>
+        <View className="flex-1 bg-black/50 items-center justify-center px-6">
+          <View className="bg-white rounded-2xl w-full max-w-sm p-5">
+            <Text className="text-lg font-semibold text-foreground">
+              {actionResult?.action.title}
+            </Text>
+            {actionResult?.action.resultFields?.map((field) => (
+              <View key={field.key} className="mt-4">
+                <Text className="text-xs text-muted">{field.label}</Text>
+                <Text className="text-foreground text-base mt-1" selectable>
+                  {String(actionResult.data?.[field.key] ?? "—")}
+                </Text>
+              </View>
+            ))}
+            <TouchableOpacity
+              onPress={() => setActionResult(null)}
+              className="mt-5 rounded-xl py-3 items-center bg-primary"
+            >
+              <Text className="text-white font-semibold">Done</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </>
+  );
+}
+
+function PreflightSummary({ data }: { data: any }) {
+  const recipients = Array.isArray(data?.valid_recipients) ? data.valid_recipients : [];
+  const errors = Array.isArray(data?.errors) ? data.errors : [];
+  const skipped = Array.isArray(data?.skipped) ? data.skipped : [];
+  return (
+    <ScrollView className="max-h-72 mt-2" nestedScrollEnabled>
+      <View className="bg-slate-50 rounded-xl p-3">
+        <Text className="text-xs text-muted">From</Text>
+        <Text className="text-foreground font-medium" selectable>{data?.sender_email || "Not configured"}</Text>
+        <Text className="text-xs text-muted mt-3">Items / recipients</Text>
+        <Text className="text-foreground font-medium">
+          {Number(data?.item_count || 0)} items · {recipients.length} recipients
+          {Number(data?.held_count || 0) > 0 ? ` · ${data.held_count} held for next batch` : ""}
+        </Text>
+        {recipients.map((recipient: any) => (
+          <View key={String(recipient.id ?? recipient.email)} className="mt-3 border-t border-slate-200 pt-2">
+            <Text className="text-foreground font-medium">{recipient.company || recipient.contact || "Supplier"}</Text>
+            <Text className="text-xs text-muted" selectable>{recipient.email}</Text>
+            {Array.isArray(recipient.cc_emails) && recipient.cc_emails.length ? (
+              <Text className="text-xs text-muted" selectable>CC: {recipient.cc_emails.join(", ")}</Text>
+            ) : null}
+          </View>
+        ))}
+        {skipped.length ? (
+          <View className="mt-3 bg-amber-50 rounded-lg p-2">
+            <Text className="text-amber-800 font-medium">Skipped</Text>
+            {skipped.map((message: any, index: number) => (
+              <Text key={`${index}-${String(message)}`} className="text-xs text-amber-800 mt-1">• {String(message)}</Text>
+            ))}
+          </View>
+        ) : null}
+        {errors.length ? (
+          <View className="mt-3 bg-red-50 rounded-lg p-2">
+            <Text className="text-red-700 font-medium">Cannot send</Text>
+            {errors.map((message: any, index: number) => (
+              <Text key={`${index}-${String(message)}`} className="text-xs text-red-700 mt-1">• {String(message)}</Text>
+            ))}
+          </View>
+        ) : null}
+      </View>
+    </ScrollView>
   );
 }

@@ -72,12 +72,15 @@ export type OpportunityBOQ = {
 export type OpportunityBOQItem = {
   id: number;
   boq_id: number;
-  item_no: string | null;
+  item_code: string | null;
+  item_name: string;
   description: string;
   quantity: string;
-  unit: string;
-  rate: string;
-  amount: string;
+  unit_id: number | null;
+  unit_rate: string;
+  total_amount: string;
+  category?: string | null;
+  remarks?: string | null;
   created_at: string | null;
 };
 
@@ -86,6 +89,7 @@ export type OpportunityFilters = {
   status?: string;
   stage?: string | number;
   client_id?: string | number;
+  filters?: string;
   limit?: number;
   offset?: number;
 };
@@ -104,6 +108,7 @@ export function useOpportunitiesList(filters?: OpportunityFilters) {
       if (filters?.status) params.status = filters.status;
       if (filters?.stage) params.stage = String(filters.stage);
       if (filters?.client_id) params.client_id = String(filters.client_id);
+      if (filters?.filters) params.filters = filters.filters;
       const data = await apiRequest(`opportunities_api/data${buildQS(params)}`);
       const { items, total } = normalizeList(data);
       return { items: items as OpportunityListItem[], total };

@@ -6,8 +6,7 @@ import {
   stopImpersonation,
   useImpersonation,
 } from "@/lib/impersonation";
-import { API_URL } from "@/lib/config";
-import { buildAuthHeaders } from "@/lib/api";
+import { apiRequest } from "@/lib/api";
 import Toast from "react-native-toast-message";
 
 /** Best-effort audit log when the admin stops impersonating. We POST
@@ -16,10 +15,8 @@ import Toast from "react-native-toast-message";
  *  token — the backend logs both. */
 async function auditStop(staffid: number): Promise<void> {
   try {
-    const headers = await buildAuthHeaders();
-    await fetch(`${API_URL}/admin/impersonate/stop`, {
+    await apiRequest("admin/impersonate/stop", {
       method: "POST",
-      headers,
       body: JSON.stringify({ staffid }),
     });
   } catch {

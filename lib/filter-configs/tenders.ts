@@ -1,6 +1,6 @@
 // ─── Tenders Filter Config ──────────────────────────────────────────────
 //
-// Mirrors prizm331 modules/tenders/views/tenders_dynamic_filter.php
+// Mirrors prizm331 modules/tenders/views/table_tenders.php
 // Table id: tenders
 
 import type { ModuleFilterConfig } from "@/lib/filters";
@@ -10,44 +10,36 @@ export const TENDERS_FILTER_CONFIG: ModuleFilterConfig = {
   rules: [
     { id: "tender_number", type: "TextRule", label: "Tender #" },
     { id: "tender_description", type: "TextRule", label: "Description" },
-    { id: "tenderer_name", type: "TextRule", label: "Tenderer" },
+    { id: "client", type: "MultiSelectRule", label: "Client" },
+    { id: "floating_date", type: "DateRule", label: "Floating Date" },
+    { id: "closing_date", type: "DateRule", label: "Closing Date" },
+    { id: "tenderer_name", type: "MultiSelectRule", label: "Tenderer" },
+    { id: "tenderActivityName", type: "MultiSelectRule", label: "Activity Name" },
     {
-      id: "tender_status",
+      id: "status",
       type: "MultiSelectRule",
       label: "Status",
       options: [
-        { value: "submitted", label: "Submitted" },
-        { value: "under_review", label: "Under Review" },
-        { value: "awarded", label: "Awarded" },
-        { value: "lost", label: "Lost" },
-        { value: "cancelled", label: "Cancelled" },
-        { value: "draft", label: "Draft" },
-        { value: "pending", label: "Pending" },
+        { value: "1", label: "Active" },
+        { value: "2", label: "Pending" },
+        { value: "3", label: "Announced" },
+        { value: "4", label: "Archived" },
+        { value: "6", label: "Canceled" },
       ],
     },
     {
       id: "source",
-      type: "SelectRule",
+      type: "MultiSelectRule",
       label: "Source",
       options: [
-        { value: "etimad", label: "Etimad" },
-        { value: "direct", label: "Direct" },
-        { value: "portal", label: "Portal" },
-        { value: "referral", label: "Referral" },
+        { value: "Etimad", label: "Etimad" },
+        { value: "DEWA", label: "DEWA" },
+        { value: "NWC", label: "NWC" },
+        { value: "AbuDhabi", label: "Abu Dhabi" },
+        { value: "Drydocks", label: "Drydocks" },
+        { value: "esupply", label: "eSupply" },
+        { value: "7x", label: "7x" },
       ],
-    },
-    { id: "closing_date", type: "DateRule", label: "Closing Date" },
-    { id: "opening_date", type: "DateRule", label: "Opening Date" },
-    { id: "created_at", type: "DateRule", label: "Date Created" },
-    {
-      id: "client_id",
-      type: "SelectRule",
-      label: "Client",
-    },
-    {
-      id: "staff_id",
-      type: "SelectRule",
-      label: "Assigned To",
     },
   ],
 };

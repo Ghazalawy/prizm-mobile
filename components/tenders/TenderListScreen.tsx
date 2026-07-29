@@ -8,8 +8,8 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { memo, useCallback, useMemo, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import { useTendersList, type TenderListItem } from "@/lib/queries/tenders";
 import { colors } from "@/lib/theme";
 
@@ -22,20 +22,24 @@ import { FilterSheet } from "@/components/ui/FilterSheet";
 
 const ACCENT = "#B45309";
 
-type StatusFilter = "all" | "Draft" | "Submitted" | "Awarded" | "Won" | "Lost" | "Cancelled";
+type StatusFilter = "all" | "1" | "2" | "3" | "4" | "6";
 
 const FILTER_CHIPS: Array<{ key: StatusFilter; label: string; color: string }> = [
   { key: "all", label: "All", color: ACCENT },
-  { key: "Draft", label: "Draft", color: "#B45309" },
-  { key: "Submitted", label: "Submitted", color: "#0284C7" },
-  { key: "Awarded", label: "Awarded", color: "#2563EB" },
-  { key: "Won", label: "Won", color: "#16A34A" },
-  { key: "Lost", label: "Lost", color: "#DC2626" },
-  { key: "Cancelled", label: "Cancelled", color: "#64748B" },
+  { key: "1", label: "Active", color: "#475569" },
+  { key: "2", label: "Pending", color: "#2563EB" },
+  { key: "3", label: "Announced", color: "#F97316" },
+  { key: "4", label: "Archived", color: "#16A34A" },
+  { key: "6", label: "Canceled", color: "#94A3B8" },
 ];
 
 function getStatusBadge(status: string): { label: string; color: string; bg: string } {
   const s = (status || "").toLowerCase();
+  if (s === "1" || s === "active") return { label: "Active", color: "#475569", bg: "#F1F5F9" };
+  if (s === "2" || s === "pending") return { label: "Pending", color: "#2563EB", bg: "#EFF6FF" };
+  if (s === "3" || s === "announced") return { label: "Announced", color: "#F97316", bg: "#FFF7ED" };
+  if (s === "4" || s === "archived") return { label: "Archived", color: "#16A34A", bg: "#F0FDF4" };
+  if (s === "6" || s === "canceled" || s === "cancelled") return { label: "Canceled", color: "#64748B", bg: "#F1F5F9" };
   if (s === "won") return { label: "Won", color: "#16A34A", bg: "#D1FAE5" };
   if (s === "awarded") return { label: "Awarded", color: "#2563EB", bg: "#EFF6FF" };
   if (s === "submitted") return { label: "Submitted", color: "#0284C7", bg: "#E0F2FE" };
@@ -68,12 +72,18 @@ export function TenderListScreen() {
 
   // ─── Perfix filter state ──────────────────────────────────────────────
   const filter = useFilterState(TENDERS_FILTER_CONFIG.rules);
+  const routeParams = useLocalSearchParams<{ q?: string }>();
+
+  useEffect(() => {
+    if (routeParams.q) filter.setSearch(routeParams.q);
+  }, [routeParams.q, filter.setSearch]);
 
   // ─── API query ────────────────────────────────────────────────────────
   const queryParams = filter.toQueryParams();
   const q = useTendersList({
     search: queryParams.search ? String(queryParams.search) : undefined,
-    status: queryParams.tender_status ? String(queryParams.tender_status) : undefined,
+    status: queryParams.status ? String(queryParams.status) : undefined,
+    filters: queryParams.filters ? String(queryParams.filters) : undefined,
     limit: 200,
   });
 
@@ -148,9 +158,9 @@ export function TenderListScreen() {
             <FilterChip
               key={chip.key}
               label={chip.label}
-              active={filter.quickFilters["tender_status"] === chip.key || (chip.key === "all" && !filter.quickFilters["tender_status"])}
+              active={filter.quickFilters["status"] === chip.key || (chip.key === "all" && !filter.quickFilters["status"])}
               onPress={() =>
-                filter.setQuickFilter("tender_status", chip.key === "all" ? "" : chip.key)
+                filter.setQuickFilter("status", chip.key === "all" ? "" : chip.key)
               }
               color={chip.color}
             />
@@ -188,7 +198,7 @@ export function TenderListScreen() {
           ItemSeparatorComponent={() => <View className="h-2" />}
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={ACCENT} />}
           renderItem={({ item }) => {
-            const st = getStatusBadge(item.tender_status);
+            const st = getStatusBadge(String(item.tender_status ?? item.status ?? ""));
             const cc = closingCountdown(item.closing_date);
             return (
               <TouchableOpacity

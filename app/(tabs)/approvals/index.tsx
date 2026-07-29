@@ -14,6 +14,7 @@ const TYPE_LABELS: Record<string, string> = {
   purchase_order: "Purchase Order",
   expense_request: "Expense Request",
   leave: "Leave",
+  leave_request: "Leave",
   timesheet: "Timesheet",
 };
 

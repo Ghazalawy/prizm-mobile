@@ -9,7 +9,6 @@ export const TASKS_FILTER_CONFIG: ModuleFilterConfig = {
   tableId: "tasks",
   rules: [
     { id: "name", type: "TextRule", label: "Task Name" },
-    { id: "id", type: "NumberRule", label: "Task ID" },
     {
       id: "status",
       type: "MultiSelectRule",
@@ -24,7 +23,7 @@ export const TASKS_FILTER_CONFIG: ModuleFilterConfig = {
     },
     {
       id: "priority",
-      type: "SelectRule",
+      type: "MultiSelectRule",
       label: "Priority",
       options: [
         { value: "1", label: "Low" },
@@ -34,12 +33,52 @@ export const TASKS_FILTER_CONFIG: ModuleFilterConfig = {
       ],
     },
     { id: "startdate", type: "DateRule", label: "Start Date" },
-    { id: "duedate", type: "DateRule", label: "Due Date" },
-    { id: "datefinished", type: "DateRule", label: "Date Finished" },
-    { id: "dateadded", type: "DateRule", label: "Date Created" },
+    { id: "duedate", type: "DateRule", label: "Due Date", withEmptyOperators: true },
+    {
+      id: "todays_tasks",
+      type: "BooleanRule",
+      label: "Today's Tasks",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "duedate_passed",
+      type: "BooleanRule",
+      label: "Due Date Passed",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "not_assigned",
+      type: "BooleanRule",
+      label: "Not Assigned",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "my_tasks",
+      type: "BooleanRule",
+      label: "Assigned to Me",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "my_following_tasks",
+      type: "BooleanRule",
+      label: "Tasks I Follow",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "upcoming_tasks",
+      type: "BooleanRule",
+      label: "Upcoming Tasks",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
+    {
+      id: "recurring",
+      type: "BooleanRule",
+      label: "Recurring",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
+    },
     {
       id: "billable",
-      type: "SelectRule",
+      type: "BooleanRule",
       label: "Billable",
       options: [
         { value: "1", label: "Billable" },
@@ -47,31 +86,17 @@ export const TASKS_FILTER_CONFIG: ModuleFilterConfig = {
       ],
     },
     {
-      id: "rel_type",
-      type: "SelectRule",
-      label: "Related To",
-      options: [
-        { value: "project", label: "Project" },
-        { value: "lead", label: "Lead" },
-        { value: "customer", label: "Customer" },
-        { value: "invoice", label: "Invoice" },
-        { value: "estimate", label: "Estimate" },
-        { value: "contract", label: "Contract" },
-        { value: "ticket", label: "Ticket" },
-        { value: "proposal", label: "Proposal" },
-      ],
+      id: "billed",
+      type: "BooleanRule",
+      label: "Billed",
+      options: [{ value: "1", label: "Yes" }, { value: "0", label: "No" }],
     },
     {
       id: "assigned",
-      type: "SelectRule",
+      type: "MultiSelectRule",
       label: "Assigned To",
       withEmptyOperators: true,
       emptyOperatorValue: "0",
-    },
-    {
-      id: "milestone",
-      type: "SelectRule",
-      label: "Milestone",
     },
   ],
 };

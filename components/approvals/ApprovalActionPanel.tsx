@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { API_URL } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
+import { getSessionGeneration } from "@/lib/auth-events";
 import Toast from "react-native-toast-message";
 import { NoteModal, type NoteMode } from "./NoteModal";
 
@@ -57,6 +58,7 @@ export function ApprovalActionPanel({
     mutationFn: async ({ kind, note }: { kind: NoteMode; note: string }) => {
       // buildAuthHeaders adds authtoken + X-Impersonate-Staff-Id (View-As)
       // so admin-while-viewing-as-X's approve action posts as X.
+      const gen = getSessionGeneration();
       const headers = await buildAuthHeaders();
       const res = await fetch(
         `${API_URL}/${endpointBase.replace(/^\/+/, "")}/${encodeURIComponent(String(requestId))}/${kind}`,
@@ -69,7 +71,7 @@ export function ApprovalActionPanel({
           body: JSON.stringify({ note, statusDetailID }),
         },
       );
-      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"]);
+      const { body, invalidToken } = await parseApiResponse(res, !!headers["authtoken"], gen);
       if (invalidToken) throw new Error("Session expired");
       if (!res.ok) {
         const msg =

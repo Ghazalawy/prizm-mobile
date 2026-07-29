@@ -18,6 +18,10 @@ import {
   type CalendarEvent,
   type CalendarOverlayItem,
 } from "@/lib/queries/calendar";
+import { useFilterState } from "@/lib/hooks/useFilterState";
+import { CALENDAR_FILTER_CONFIG } from "@/lib/filter-configs";
+import { FilterBar } from "@/components/ui/FilterBar";
+import { FilterSheet } from "@/components/ui/FilterSheet";
 
 // ─── Helpers ─────────────────────────────────────────────────────────────
 
@@ -304,9 +308,22 @@ export function CalendarScreen() {
   );
   const [viewMode, setViewMode] = useState<"month" | "agenda">("month");
   const [refreshing, setRefreshing] = useState(false);
+  const [showFilterSheet, setShowFilterSheet] = useState(false);
+  const filter = useFilterState(CALENDAR_FILTER_CONFIG.rules);
+  const queryParams = filter.toQueryParams();
 
-  const events = useCalendarEvents(month, year);
+  const events = useCalendarEvents({
+    month,
+    year,
+    search: queryParams.search ? String(queryParams.search) : undefined,
+    filters: queryParams.filters ? String(queryParams.filters) : undefined,
+  });
   const overlays = useCalendarOverlays(month, year);
+  const visibleOverlays = useMemo(() => {
+    const needle = filter.search.trim().toLowerCase();
+    if (!needle) return overlays.data ?? [];
+    return (overlays.data ?? []).filter((item) => item.title.toLowerCase().includes(needle));
+  }, [overlays.data, filter.search]);
 
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -344,7 +361,7 @@ export function CalendarScreen() {
   const dotMap = useMemo(() => {
     const map = new Map<number, string[]>();
     const allEvents = events.data ?? [];
-    const allOverlays = overlays.data ?? [];
+    const allOverlays = visibleOverlays;
 
     for (const e of allEvents) {
       const d = new Date(e.start.replace(" ", "T"));
@@ -367,7 +384,7 @@ export function CalendarScreen() {
     }
 
     return map;
-  }, [events.data, overlays.data, month, year]);
+  }, [events.data, visibleOverlays, month, year]);
 
   const selectedDayItems = useMemo(() => {
     if (selectedDay === null) return [];
@@ -396,7 +413,7 @@ export function CalendarScreen() {
         });
       }
     }
-    for (const o of overlays.data ?? []) {
+    for (const o of visibleOverlays) {
       if (o.date.slice(0, 10) === key) {
         items.push({
           id: String(o.id),
@@ -408,7 +425,7 @@ export function CalendarScreen() {
       }
     }
     return items;
-  }, [selectedDay, events.data, overlays.data, month, year]);
+  }, [selectedDay, events.data, visibleOverlays, month, year]);
 
   const isLoading = events.isLoading || overlays.isLoading;
 
@@ -461,6 +478,16 @@ export function CalendarScreen() {
             />
           </TouchableOpacity>
         </View>
+      </View>
+      <View className="bg-white px-4 pb-3 border-b border-slate-100">
+        <FilterBar
+          search={filter.search}
+          onSearchChange={filter.setSearch}
+          searchPlaceholder="Search this month’s calendar…"
+          activeFilterCount={filter.activeFilterCount}
+          onFilterPress={() => setShowFilterSheet(true)}
+          onClearAll={filter.clearAll}
+        />
       </View>
 
       <ScrollView
@@ -563,11 +590,23 @@ export function CalendarScreen() {
           <View className="px-4 pt-3">
             <AgendaView
               events={events.data ?? []}
-              overlays={overlays.data ?? []}
+              overlays={visibleOverlays}
             />
           </View>
         )}
       </ScrollView>
+
+      <FilterSheet
+        visible={showFilterSheet}
+        onClose={() => setShowFilterSheet(false)}
+        ruleDefs={CALENDAR_FILTER_CONFIG.rules}
+        rules={filter.rules}
+        matchType={filter.matchType}
+        onAddRule={filter.addRule}
+        onRemoveRule={filter.removeRule}
+        onUpdateRule={filter.updateRule}
+        onSetMatchType={filter.setMatchType}
+      />
 
       {/* FAB — create new event */}
       <TouchableOpacity

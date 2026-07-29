@@ -23,6 +23,7 @@ import {
   type CalendarEvent,
   type CreateEventPayload,
 } from "@/lib/queries/calendar";
+import { DateInput } from "@/components/crud/DateInput";
 
 const COLOR_OPTIONS = [
   "#E65100", "#03A9F4", "#4CAF50", "#FF9800", "#9C27B0",
@@ -49,11 +50,10 @@ export function EventForm({ event, mode }: Props) {
   const [title, setTitle] = useState(event?.title ?? "");
   const [description, setDescription] = useState(event?.description ?? "");
   const [startDate, setStartDate] = useState(
-    event?.start?.replace(" ", "T").slice(0, 16) ??
-      new Date().toISOString().slice(0, 16),
+    event?.start ?? formatLocalDateTime(new Date()),
   );
   const [endDate, setEndDate] = useState(
-    event?.end?.replace(" ", "T").slice(0, 16) ?? "",
+    event?.end ?? "",
   );
   const [isPublic, setIsPublic] = useState(
     Number(event?.public ?? 1) === 1,
@@ -76,12 +76,20 @@ export function EventForm({ event, mode }: Props) {
       Toast.show({ type: "error", text1: "Title is required" });
       return;
     }
+    if (!startDate) {
+      Toast.show({ type: "error", text1: "Start date and time are required" });
+      return;
+    }
+    if (endDate && new Date(endDate.replace(" ", "T")) < new Date(startDate.replace(" ", "T"))) {
+      Toast.show({ type: "error", text1: "End must be after start" });
+      return;
+    }
 
     const payload: CreateEventPayload = {
       title: title.trim(),
       description: description.trim() || undefined,
-      start: startDate.replace("T", " "),
-      end: endDate ? endDate.replace("T", " ") : undefined,
+      start: startDate,
+      end: endDate || undefined,
       reminder_before: parseInt(reminderBefore, 10) || 30,
       reminder_before_type: reminderType,
       color: selectedColor,
@@ -204,24 +212,22 @@ export function EventForm({ event, mode }: Props) {
             <Text className="text-xs font-semibold text-muted uppercase mb-1">
               Start
             </Text>
-            <TextInput
+            <DateInput
               value={startDate}
-              onChangeText={setStartDate}
-              placeholder="YYYY-MM-DDTHH:mm"
-              className="bg-white rounded-xl px-4 py-3 text-sm text-foreground border border-slate-200"
-              placeholderTextColor="#94A3B8"
+              onChange={setStartDate}
+              mode="datetime"
+              placeholder="Pick start date and time"
             />
           </View>
           <View className="flex-1">
             <Text className="text-xs font-semibold text-muted uppercase mb-1">
               End
             </Text>
-            <TextInput
+            <DateInput
               value={endDate}
-              onChangeText={setEndDate}
-              placeholder="YYYY-MM-DDTHH:mm"
-              className="bg-white rounded-xl px-4 py-3 text-sm text-foreground border border-slate-200"
-              placeholderTextColor="#94A3B8"
+              onChange={setEndDate}
+              mode="datetime"
+              placeholder="Optional end date and time"
             />
           </View>
         </View>
@@ -302,7 +308,7 @@ export function EventForm({ event, mode }: Props) {
         </View>
 
         {/* Delete */}
-        {mode === "edit" && (
+        {mode === "edit" && event?._actions?.delete !== false && (
           <TouchableOpacity
             onPress={handleDelete}
             className="flex-row items-center justify-center py-3 rounded-xl bg-rose-50 mt-2"
@@ -316,4 +322,9 @@ export function EventForm({ event, mode }: Props) {
       </ScrollView>
     </KeyboardAvoidingView>
   );
+}
+
+function formatLocalDateTime(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:00`;
 }

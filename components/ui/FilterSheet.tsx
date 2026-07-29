@@ -77,19 +77,33 @@ export function FilterSheet({
 
   const selectedDef = ruleDefs.find((d) => d.id === selectedField);
   const availableOps = selectedDef
-    ? selectedDef.operators ?? OPERATORS_BY_TYPE[selectedDef.type]
+    ? [
+        ...(selectedDef.operators ?? OPERATORS_BY_TYPE[selectedDef.type]),
+        ...(selectedDef.withEmptyOperators ? (["is_empty", "is_not_empty"] as FilterOperator[]) : []),
+      ]
     : [];
 
-  const canAdd =
-    selectedField !== "" && inputValue.trim() !== "";
+  const noValueOperator = selectedOperator === "is_empty" || selectedOperator === "is_not_empty";
+  const rangeOperator = selectedOperator === "between" || selectedOperator === "not_between";
+  const rangeValues = inputValue.split("..").map((value) => value.trim());
+  const canAdd = selectedField !== "" && (
+    noValueOperator
+    || (rangeOperator ? rangeValues.length === 2 && rangeValues.every(Boolean) : inputValue.trim() !== "")
+  );
 
   const handleAdd = () => {
     if (!canAdd || !selectedDef) return;
 
+    const multiValue = selectedDef.type === "MultiSelectRule" || selectedDef.type === "CheckboxRule";
     const rule: FilterRuleInstance = {
       id: selectedField,
       operator: selectedOperator,
-      value: inputValue.trim(),
+      value: noValueOperator
+        ? ""
+        : (multiValue || rangeOperator)
+          ? (rangeOperator ? rangeValues : inputValue.split(",").map((value) => value.trim()).filter(Boolean))
+          : inputValue.trim(),
+      hasDynamicValue: selectedOperator === "dynamic",
     };
     onAddRule(rule);
 
@@ -424,13 +438,26 @@ export function FilterSheet({
                       <TouchableOpacity
                         key={opt.value}
                         onPress={() => {
-                          setInputValue(opt.value);
+                          const multi = selectedDef.type === "MultiSelectRule"
+                            || selectedDef.type === "CheckboxRule"
+                            || selectedOperator === "in"
+                            || selectedOperator === "not_in";
+                          if (!multi) {
+                            setInputValue(opt.value);
+                            return;
+                          }
+                          const selected = inputValue.split(",").map((value) => value.trim()).filter(Boolean);
+                          setInputValue(
+                            selected.includes(opt.value)
+                              ? selected.filter((value) => value !== opt.value).join(",")
+                              : [...selected, opt.value].join(","),
+                          );
                         }}
                         style={{
                           padding: 10,
                           borderRadius: 8,
                           backgroundColor:
-                            inputValue === opt.value
+                            inputValue.split(",").includes(opt.value)
                               ? "#EFF6FF"
                               : "transparent",
                         }}
@@ -439,9 +466,9 @@ export function FilterSheet({
                           style={{
                             fontSize: 14,
                             fontWeight:
-                              inputValue === opt.value ? "600" : "400",
+                              inputValue.split(",").includes(opt.value) ? "600" : "400",
                             color:
-                              inputValue === opt.value
+                              inputValue.split(",").includes(opt.value)
                                 ? "#2563EB"
                                 : "#1E293B",
                           }}
@@ -468,7 +495,7 @@ export function FilterSheet({
                     onChangeText={setInputValue}
                     placeholder={
                       selectedOperator === "between"
-                        ? "YYYY-MM-DD, YYYY-MM-DD"
+                        ? "YYYY-MM-DD..YYYY-MM-DD"
                         : selectedOperator === "dynamic"
                           ? "today / this_week / this_month / ..."
                           : "YYYY-MM-DD"

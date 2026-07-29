@@ -15,6 +15,14 @@ export type CalendarEvent = {
   isstartnotified: string | number;
   reminder_before: string | number;
   reminder_before_type: string;
+  _actions?: { edit?: boolean; delete?: boolean };
+};
+
+export type CalendarEventFilters = {
+  month?: number;
+  year?: number;
+  search?: string;
+  filters?: string;
 };
 
 export type CalendarOverlayItem = {
@@ -41,11 +49,20 @@ export type CreateEventPayload = {
 
 // ─── Calendar Events ─────────────────────────────────────────────────────
 
-export function useCalendarEvents(month?: number, year?: number) {
+export function useCalendarEvents(options: CalendarEventFilters = {}) {
+  const { month, year, search, filters } = options;
   return useQuery({
-    queryKey: ["calendar-events", month, year],
+    queryKey: ["calendar-events", options],
     queryFn: async () => {
-      const data = await apiRequest("calendar");
+      const hasMonth = month !== undefined && year !== undefined;
+      const from = hasMonth
+        ? `${year}-${String(month + 1).padStart(2, "0")}-01`
+        : undefined;
+      const to = hasMonth
+        ? `${year}-${String(month + 1).padStart(2, "0")}-${String(new Date(year!, month! + 1, 0).getDate()).padStart(2, "0")}`
+        : undefined;
+      const qs = buildQS({ search, filters, from, to, limit: 500 });
+      const data = await apiRequest(`calendar${qs}`);
       const events: CalendarEvent[] = Array.isArray(data)
         ? data
         : data?.data ?? data ?? [];
@@ -61,6 +78,18 @@ export function useCalendarEvents(month?: number, year?: number) {
   });
 }
 
+export function useCalendarEvent(id: string | number | undefined) {
+  return useQuery({
+    queryKey: ["calendar-event", id],
+    queryFn: async () => {
+      const data = await apiRequest(`calendar/${id}`);
+      return (data?.data ?? data) as CalendarEvent;
+    },
+    enabled: id !== undefined && id !== "",
+    staleTime: 60_000,
+  });
+}
+
 // ─── Overlay: task due dates, project deadlines, contract expiry, tender closing ─
 
 export function useCalendarOverlays(month?: number, year?: number) {
@@ -71,7 +100,7 @@ export function useCalendarOverlays(month?: number, year?: number) {
         apiRequest("tasks?limit=200"),
         apiRequest("projects?limit=200"),
         apiRequest("contracts?limit=200"),
-        apiRequest("tenders_api/data?limit=200"),
+        apiRequest("tenders_api?limit=200"),
       ]);
 
       const overlays: CalendarOverlayItem[] = [];
@@ -176,7 +205,9 @@ export function useUpdateEvent() {
         method: "PUT",
         body: JSON.stringify(payload),
       }),
-    onSuccess: () => {
+    onSuccess: (_, { id }) => {
+      qc.invalidateQueries({ queryKey: ["calendar-event", id] });
+      qc.invalidateQueries({ queryKey: ["calendar-event", String(id)] });
       qc.invalidateQueries({ queryKey: ["calendar-events"] });
     },
   });
@@ -187,7 +218,9 @@ export function useDeleteEvent() {
   return useMutation({
     mutationFn: (id: number) =>
       apiRequest(`calendar/${id}`, { method: "DELETE" }),
-    onSuccess: () => {
+    onSuccess: (_, id) => {
+      qc.removeQueries({ queryKey: ["calendar-event", id] });
+      qc.removeQueries({ queryKey: ["calendar-event", String(id)] });
       qc.invalidateQueries({ queryKey: ["calendar-events"] });
     },
   });

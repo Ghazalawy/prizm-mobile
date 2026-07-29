@@ -5,9 +5,9 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-05-30 (routing cleanup — no ERP browser escapes)
-**Recent:** internal Prizm ERP URLs from notifications, approvals, search, generic URL fields, purchase notes, and purchase attachments now resolve through `lib/native-routing.ts` and stay inside the mobile app. Unknown internal ERP links fall back to the ERP hub instead of opening the web admin.
-**Maintained by:** the Claude session that ships each batch
+**Last updated:** 2026-07-29 (native parity, auth, search/filter contract hardening)
+**Recent:** authenticated requests now share the impersonation-aware header path; only a genuine HTTP 401 can end a session; biometric re-sign-in uses the encrypted credential vault; native routing, field schemas, list search, advanced filters, sorts, and CRUD controls are checked against the backend source.
+**Maintained by:** the coding session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
 ---
@@ -30,6 +30,29 @@ Status legend:
 
 ## Executive summary
 
+### Current automated checkpoint (supersedes the historical totals below)
+
+- **131 resources** registered in `lib/module-registry.ts`; **43** expose record workflow actions.
+- **105 server-searchable + 2 client-searchable** endpoints pass source-level search contract checks.
+- **107 advanced-filter surfaces** and **59 sort surfaces** match the exact backend fields/rule types.
+- **303 advertised create/edit/delete operations** have matching backend controller methods.
+- Contract coverage has **zero skipped complex endpoints**.
+- TypeScript, release metadata, Expo dependency alignment, and Android Hermes export pass.
+- New native surfaces include Custom Statuses, Advance Leads, DEWA Contacts, Prizm Documents, Resource Kits/components, Material Categories, UNSPSC commodity search/specifications, Calculation Sheets/line items, Survey Send History, Budget Item Specifications, and Technical Inquiry item editing.
+
+### Backend-only blockers found during web-first review
+
+| Web surface | Why it is not exposed as a fake mobile page |
+|---|---|
+| Task Templates / Task Manage | The generic API writes tables directly, skips the web model/permission workflow, and searches nonexistent `name` columns instead of `group_name` / `milestone_name`. |
+| Product Families | No mobile API mirrors tree validation, commodity propagation, linked-item checks, and unlink confirmation. |
+| Client Items | No mobile API mirrors the composition-review workflow. |
+| Cost Center members/supervisors/activity | API uses nonexistent `staff_id` / `dateadded` columns; schema/web use `member_id`, `supervisor_id`, and `date`. |
+| Survey Results | API queries `tblsurveyresults`; the web/schema use result sets plus form results. Send History is safe and native. |
+| Knowledge article CRUD | API calls nonexistent model methods. Publish/unpublish remain available; unsafe CRUD controls are hidden. |
+
+These require backend contract repairs before release parity can honestly be called complete. Raw table access is not an acceptable substitute.
+
 | # | Module | Group | Web | API | Mobile | Actions | Status |
 |---|---|---|---|---|---|---|---|
 | 1 | Customers | CRM | ✅ | ✅ CRUD | ✅ fields/tabs/files | — | 🟡 no workflow actions (none meaningful) |
@@ -46,7 +69,7 @@ Status legend:
 | 12 | Credit Notes | Sales | ✅ | ✅ CRUD only | ✅ | — | 🟡 apply/refund deferred |
 | 13 | Payments | Finance | ✅ | ✅ CRUD | ✅ | — | 🟡 no workflow needed |
 | 14 | Subscriptions | Sales | ✅ | ✅ CRUD | ✅ | — | 🟡 cancel/pause deferred |
-| 15 | Tenders | PRIZM | ✅ | ✅ + status/won/lost (b1) | ✅ + actions | 3 | ✅ |
+| 15 | Tenders | PRIZM | ✅ | ✅ detail + conversion | ✅ native detail/children + convert | 1 | ✅ |
 | 16 | Opportunities | PRIZM | ✅ | ✅ + stage/status (b1) | ✅ + actions | 2 | ✅ |
 | 17 | Purchase Orders | PRIZM | ✅ | ✅ + workflow + approval detail (b14) | ✅ native approval/actions/files | 5 | ✅ |
 | 18 | Purchase Requests (RFQs) | PRIZM | ✅ | ✅ + approve/reject/publish/close, list/detail parity hardening (b13) | ✅ + actions/files | 4 | ✅ |
@@ -56,11 +79,11 @@ Status legend:
 | 18d | Delivery Notes | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
 | 18e | Supplier Quotations | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read/files | — | 🟡 workflow native pending |
 | 18f | Completion Certificates | PRIZM | ✅ | ✅ read/list/detail (b13) | ✅ native read | — | 🟡 workflow native pending |
-| 19 | Materials | PRIZM | ✅ | ✅ CRUD + AI classify | 🟡 fields only | — | 🟡 |
-| 20 | Technical Inquiries | PRIZM | ✅ | ✅ CRUD | 🟡 fields only | — | 🟡 convert-to-RFQ deferred |
+| 19 | Materials | PRIZM | ✅ | ✅ CRUD + metadata/categories/kits/UNSPSC | ✅ native pages/tabs/search | 1 | 🟡 backend-only family/client-item gaps |
+| 20 | Technical Inquiries | PRIZM | ✅ | ✅ CRUD + items/specs/sync | ✅ native CRUD + inline items | — | 🟡 conversion API deferred |
 | 21 | Goals | HR | ✅ | ✅ + publish/complete (b3) | ✅ + 2 actions | 2 | ✅ |
-| 22 | Surveys | HR | ✅ | ✅ + publish (b3) | ✅ + 1 action | 1 | ✅ |
-| 23 | Knowledge | HR | ✅ | ✅ + publish/unpublish (b3) | ✅ + 2 actions | 2 | ✅ |
+| 22 | Surveys | HR | ✅ | ✅ + publish + send log | ✅ + send history | 1 | 🟡 results API broken |
+| 23 | Knowledge | HR | ✅ | 🟡 publish/unpublish safe; CRUD broken | ✅ read/search/group filters + 2 actions | 2 | 🟡 backend CRUD repair required |
 | 24 | Recruitment Candidates | HR | ✅ | ✅ + hire/reject/stage (b3) | ✅ + 3 actions | 3 | ✅ |
 | 25 | Recruitment Positions | HR | ✅ | ✅ CRUD only | ✅ | — | 🟡 open/close deferred |
 | 26 | HR Payslips | HR | ✅ | ✅ + mark_paid (b3) | ✅ + 1 action | 1 | ✅ |
@@ -68,14 +91,14 @@ Status legend:
 | 28 | Budget Items | Finance | ✅ | ✅ + approve/reject (b4) | ✅ + 2 actions | 2 | ✅ |
 | 29 | Fixed Equipment | Ops | ✅ | ✅ + allocate/return (b4) | ✅ + 2 actions | 2 | ✅ |
 | 30 | Business Partners | Ops | ✅ | ✅ CRUD | ✅ | — | ⚫ config-only |
-| 31 | Cost Centers | Ops | ✅ | ✅ CRUD + members | ✅ | — | ⚫ admin-rare on mobile |
+| 31 | Cost Centers | Ops | ✅ | 🟡 CRUD valid; child endpoints broken | ✅ native CRUD | — | 🟡 child API repair required |
 | 32 | Timesheets | Work | ✅ | ✅ CRUD | ✅ | — | 🟡 covered by Tasks timer |
 | 33 | Milestones | Work | ✅ | ✅ CRUD | ✅ | — | 🟡 no workflow needed |
 | 34 | Files | Cross-cut | ✅ | ✅ upload/list/download, purchase rel_type aliases (b13) | ✅ FilesTab preview/upload | — | ✅ |
 | 35 | Staff | Admin | ✅ | ✅ CRUD | ✅ | — | ⚫ admin-only |
 | 36 | Items (catalog) | Sales | ✅ | ✅ CRUD | ✅ | — | ⚫ config |
-| 37 | Calendar | Work | ✅ | ✅ list | 🟡 stub | — | 🔴 needs calendar UI |
-| 38 | Automation | Admin | ✅ | ✅ CRUD | ✅ stub | — | ⚫ admin-only |
+| 37 | Calendar | Work | ✅ | ✅ CRUD | ✅ native calendar/search/filter/detail/edit | — | ✅ |
+| 38 | Automation | Admin | ✅ | ✅ CRUD + triggers/actions | ✅ native admin page | actions | ✅ admin-only |
 | 39 | OTP Manager | Admin | ✅ | ✅ list | ✅ stub | — | ⚫ admin-only |
 | 40 | Allowed Payment Modes | Sales | ✅ | ✅ list | ✅ | — | ⚫ ref-data |
 | 41 | Tender BOQ | PRIZM child | ✅ | ✅ CRUD | ✅ tab | — | ✅ |
@@ -88,11 +111,7 @@ Status legend:
 | 48 | Task Checklist / Comments / Assignments / Followers | Work child | ✅ | ✅ via tasks/* | ✅ tabs | — | ✅ |
 | 49 | Tickets replies / statuses / priorities | Support child | ✅ | ✅ ref-data | ✅ relations | — | ✅ |
 
-**Totals:**
-- **55 modules registered** in `lib/module-registry.ts`
-- **23 modules with workflow actions wired** (⋮ menu in detail screen)
-- **~60 mobile workflow endpoints added to the API** across 7 CRM PRs (PRs #264 → #270)
-- **8 controllers instrumented with `Mobile_audit`** library (`[Mobile]` prefix in `tblactivity_log`)
+**Historical totals below this point were captured before the July parity pass. Use the current automated checkpoint above for release decisions.**
 
 ---
 
@@ -275,14 +294,15 @@ Status legend:
 ### 19. Materials (`materials`) 🟡
 
 - **API controller:** `modules/api/controllers/Materials_catalog.php`
-- **Endpoints:** CRUD + AI classify + metadata KV + UNSPSC search/lookup
-- **Mobile:** registry with basic fields, no workflow actions wired
-- **Open decisions:** Materials are catalog reference data — no clear per-record workflow actions. Bulk reclassification would need a richer UI. **Status: 🟡 partial — acceptable for now.**
+- **Endpoints:** CRUD + source-to-catalog conversion + metadata + categories + kits/components + UNSPSC search/lookup.
+- **Mobile:** native material CRUD, conversion action, specifications tab, category hierarchy editor, resource kits, and search-first UNSPSC commodity/specification viewer.
+- **Blocked:** Product Families and Client Items require model-backed APIs; the available raw/direct-table alternatives are intentionally not exposed.
 
 ### 20. Technical Inquiries (`technical_inquiries`) 🟡
 
-- **API:** CRUD only
-- **Open decisions:** convert-to-RFQ workflow lives in admin controller — would need a new endpoint. **Deferred.**
+- **API:** inquiry CRUD plus item add/update/delete, catalog sync, and item specifications.
+- **Mobile:** native inquiry CRUD and permission-gated inline item add/edit/delete using catalog and unit pickers.
+- **Blocked:** convert-to-RFQ remains web-only until a model-backed API endpoint exists.
 
 ### 21. Goals (`goals`) ✅
 
@@ -296,6 +316,8 @@ Status legend:
 - **API endpoints (batch 3):**
   - `PUT /api/surveys_api/:id/publish`
 - **Mobile actions:** 1
+- **Mobile related page:** Send History uses the valid `tblsurveysendlog` contract.
+- **Blocked:** Results API references the wrong table and stays hidden until repaired.
 
 ### 23. Knowledge (`knowledge`) ✅
 
@@ -303,6 +325,7 @@ Status legend:
   - `PUT /api/knowledge_api/:id/publish`
   - `PUT /api/knowledge_api/:id/unpublish`
 - **Mobile actions:** 2
+- **Safety:** article create/edit/delete controls are hidden because the API invokes model methods that do not exist; read/search/group filtering and publish/unpublish remain native.
 
 ### 24. Recruitment Candidates (`recruitment_candidates`) ✅
 

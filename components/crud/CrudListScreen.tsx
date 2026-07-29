@@ -9,12 +9,15 @@ import {
   View,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
-import { memo, useCallback, useMemo, useRef, useState } from "react";
+import { router, useLocalSearchParams } from "expo-router";
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listEntities, normalizeList, type ListParams } from "@/lib/api";
+import { serializePerfexFilterGroup } from "@/lib/filters";
 import {
   getModule,
+  getFilterFields,
+  getModuleMutationCapability,
   getModulePermissionFeatures,
   isCrudEnabled,
   moduleId,
@@ -34,13 +37,18 @@ type CrudListScreenProps = {
   moduleKey: string;
   basePath?: string;
   titleOverride?: string;
+  initialSearch?: string;
 };
 
 const PAGE_SIZE = 25;
 
-export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListScreenProps) {
+export function CrudListScreen({ moduleKey, basePath, titleOverride, initialSearch }: CrudListScreenProps) {
   const module = getModule(moduleKey);
-  const [search, setSearch] = useState("");
+  const routeParams = useLocalSearchParams<{ q?: string | string[] }>();
+  const routeSearch = Array.isArray(routeParams.q) ? routeParams.q[0] : routeParams.q;
+  const requestedSearch = initialSearch ?? routeSearch ?? "";
+  const [search, setSearch] = useState(requestedSearch);
+  const [debouncedSearch, setDebouncedSearch] = useState(requestedSearch.trim());
   const [refreshing, setRefreshing] = useState(false);
   const [filterGroup, setFilterGroup] = useState<FilterGroup>({ match_type: "and", rules: [] });
   const [sort, setSort] = useState<SortState | undefined>(module?.defaultSort);
@@ -48,19 +56,36 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
   const [sortVisible, setSortVisible] = useState(false);
   const permissions = usePermissions();
   const flatListRef = useRef<FlatList>(null);
+  const hasSupportedSearch = Boolean(module?.searchFields?.length);
+  const hasSupportedFilters = Boolean(module && getFilterFields(module).length > 0);
+  const hasSupportedSort = Boolean(module?.defaultSort);
+  const serverSearch = module?.clientSideSearch ? "" : debouncedSearch;
+  const awaitingRequiredSearch = Boolean(module?.requiresSearch && !serverSearch);
 
   const filterParams = useMemo(() => filterGroupToParams(filterGroup), [filterGroup]);
 
+  useEffect(() => {
+    setSearch(requestedSearch);
+    setDebouncedSearch(requestedSearch.trim());
+  }, [requestedSearch]);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => clearTimeout(timer);
+  }, [search]);
+
   const q = useInfiniteQuery({
-    queryKey: ["crud", moduleKey, "list", { search, filterParams, sort }],
+    queryKey: ["crud", moduleKey, "list", { search: serverSearch, filterParams, sort }],
     queryFn: ({ pageParam = 0 }) => {
       if (!module) return Promise.resolve({ data: [], total: 0 });
       const params: ListParams = {
-        search: search.trim() || undefined,
-        limit: PAGE_SIZE,
+        limit: module.unpaginated ? 1000 : PAGE_SIZE,
         offset: pageParam as number,
         ...filterParams,
       };
+      if (serverSearch) {
+        params[module.searchParam || "search"] = serverSearch;
+      }
       if (sort) {
         params.sort = sort.field;
         params.sort_dir = sort.direction;
@@ -69,6 +94,7 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
     },
     initialPageParam: 0,
     getNextPageParam: (lastPage, allPages) => {
+      if (module?.unpaginated) return undefined;
       const { items, total } = normalizeList(lastPage);
       const loaded = allPages.reduce(
         (acc, page) => acc + normalizeList(page).items.length,
@@ -78,7 +104,11 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
       if (total > 0 && loaded >= total) return undefined;
       return loaded;
     },
-    enabled: !!module,
+    enabled:
+      !!module &&
+      permissions.isLoaded &&
+      (!module.adminOnlyAccess || permissions.isAdmin) &&
+      !awaitingRequiredSearch,
   });
 
   const { rows, totalCount, hasServerTotal } = useMemo(() => {
@@ -96,14 +126,17 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
     }
 
     const unique = uniqueRowsById(module, allItems);
-    const sorted = clientSideSort(module, unique, sort);
+    const searched = module?.clientSideSearch
+      ? clientSideSearchRows(module, unique, debouncedSearch)
+      : unique;
+    const sorted = clientSideSort(module, searched, sort);
 
     return {
       rows: sorted,
       totalCount: hasTotal ? serverTotal : sorted.length,
       hasServerTotal: hasTotal,
     };
-  }, [module, q.data, search, sort]);
+  }, [debouncedSearch, module, q.data, sort]);
 
   const filterCount = activeFilterCount(filterGroup);
 
@@ -131,6 +164,9 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
 
   if (!module) {
     return <MissingModule moduleKey={moduleKey} />;
+  }
+  if (module.adminOnlyAccess && permissions.isLoaded && !permissions.isAdmin) {
+    return <AdminOnlyModule title={module.plural} />;
   }
 
   const path = basePath || `/(tabs)/erp/${module.key}`;
@@ -170,50 +206,56 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
 
         {/* Search + filter/sort bar */}
         <View className="flex-row items-center mt-3">
-          <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-3 py-2">
-            <Ionicons name="search-outline" size={18} color="#64748B" />
-            <TextInput
-              value={search}
-              onChangeText={setSearch}
-              placeholder={`Search ${module.plural.toLowerCase()}`}
-              placeholderTextColor="#94A3B8"
-              className="flex-1 ml-2 text-foreground"
-              autoCorrect={false}
-              autoCapitalize="none"
-            />
-            {search ? (
-              <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
-                <Ionicons name="close-circle" size={18} color="#94A3B8" />
-              </TouchableOpacity>
-            ) : null}
-          </View>
+          {hasSupportedSearch ? (
+            <View className="flex-1 flex-row items-center bg-gray-100 rounded-xl px-3 py-2">
+              <Ionicons name="search-outline" size={18} color="#64748B" />
+              <TextInput
+                value={search}
+                onChangeText={setSearch}
+                placeholder={`Search ${module.plural.toLowerCase()}`}
+                placeholderTextColor="#94A3B8"
+                className="flex-1 ml-2 text-foreground"
+                autoCorrect={false}
+                autoCapitalize="none"
+              />
+              {search ? (
+                <TouchableOpacity onPress={() => setSearch("")} hitSlop={8}>
+                  <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                </TouchableOpacity>
+              ) : null}
+            </View>
+          ) : <View className="flex-1" />}
 
-          {/* Filter button */}
-          <TouchableOpacity
-            onPress={() => setFilterVisible(true)}
-            className="ml-2 w-10 h-10 rounded-xl bg-gray-100 items-center justify-center"
-            activeOpacity={0.75}
-          >
-            <Ionicons name="funnel-outline" size={18} color={filterCount > 0 ? "#0284C7" : "#64748B"} />
-            {filterCount > 0 ? (
-              <View className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary items-center justify-center">
-                <Text className="text-white text-[10px] font-bold">{filterCount}</Text>
-              </View>
-            ) : null}
-          </TouchableOpacity>
+          {/* Only advertise advanced filtering when the endpoint has an explicit contract. */}
+          {hasSupportedFilters ? (
+            <TouchableOpacity
+              onPress={() => setFilterVisible(true)}
+              className="ml-2 w-10 h-10 rounded-xl bg-gray-100 items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Ionicons name="funnel-outline" size={18} color={filterCount > 0 ? "#0284C7" : "#64748B"} />
+              {filterCount > 0 ? (
+                <View className="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-primary items-center justify-center">
+                  <Text className="text-white text-[10px] font-bold">{filterCount}</Text>
+                </View>
+              ) : null}
+            </TouchableOpacity>
+          ) : null}
 
-          {/* Sort button */}
-          <TouchableOpacity
-            onPress={() => setSortVisible(true)}
-            className="ml-2 w-10 h-10 rounded-xl bg-gray-100 items-center justify-center"
-            activeOpacity={0.75}
-          >
-            <Ionicons
-              name={sort ? (sort.direction === "asc" ? "arrow-up" : "arrow-down") : "swap-vertical-outline"}
-              size={18}
-              color={sort ? "#0284C7" : "#64748B"}
-            />
-          </TouchableOpacity>
+          {/* Sorting is explicit too; unsupported endpoints must not show a no-op control. */}
+          {hasSupportedSort ? (
+            <TouchableOpacity
+              onPress={() => setSortVisible(true)}
+              className="ml-2 w-10 h-10 rounded-xl bg-gray-100 items-center justify-center"
+              activeOpacity={0.75}
+            >
+              <Ionicons
+                name={sort ? (sort.direction === "asc" ? "arrow-up" : "arrow-down") : "swap-vertical-outline"}
+                size={18}
+                color={sort ? "#0284C7" : "#64748B"}
+              />
+            </TouchableOpacity>
+          ) : null}
         </View>
 
         {/* Quick status filter chips */}
@@ -354,6 +396,14 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
             <Text className="text-white font-medium">Retry</Text>
           </TouchableOpacity>
         </View>
+      ) : awaitingRequiredSearch ? (
+        <View className="flex-1 items-center justify-center px-8">
+          <Ionicons name="search-outline" size={48} color="#94A3B8" />
+          <Text className="text-foreground font-semibold mt-3">Search to begin</Text>
+          <Text className="text-muted text-sm mt-1 text-center">
+            Enter a code or name above to find {module.plural.toLowerCase()}.
+          </Text>
+        </View>
       ) : isEmpty ? (
         <View className="flex-1 items-center justify-center px-8">
           <Ionicons name={hasActiveFilters ? "filter-outline" as any : module.icon as any} size={48} color="#94A3B8" />
@@ -406,22 +456,26 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride }: CrudListS
       )}
 
       {/* Filter panel modal */}
-      <FilterPanel
-        module={module}
-        visible={filterVisible}
-        onClose={() => setFilterVisible(false)}
-        filterGroup={filterGroup}
-        onApply={setFilterGroup}
-      />
+      {hasSupportedFilters ? (
+        <FilterPanel
+          module={module}
+          visible={filterVisible}
+          onClose={() => setFilterVisible(false)}
+          filterGroup={filterGroup}
+          onApply={setFilterGroup}
+        />
+      ) : null}
 
       {/* Sort picker modal */}
-      <SortPicker
-        module={module}
-        visible={sortVisible}
-        onClose={() => setSortVisible(false)}
-        sort={sort}
-        onSort={setSort}
-      />
+      {hasSupportedSort ? (
+        <SortPicker
+          module={module}
+          visible={sortVisible}
+          onClose={() => setSortVisible(false)}
+          sort={sort}
+          onSort={setSort}
+        />
+      ) : null}
     </View>
   );
 }
@@ -442,7 +496,9 @@ const ListRow = memo(function ListRow({
       <DenseListRow
         title={moduleTitle(module, item)}
         subtitle={moduleSubtitle(module, item) || undefined}
-        onPress={() => router.push(`${path}/${encodeURIComponent(moduleId(module, item))}` as any)}
+        onPress={module.canOpenDetail === false
+          ? undefined
+          : () => router.push(`${path}/${encodeURIComponent(moduleId(module, item))}` as any)}
         leftAccent={
           <View
             className="w-8 h-8 rounded-lg items-center justify-center mr-1"
@@ -471,40 +527,8 @@ const ListSeparator = memo(function ListSeparator() {
  * Convert FilterGroup rules to API query params for server-side filtering.
  * Maps operators to query param formats the PHP API controller understands.
  */
-function filterGroupToParams(group: FilterGroup): Record<string, string> {
-  const params: Record<string, string> = {};
-  for (const rule of group.rules) {
-    if (!rule.value && rule.operator !== "is_empty" && rule.operator !== "is_not_empty") continue;
-    if (rule.operator === "is_empty" || rule.operator === "is_not_empty") continue; // server doesn't support
-
-    const v = Array.isArray(rule.value) ? rule.value.join(",") : String(rule.value);
-
-    switch (rule.operator) {
-      case "equal":
-      case "in":
-        params[rule.id] = v;
-        break;
-      case "contains":
-      case "begins_with":
-      case "ends_with":
-        // Server-side LIKE: send the value as-is
-        params[rule.id] = v;
-        break;
-      case "between":
-      case "not_between":
-        params[rule.id] = v; // already "from..to" format
-        break;
-      case "less":
-      case "less_or_equal":
-      case "greater":
-      case "greater_or_equal":
-        // Numeric comparison: not supported via GET params, skip
-        break;
-      default:
-        params[rule.id] = v;
-    }
-  }
-  return params;
+export function filterGroupToParams(group: FilterGroup): Record<string, string> {
+  return serializePerfexFilterGroup(group);
 }
 
 function clientSideSort(
@@ -584,13 +608,31 @@ function uniqueRowsById(module: ModuleDefinition | undefined, rows: any[]): any[
   });
 }
 
+export function clientSideSearchRows(
+  module: ModuleDefinition | undefined,
+  rows: any[],
+  search: string,
+): any[] {
+  const needle = search.trim().toLocaleLowerCase();
+  if (!module || !needle || !module.searchFields?.length) return rows;
+  return rows.filter((row) =>
+    module.searchFields!.some((field) => {
+      const value = row?.[field];
+      if (value === undefined || value === null || typeof value === "object") return false;
+      return String(value).toLocaleLowerCase().includes(needle);
+    }),
+  );
+}
+
 function canCreateModule(
   module: ModuleDefinition,
   permissions: ReturnType<typeof usePermissions>,
 ): boolean {
+  if (module.adminOnlyMutations && !permissions.isAdmin) return false;
   const features = getModulePermissionFeatures(module);
   if (features.length === 0) return true;
-  return features.some((f) => permissions.canCreate(f));
+  const capability = getModuleMutationCapability(module, "create");
+  return features.some((f) => permissions.hasPermission(f, capability));
 }
 
 function MissingModule({ moduleKey }: { moduleKey: string }) {
@@ -599,6 +641,16 @@ function MissingModule({ moduleKey }: { moduleKey: string }) {
       <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
       <Text className="text-foreground font-semibold mt-3">Module not found</Text>
       <Text className="text-muted text-sm mt-1 text-center">{moduleKey}</Text>
+    </View>
+  );
+}
+
+function AdminOnlyModule({ title }: { title: string }) {
+  return (
+    <View className="flex-1 bg-surface items-center justify-center px-8">
+      <Ionicons name="shield-outline" size={48} color="#64748B" />
+      <Text className="text-foreground text-lg font-semibold mt-3">Administrator access required</Text>
+      <Text className="text-muted text-center mt-1">{title} is a protected settings area.</Text>
     </View>
   );
 }

@@ -373,6 +373,64 @@ export function useCancelLeave() {
   });
 }
 
+export type LeaveApproval = LeaveRequest & {
+  staff_id: number;
+  staff_name?: string;
+  staff_email?: string;
+  rel_type_key?: string;
+  approval_history?: Array<{
+    id: number;
+    staffid: string;
+    staff_approve?: number;
+    approve: string | number;
+    note?: string;
+    date?: string;
+  }>;
+  _actions?: { approve?: boolean; reject?: boolean; delete?: boolean };
+};
+
+export function useLeaveApproval(id: string | number) {
+  const scope = useMyQueryScope();
+  return useQuery({
+    queryKey: ["my", "leave", "approval", String(id), scope],
+    queryFn: async () => {
+      const response = await api<{ status: true; data: LeaveApproval }>(
+        `my/leave/approvals/${encodeURIComponent(String(id))}`
+      );
+      return response.data;
+    },
+    enabled: !!id,
+    staleTime: 30 * 1000,
+  });
+}
+
+function useLeaveApprovalAction(action: "approve" | "reject") {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, note }: { id: number; note: string }) =>
+      api<{ status: true; message: string }>(
+        `my/leave/approvals/${id}/${action}`,
+        {
+          method: "POST",
+          body: JSON.stringify(action === "approve" ? { note } : { reason: note }),
+        }
+      ),
+    onSuccess: (_, variables) => {
+      qc.invalidateQueries({ queryKey: ["my", "leave"] });
+      qc.invalidateQueries({ queryKey: ["inbox"] });
+      qc.invalidateQueries({ queryKey: ["my", "leave", "approval", String(variables.id)] });
+    },
+  });
+}
+
+export function useApproveLeave() {
+  return useLeaveApprovalAction("approve");
+}
+
+export function useRejectLeave() {
+  return useLeaveApprovalAction("reject");
+}
+
 // ─── My Payslips (v2.7.2) ───────────────────────────────────────────────
 
 export type PayslipRow = {

@@ -2,6 +2,8 @@ import { API_URL, ADMIN_URL } from "./config";
 import { getAuthToken, getSessionCookie } from "./auth";
 import { notifyInvalidToken, getSessionGeneration } from "./auth-events";
 import { getCurrentImpersonation } from "./impersonation";
+import { isInvalidTokenResponse } from "./auth-response";
+export { isInvalidTokenResponse } from "./auth-response";
 
 // --- Invalid-token detection ----------------------------------------------
 //
@@ -20,46 +22,6 @@ import { getCurrentImpersonation } from "./impersonation";
 // doesn't exist at all (not just when the token failed), which falsely
 // signed out users hitting a not-yet-deployed endpoint. Only the JWT-
 // specific phrases stay in the unambiguous list now.
-const UNAMBIGUOUS_JWT_PATTERNS = [
-  /signature verification failed/i,
-  /token expired/i,
-];
-
-export function isInvalidTokenResponse(
-  status: number,
-  body: any,
-  hadToken: boolean
-): boolean {
-  // No token sent → server's "401 / signature failed" is just the natural
-  // unauthenticated state, NOT a session-expiry event.
-  if (!hadToken) return false;
-  // 401 (Unauthorized) with auth header set = the canonical session-expiry
-  // signal. HTTP semantics: 401 means "your credentials are invalid or
-  // missing", which on our backend means the JWT couldn't be decoded or
-  // the user record behind it can't be resolved.
-  if (status === 401) return true;
-  // 403 (Forbidden) is NOT session-expiry — it's "you're authenticated
-  // fine, you just lack permission for THIS specific action" (e.g. you're
-  // not the current approver of a PR). Signing the user out here was the
-  // bug behind the "Approve → toast → kicked to login" symptom: the
-  // backend was correctly saying "you can't approve this stage, it's
-  // someone else's turn" with a 403, and the mobile was interpreting that
-  // as "your whole session is dead."
-  // 404 with a SPECIFIC JWT-layer message = stale-token edge case (see #2
-  // above). Anything else with status 404 is treated as "route not found"
-  // and bubbled up as a normal error — the user stays signed in.
-  if (
-    body &&
-    body.status === false &&
-    typeof body.message === "string"
-  ) {
-    for (const re of UNAMBIGUOUS_JWT_PATTERNS) {
-      if (re.test(body.message)) return true;
-    }
-  }
-  return false;
-}
-
 /**
  * Parse a response once (body is consumed) and detect invalid-token. If
  * detected, fires the global handler (which AuthContext registers — see
@@ -71,7 +33,7 @@ export function isInvalidTokenResponse(
 export async function parseApiResponse(
   res: Response,
   hadToken: boolean,
-  requestGeneration?: number
+  requestGeneration: number
 ): Promise<{ body: any; invalidToken: boolean }> {
   const text = await res.text();
   let body: any = text;
@@ -149,6 +111,17 @@ export function normalizeList(response: any): ListResult {
     return {
       items: response.data,
       total: typeof response.total === "number" ? response.total : response.data.length,
+    };
+  }
+  if (response?.data && Array.isArray(response.data.items)) {
+    return {
+      items: response.data.items,
+      total:
+        typeof response.data.total === "number"
+          ? response.data.total
+          : typeof response.total === "number"
+            ? response.total
+            : response.data.items.length,
     };
   }
   return { items: [], total: 0 };
@@ -256,7 +229,40 @@ export type CrudEndpoint = {
 export const listEntities = (
   endpoint: string,
   p?: ListParams
-) => apiRequest(`${endpoint}${buildQS(p)}`);
+) => {
+  const query = buildQS(p);
+  const suffix = query && endpoint.includes("?") ? `&${query.slice(1)}` : query;
+  return apiRequest(`${endpoint}${suffix}`);
+};
+
+/**
+ * Load every page for a narrowly scoped related-record query. Related tabs
+ * must not fetch one arbitrary page and then filter locally, because that
+ * silently hides valid records beyond the first page.
+ */
+export async function listAllEntities(
+  endpoint: string,
+  p: ListParams = {},
+  pageSize = 100,
+  maxPages = 100,
+): Promise<any[]> {
+  const rows: any[] = [];
+  let offset = 0;
+
+  for (let page = 0; page < maxPages; page += 1) {
+    const response = await listEntities(endpoint, { ...p, limit: pageSize, offset });
+    const normalized = normalizeList(response);
+    if (normalized.items.length === 0) break;
+
+    rows.push(...normalized.items);
+    offset += normalized.items.length;
+
+    if (normalized.total !== undefined && rows.length >= normalized.total) break;
+    if (normalized.total === undefined && normalized.items.length < pageSize) break;
+  }
+
+  return rows;
+}
 
 export const getEntity = (
   endpoint: string,

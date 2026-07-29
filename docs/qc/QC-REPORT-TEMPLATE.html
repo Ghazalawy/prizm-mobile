@@ -79,7 +79,7 @@
     <tr><td>Detail, lightbox, edit, and review use one resolver</td><td class="pass">100% PASS</td></tr>
     <tr><td>Selected environment controls the storage host/root</td><td class="pass">100% PASS</td></tr>
   </table>
-  <p class="result">QC gate before push: PASS — no open defects in scope.</p>
+  <p class="result">QC and deployment gates: PASS — no open defects in scope.</p>
 
   <h2>4. Files, Release and Rollback</h2>
   <table>
@@ -89,14 +89,16 @@
     <tr><td>Regression test</td><td><code>scripts/test-mobile-contracts.mjs</code></td></tr>
     <tr><td>Release metadata</td><td class="pass">1.14.2 / Android versionCode 28</td></tr>
     <tr><td>Base commit</td><td><code>298b36b2ea938c5d15a6221a81846c67d48c0e25</code></td></tr>
-    <tr><td>Fix commit / workflow / APK</td><td class="pending">Pending QC-gated push and build</td></tr>
+    <tr><td>Fix commit</td><td class="pass"><code>0ffbecb39d420ea6d1315fd8f80e9f24c00ad6d0</code> on <code>origin/main</code></td></tr>
+    <tr><td>GitHub Actions</td><td class="pass">PASS — run <code>30494216969</code>; Android build and Pages deployment succeeded</td></tr>
+    <tr><td>Rolling APK</td><td class="pass">PASS — <code>prizm-mobile.apk</code>, 91,541,760 bytes, HTTP 200, build <code>0ffbecb</code></td></tr>
     <tr><td>Rollback</td><td>Revert the mobile commit; no backend, schema, or data mutation</td></tr>
   </table>
 
   <h2>5. Sign-off</h2>
   <table>
     <tr><th>Role</th><th>Name</th><th>Status</th><th>Date</th></tr>
-    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + production read + emulator PASS</td><td>2026-07-30</td></tr>
+    <tr><td>QA automation</td><td>Codex</td><td class="pass">Local + production read + emulator + deployment PASS</td><td>2026-07-30</td></tr>
     <tr><td>Product reviewer</td><td>Osama Hassan</td><td>Reported mobile/web image mismatch</td><td>2026-07-30</td></tr>
   </table>
   <div class="footer">Generated under Prizm QA/QC Policy · Hawiya / Asmaa · Classification: Internal</div>

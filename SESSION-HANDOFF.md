@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-07-30 — Site Report Image Storage Compatibility
 
-**Status:** Local, production-read, and Android emulator QC passed. Release `1.14.2` (Android versionCode `28`) is cleared for the push/build protocol; post-deployment evidence is pending.
+**Status:** Release `1.14.2` (Android versionCode `28`) is deployed. Commit `0ffbecb` is on `origin/main`; GitHub Actions run `30494216969` completed successfully and refreshed the rolling APK.
 
 ### Completed
 
@@ -17,12 +17,13 @@
 - Android emulator rendered one real newly stored report photo and one legacy-only photo through fallback.
 - TypeScript, Expo dependencies, release metadata, mobile contracts, 303 mutation contracts, and 107 list contracts pass.
 - Temporary diagnostic login content was removed before commit.
+- GitHub Android build and Pages deployment passed; the 91,541,760-byte rolling APK returns HTTP 200.
 
 ### Evidence
 
 - Emulator screenshot: `C:\Users\osama\AppData\Local\Temp\prizm-mobile-codex-20260730\report-image-test\report-image-qc.png`
 - QC report template: `docs/qc/QC-REPORT-TEMPLATE.md`
-- Canonical report after deployment: `PE-QAQC-QC-RPT-26009-R01__report-image-path-emulator-20260730.md/.pdf`
+- Canonical report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26009-R01__report-image-path-emulator-20260730.md/.pdf`
 
 ---
 

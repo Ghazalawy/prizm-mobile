@@ -44,6 +44,8 @@ No backend or database change was required.
 | 10 | List contract audit | 107 searchable/filterable; 59 sortable; 0 skipped | PASS |
 | 11 | Release metadata | `1.14.2`, Android versionCode `28` | PASS |
 | 12 | Patch integrity | `git diff --check`; diagnostic login UI removed | PASS |
+| 13 | GitHub release pipeline | Run `30494216969`; Android build and Pages deployment | PASS |
+| 14 | Rolling APK publication | `prizm-mobile.apk`; 91,541,760 bytes; HTTP 200 | PASS |
 
 ### Acceptance Criteria
 
@@ -54,7 +56,7 @@ No backend or database change was required.
 | S2 | Detail thumbnails, lightbox source, edit preview, and review preview use the resolver | 100% PASS |
 | S2 | Development and local environments do not resolve against production storage | 100% PASS |
 
-**QC gate before push: PASS. No open Blocker, Major, or Minor defects in scope.**
+**QC and deployment gates: PASS. No open Blocker, Major, or Minor defects in scope.**
 
 ## 4. Code Changes
 
@@ -72,17 +74,17 @@ No backend or database change was required.
 | Item | Status |
 |---|---|
 | Base commit | `298b36b2ea938c5d15a6221a81846c67d48c0e25` |
-| Fix commit | Pending |
-| GitHub push | Pending QC-gated push |
-| GitHub Actions Android build | Pending |
-| Rolling APK release | Pending |
+| Fix commit | `0ffbecb39d420ea6d1315fd8f80e9f24c00ad6d0` |
+| GitHub push | PASS — commit is on `origin/main` |
+| GitHub Actions Android build | PASS — run `30494216969` |
+| Rolling APK release | PASS — `latest/prizm-mobile.apk`, 91,541,760 bytes, build `0ffbecb` |
 | Rollback | Revert the mobile commit; no backend, schema, or data mutation |
 
 ## 6. Sign-off
 
 | Role | Name | Status | Date |
 |---|---|---|---|
-| QA automation | Codex | Local, production-read, and emulator gates PASS | 2026-07-30 |
+| QA automation | Codex | Local, production-read, emulator, and deployment gates PASS | 2026-07-30 |
 | Product reviewer | Osama Hassan | Reported the mobile/web image mismatch | 2026-07-30 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

@@ -1070,3 +1070,12 @@ When building a new detail screen for ANY module, apply these rules in order:
 ---
 
 **End of handoff. Next session: pick a batch, run Phase 0 sweep (if not done) → Phase 1 gaps → Phase 2 build (apply UI checklist from Section 9.0 on every screen!) → Phase 3 test → Phase 4 ship. One module at a time. Tick the CSV as you go.**
+
+---
+
+## 10.0 2026-07-30 — Project multi-status and logical filters
+
+- Mobile v1.14.3 deployed from commit `3c232037`; Android workflow `30516966680` passed.
+- Projects API deployed through `PrizmIT/prizm331#1132`; deployment run `30515446675` passed.
+- Emulator verified On Hold + Cancelled, AND, OR, negative, and release-APK scenarios against production data.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26010-R01__project-multi-logical-filters-emulator-20260730.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

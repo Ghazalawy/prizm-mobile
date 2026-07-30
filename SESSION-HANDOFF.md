@@ -1,5 +1,38 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-07-30 — Android ERP App Links
+
+**Status:** Release candidate `1.14.4` (Android versionCode `30`) is committed on `codex/erp-app-links` at `9a716ca`. Local QC passes; the branch, APK, and root website association are not deployed.
+
+### Completed
+
+- Added verified Android HTTPS App Links for `ms.prizm-energy.com/MS` and `/MS/admin/*`.
+- Reused native ERP routing so recognized record links open their matching mobile screen.
+- Routed unmatched internal ERP pages to the native ERP module hub while leaving upload and external URLs unclaimed.
+- Added the required Android Digital Asset Links association for the stable release-signing fingerprint.
+
+### Verified
+
+- Built and installed an x86_64 APK on `emulator-5554`.
+- A Project 42 ERP URL opened `P1051 - SEALING OF CABLE ENTRY` in the native Project detail screen.
+- An unmatched ERP dashboard URL opened the native ERP module hub.
+- With the domain approval simulated, Android selected `com.prizmenergy.mobile/.MainActivity` without a package hint and reached the same native Project screen.
+- TypeScript, release metadata, Expo dependency alignment, mobile contracts, 303 mutation contracts, 107 list contracts, native APK build, and Android production export pass.
+- The emulator was restored to released v1.14.3; the temporary domain override and Metro process were removed.
+
+### Remaining Before Production Activation
+
+- Publish `public/.well-known/assetlinks.json` at `https://ms.prizm-energy.com/.well-known/assetlinks.json` (the live URL currently returns 404).
+- Push/merge `codex/erp-app-links` and publish the v1.14.4 APK, then repeat the no-package-hint link test against the real verified domain.
+
+### Evidence
+
+- Emulator screenshot: `C:\Users\osama\AppData\Local\Temp\prizm-app-links-project-final.png`
+- QC report: `docs/qc/PE-QAQC-QC-RPT-26011-R01__android-erp-app-links-emulator-20260730.md/.pdf`
+- Canonical report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26011-R01__android-erp-app-links-emulator-20260730.md/.pdf`
+
+---
+
 ## Current Session — 2026-07-30 — Site Report Image Storage Compatibility
 
 **Status:** Release `1.14.2` (Android versionCode `28`) is deployed. Commit `0ffbecb` is on `origin/main`; GitHub Actions run `30494216969` completed successfully and refreshed the rolling APK.

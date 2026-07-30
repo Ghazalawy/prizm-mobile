@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-07-30 — Android ERP App Links
 
-**Status:** Release candidate `1.14.4` (Android versionCode `30`) is committed on `codex/erp-app-links` at `9a716ca`. Local QC passes; the branch, APK, and root website association are not deployed.
+**Status:** Release `1.14.4` (Android versionCode `30`) is deployed. `origin/main` shipped commit `dc0aed0`; GitHub Actions run `30571157067` completed successfully, and the production website association is verified by Android.
 
 ### Completed
 
@@ -16,20 +16,23 @@
 - Built and installed an x86_64 APK on `emulator-5554`.
 - A Project 42 ERP URL opened `P1051 - SEALING OF CABLE ENTRY` in the native Project detail screen.
 - An unmatched ERP dashboard URL opened the native ERP module hub.
-- With the domain approval simulated, Android selected `com.prizmenergy.mobile/.MainActivity` without a package hint and reached the same native Project screen.
+- The production association returns HTTP 200 JSON and Android reports `ms.prizm-energy.com: verified`.
+- The published v1.14.4 APK selected `com.prizmenergy.mobile/.MainActivity` from an unhinted HTTPS cold start and reached the same native Project screen in 2.3 seconds.
+- The published APK routed an unmatched ERP dashboard URL to the native ERP module hub.
 - TypeScript, release metadata, Expo dependency alignment, mobile contracts, 303 mutation contracts, 107 list contracts, native APK build, and Android production export pass.
-- The emulator was restored to released v1.14.3; the temporary domain override and Metro process were removed.
+- The 91,543,576-byte rolling APK has SHA-256 `6cf0c250e134a877ce4adcd3fdcb3220d80ff195fb190a155035fd68835683b2` and the expected signing certificate.
 
-### Remaining Before Production Activation
+### Deployment
 
-- Publish `public/.well-known/assetlinks.json` at `https://ms.prizm-energy.com/.well-known/assetlinks.json` (the live URL currently returns 404).
-- Push/merge `codex/erp-app-links` and publish the v1.14.4 APK, then repeat the no-package-hint link test against the real verified domain.
+- Website association: `https://ms.prizm-energy.com/.well-known/assetlinks.json` — HTTP 200.
+- Android build and Pages workflow: `30571157067` — success.
+- Rolling release: `https://github.com/Ghazalawy/prizm-mobile/releases/download/latest/prizm-mobile.apk`.
 
 ### Evidence
 
-- Emulator screenshot: `C:\Users\osama\AppData\Local\Temp\prizm-app-links-project-final.png`
-- QC report: `docs/qc/PE-QAQC-QC-RPT-26011-R01__android-erp-app-links-emulator-20260730.md/.pdf`
-- Canonical report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26011-R01__android-erp-app-links-emulator-20260730.md/.pdf`
+- Emulator screenshot: `C:\Users\osama\AppData\Local\Temp\prizm-app-links-v1144-final.png`
+- QC report: `docs/qc/PE-QAQC-QC-RPT-26011-R02__android-erp-app-links-production-20260730.md/.pdf`
+- Canonical report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26011-R02__android-erp-app-links-production-20260730.md/.pdf`
 
 ---
 

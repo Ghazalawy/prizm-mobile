@@ -2,6 +2,17 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.14.3",
+      "date": "2026-07-30",
+      "title": "Project filters combine statuses and logical rules",
+      "highlights": [
+        "Selecting multiple project statuses now shows the combined matching projects.",
+        "Project funnel rules now preserve AND and OR logic instead of flattening the first selection.",
+        "Negative, range, and repeated-field project rules are handled by the mobile API.",
+        "Older app builds using comma-separated project statuses remain compatible."
+      ]
+    },
+    {
       "version": "1.14.2",
       "date": "2026-07-30",
       "title": "Site report photos follow the new storage path",

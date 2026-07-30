@@ -45,7 +45,7 @@ function loadTypeScriptModule(relativePath, imports = {}) {
 }
 
 const { isInvalidTokenResponse } = loadTypeScriptModule("lib/auth-response.ts");
-const { serializeDirectFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
+const { serializeDirectFilterGroup, serializeModuleFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
 const authEvents = loadTypeScriptModule("lib/auth-events.ts");
 const routing = loadTypeScriptModule("lib/native-routing.ts", {
   "react-native": { Linking: { openURL: async () => undefined } },
@@ -104,6 +104,58 @@ assert.deepEqual(
   { include_inactive: "1" },
   "selecting every customer status must lift the API's active-only default",
 );
+
+const projectMultiStatus = serializeModuleFilterGroup(
+  {
+    match_type: "and",
+    rules: [{ id: "status", type: "MultiSelectRule", operator: "in", value: ["3", "5"] }],
+  },
+  { supportsAdvancedFilters: true },
+);
+assert.deepEqual(
+  JSON.parse(projectMultiStatus.filters),
+  {
+    match_type: "and",
+    rules: [{
+      id: "status",
+      type: "MultiSelectRule",
+      operator: "in",
+      value: ["3", "5"],
+      has_dynamic_value: false,
+    }],
+  },
+  "On Hold plus Cancelled must remain a two-value status rule",
+);
+
+for (const scenario of [
+  {
+    match_type: "and",
+    rules: [
+      { id: "status", type: "MultiSelectRule", operator: "in", value: ["3", "5"] },
+      { id: "billing_type", type: "SelectRule", operator: "equal", value: "3" },
+    ],
+  },
+  {
+    match_type: "or",
+    rules: [
+      { id: "status", type: "MultiSelectRule", operator: "in", value: ["3", "5"] },
+      { id: "clientid", type: "NumberRule", operator: "equal", value: "132" },
+    ],
+  },
+  {
+    match_type: "and",
+    rules: [
+      { id: "status", type: "MultiSelectRule", operator: "not_in", value: ["1", "2"] },
+      { id: "deadline", type: "DateRule", operator: "between", value: ["2024-01-01", "2026-12-31"] },
+    ],
+  },
+]) {
+  const encoded = serializeModuleFilterGroup(scenario, { supportsAdvancedFilters: true });
+  assert.deepEqual(JSON.parse(encoded.filters), {
+    match_type: scenario.match_type,
+    rules: scenario.rules.map((rule) => ({ ...rule, has_dynamic_value: false })),
+  });
+}
 
 let invalidTokenEvents = 0;
 authEvents.setInvalidTokenHandler(() => { invalidTokenEvents += 1; });

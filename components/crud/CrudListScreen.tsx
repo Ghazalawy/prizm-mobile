@@ -13,7 +13,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listEntities, normalizeList, type ListParams } from "@/lib/api";
-import { serializeDirectFilterGroup } from "@/lib/filters";
+import { serializeModuleFilterGroup } from "@/lib/filters";
 import {
   getModule,
   getFilterFields,
@@ -534,7 +534,8 @@ export function filterGroupToParams(
   group: FilterGroup,
   module?: ModuleDefinition,
 ): Record<string, string> {
-  return serializeDirectFilterGroup(group, {
+  return serializeModuleFilterGroup(group, {
+    supportsAdvancedFilters: module?.supportsAdvancedFilters,
     statusField: module?.statusField,
     statusValues: module?.statusOptions?.map((option) => option.value),
     allStatusesParams: module?.allStatusesParams,

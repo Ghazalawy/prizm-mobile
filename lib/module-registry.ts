@@ -382,6 +382,8 @@ export type ModuleDefinition = {
   /** Extra params used when every status is selected but the server's default
    * list scope would otherwise hide records. */
   allStatusesParams?: Record<string, string | number>;
+  /** Endpoint accepts a serialized Perfex logical filter group. */
+  supportsAdvancedFilters?: boolean;
   /**
    * Perfix filter rule definitions — maps field keys to explicit filter rule
    * types and operator allowlists. When set, this overrides auto-inference
@@ -908,6 +910,7 @@ export const MODULES: ModuleDefinition[] = [
     filterableFields: ["status", "clientid", "billing_type", "start_date", "deadline"],
     statusField: "status",
     statusOptions: projectStatusFilterOptions,
+    supportsAdvancedFilters: true,
     filterRules: {
       status: { ruleType: "MultiSelectRule" },
       clientid: { operators: ["equal", "not_equal"] },

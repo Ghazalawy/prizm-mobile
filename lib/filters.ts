@@ -262,6 +262,22 @@ type DirectFilterOptions = {
   allStatusesParams?: Record<string, string | number>;
 };
 
+type ModuleFilterOptions = DirectFilterOptions & {
+  /** Endpoint accepts the complete Perfex-compatible logical rule group. */
+  supportsAdvancedFilters?: boolean;
+};
+
+/** Select the endpoint's declared transport without flattening logical rules. */
+export function serializeModuleFilterGroup(
+  group: { match_type: MatchType; rules: SerializableFilterRule[] },
+  options: ModuleFilterOptions = {},
+): Record<string, string> {
+  if (options.supportsAdvancedFilters) {
+    return serializePerfexFilterGroup(group);
+  }
+  return serializeDirectFilterGroup(group, options);
+}
+
 /**
  * Serialize filters for the mobile REST controllers. These controllers accept
  * ordinary query parameters (`active=0`, `city=Dubai`, …), not Perfex's web

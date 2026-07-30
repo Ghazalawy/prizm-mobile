@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>QC Report — Android ERP App Links</title>
+  <title>QC Report — Dense Native Record Views</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -169,28 +169,14 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
-    @page { size: A4; margin: 15mm 14mm 17mm; }
-    body { max-width: none; padding: 0; font-family: Arial, sans-serif; color: #172033; font-size: 9.2pt; line-height: 1.38; background: white; }
-    h1 { color: #ea580c; font-size: 21pt; margin: 0 0 4mm; }
-    h1.title { display: none; }
-    h2 { color: #0f172a; font-size: 13pt; border-bottom: 1px solid #fdba74; padding-bottom: 1.5mm; margin: 6mm 0 2.5mm; break-after: avoid; }
-    h3 { color: #9a3412; font-size: 11pt; margin: 4mm 0 2mm; break-after: avoid; }
-    thead { display: table-header-group; }
-    p { margin: 0 0 2.5mm; }
-    table { width: 100%; border-collapse: collapse; margin: 2mm 0 4mm; font-size: 8.5pt; }
-    th, td { border: 1px solid #dbe2ea; padding: 2mm 2.2mm; vertical-align: top; }
-    tr { break-inside: avoid; }
-    th { background: #fff7ed; color: #9a3412; text-align: left; }
-    code { font-family: Consolas, monospace; font-size: 8pt; }
-    strong { color: #0f172a; }
   </style>
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">QC Report — Android ERP App Links</h1>
+<h1 class="title">QC Report — Dense Native Record Views</h1>
 </header>
-<h1 id="qc-report-android-erp-app-links">QC Report — Android ERP App
-Links</h1>
+<h1 id="qc-report-dense-native-record-views">QC Report — Dense Native
+Record Views</h1>
 <h2 id="report-header">Report Header</h2>
 <table>
 <thead>
@@ -202,15 +188,15 @@ Links</h1>
 <tbody>
 <tr>
 <td>Report Code</td>
-<td><code>PE-QAQC-QC-RPT-26011-R02</code></td>
+<td><code>PE-QAQC-QC-RPT-26012-R01</code></td>
 </tr>
 <tr>
 <td>Session ID</td>
-<td><code>android-erp-app-links-production-20260730</code></td>
+<td><code>dense-native-record-ui-20260730</code></td>
 </tr>
 <tr>
 <td>Date / Time</td>
-<td><code>2026-07-30 23:08:16 +04:00</code></td>
+<td><code>2026-07-31 00:31 +04:00</code></td>
 </tr>
 <tr>
 <td>Agent / Model</td>
@@ -222,7 +208,7 @@ Links</h1>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/erp-app-links</code></td>
+<td><code>codex/dense-task-record-ui</code></td>
 </tr>
 <tr>
 <td>Classification</td>
@@ -231,16 +217,16 @@ Links</h1>
 </tbody>
 </table>
 <h2 id="executive-summary">1. Executive Summary</h2>
-<p>Android release v1.14.4 declares verified App Links for
-<code>https://ms.prizm-energy.com/MS</code> and
-<code>/MS/admin/*</code>. Incoming ERP URLs pass through the existing
-native route resolver: recognized record URLs open their native mobile
-screen, while unmatched ERP pages open the native ERP module hub.
-Upload/download paths are not claimed.</p>
-<p>Production activation is complete. The website association returns
-HTTP 200 JSON, Android reports the domain as verified, and the published
-v1.14.4 APK cold-started directly from an unhinted ERP HTTPS URL into
-the matching native Project screen.</p>
+<p>Mobile v1.15.0 makes opened records unmistakable and substantially
+denser. Shared and high-traffic detail screens now show a module/group
+eyebrow, module icon, record type, ID, and record title at the top.
+Generic record metadata uses a field-aware two-column layout for short
+values while preserving full width for names, descriptions, notes, URLs,
+and other narrative content.</p>
+<p>The Tasks list defect is fixed: priority bars retain their full
+height with a 10 px text gutter, and internal relation keys such as
+<code>erp_dev</code> render as <code>ERP Development Module</code>. The
+relation label is also used in task detail.</p>
 <h2 id="implementation">2. Implementation</h2>
 <table>
 <colgroup>
@@ -249,45 +235,49 @@ the matching native Project screen.</p>
 </colgroup>
 <thead>
 <tr>
-<th>Layer</th>
+<th>Area</th>
 <th>Change</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Android manifest</td>
-<td>Expo <code>intentFilters</code> emits <code>VIEW</code>,
-<code>DEFAULT</code>, <code>BROWSABLE</code>, and
-<code>autoVerify=true</code> for the production ERP host and paths.</td>
+<td>Shared record header</td>
+<td><code>ScreenHeader</code> supports module eyebrow, icon, color,
+title, ID, and record subtitle.</td>
 </tr>
 <tr>
-<td>Cold/warm start routing</td>
-<td><code>app/+native-intent.ts</code> rewrites operating-system URLs
-through <code>resolveIncomingAppLink()</code>.</td>
+<td>Generic record density</td>
+<td>Short metadata and custom fields pack into two columns; narrative
+and long fields remain full width.</td>
 </tr>
 <tr>
-<td>Native destination</td>
-<td>Known ERP records use the existing route map; unknown internal ERP
-pages use <code>/(tabs)/erp</code>.</td>
+<td>Task list</td>
+<td>Priority accent remains visible and is separated from text by a
+fixed gutter.</td>
 </tr>
 <tr>
-<td>Website association</td>
-<td><code>public/.well-known/assetlinks.json</code> contains package
-<code>com.prizmenergy.mobile</code> and the stable SHA-256 signing
-fingerprint.</td>
+<td>Task relation</td>
+<td>Perfex relation keys map to readable module labels; related record
+IDs/names remain visible.</td>
 </tr>
 <tr>
-<td>Safety boundary</td>
-<td><code>/MS/uploads/*</code> and unrelated external URLs are not
-claimed or rewritten.</td>
+<td>Workflow approvals</td>
+<td>Purchase Request, Purchase Order, Payment Request, and Expense
+Request headers identify their exact module.</td>
+</tr>
+<tr>
+<td>High-traffic detail screens</td>
+<td>Project, Lead, Customer, Contract, Ticket, Opportunity, and Business
+Partner surfaces expose module identity.</td>
 </tr>
 </tbody>
 </table>
+<p>No API endpoints, database schemas, authentication behavior, CSRF
+handling, or workflow permission rules changed in this release.</p>
 <h2 id="android-emulator-verification">3. Android Emulator
 Verification</h2>
-<p>Tests ran on <code>emulator-5554</code> first with the local x86_64
-APK and finally with the published 91,543,576-byte v1.14.4 release
-APK.</p>
+<p>Tests ran on <code>emulator-5554</code> using the locally built
+x86_64 debug APK, followed by the published signed v1.15.0 APK.</p>
 <table>
 <colgroup>
 <col style="width: 25%" />
@@ -305,55 +295,56 @@ APK.</p>
 </thead>
 <tbody>
 <tr>
-<td>Manifest inspection</td>
-<td>Verified HTTPS filter for ERP paths</td>
-<td>Literal <code>/MS</code>, prefix <code>/MS/admin</code>,
-<code>AutoVerify=true</code></td>
+<td>Dedicated Tasks list</td>
+<td>Priority bar does not touch title</td>
+<td>Full-height colored bar with visible gutter on every rendered
+row</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Package-targeted Project URL</td>
-<td>Native Project 42 detail</td>
-<td>Opened <code>P1051 - SEALING OF CABLE ENTRY</code> with full native
-detail UI</td>
+<td>Task search <code>erp</code></td>
+<td>No raw internal relation key</td>
+<td><code>ERP Development Module · #266</code> and
+<code>ERP Development Module · #260</code> rendered</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Unmatched ERP dashboard URL</td>
-<td>Native ERP hub</td>
-<td>Opened ERP modules list; browser was not opened</td>
+<td>Task detail <code>#17288</code></td>
+<td>Clear context and readable relation</td>
+<td>Header shows <code>WORK / Task / #17288</code>; relation pill shows
+<code>ERP Development Module · #266</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Real verified-domain cold start without package hint</td>
-<td>Android selects Prizm CRM</td>
-<td><code>com.prizmenergy.mobile/.MainActivity</code>, cold launch in
-2.3 seconds</td>
+<td>ERP Tasks list</td>
+<td>No redundant raw status code</td>
+<td>Status appears as <code>Not Started</code>; raw numeric
+<code>1</code> is absent</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Published APK deep route</td>
-<td>Native Project 42 detail</td>
-<td>Opened <code>P1051 - SEALING OF CABLE ENTRY</code> after dismissing
-What’s New</td>
+<td>Payment Request <code>#1208</code></td>
+<td>Opened module is immediately obvious</td>
+<td>Header shows
+<code>APPROVALS / Payment Request / MT-26070029</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Published APK unmatched dashboard URL</td>
-<td>Native ERP hub</td>
-<td>Opened ERP modules list; browser was not opened</td>
+<td>Budget Item <code>#27386</code></td>
+<td>Dense layout without crushing long text</td>
+<td>Long name/description use full width; short classification metadata
+shares rows</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Android domain state</td>
-<td>Production host verified</td>
-<td><code>ms.prizm-energy.com: verified</code></td>
+<td>Live workflow content</td>
+<td>Existing approval controls remain usable</td>
+<td>Approve/Reject, tabs, approvers, and line items rendered without
+overlap</td>
 <td>PASS</td>
 </tr>
 </tbody>
 </table>
-<p>Screenshot evidence:
-<code>C:\Users\osama\AppData\Local\Temp\prizm-app-links-v1144-final.png</code>.</p>
 <h2 id="automated-quality-gates">4. Automated Quality Gates</h2>
 <table>
 <colgroup>
@@ -369,11 +360,11 @@ What’s New</td>
 <tbody>
 <tr>
 <td>Release metadata</td>
-<td>PASS — v1.14.4, Android versionCode 30</td>
+<td>PASS — v1.15.0, Android versionCode 31</td>
 </tr>
 <tr>
 <td>TypeScript</td>
-<td>PASS</td>
+<td>PASS — <code>npx tsc --noEmit -p tsconfig.json</code></td>
 </tr>
 <tr>
 <td>Expo dependency alignment</td>
@@ -381,49 +372,44 @@ What’s New</td>
 </tr>
 <tr>
 <td>Mobile contract tests</td>
-<td>PASS — includes App Link manifest, association, cold-start, internal
-fallback, and external passthrough</td>
+<td>PASS — auth, filters, routing, schemas, workflows</td>
 </tr>
 <tr>
 <td>CRUD contract audit</td>
-<td>PASS — 303 mutations, 0 skipped</td>
+<td>PASS — 303 advertised mutations, 0 skipped</td>
 </tr>
 <tr>
 <td>List contract audit</td>
-<td>PASS — 105 server-searchable + 2 client-searchable, 107 filterable,
-59 sortable, 0 skipped</td>
+<td>PASS — 107 searchable and filterable lists, 59 sortable, 0
+skipped</td>
 </tr>
 <tr>
-<td>Android native APK build</td>
-<td>PASS — x86_64 debug APK, 65,966,484 bytes</td>
-</tr>
-<tr>
-<td>Android production export</td>
-<td>PASS — Hermes bundle, 44 assets</td>
-</tr>
-<tr>
-<td>Production association</td>
-<td>PASS — HTTP 200 <code>application/json</code>; SHA-256
-<code>aa79d81c66a706c774f23be51c768fc04fcdbfa04be7abc49496a533a38c27ef</code></td>
-</tr>
-<tr>
-<td>GitHub release workflow</td>
-<td>PASS — run <code>30571157067</code>, Android build and Pages
-deploy</td>
-</tr>
-<tr>
-<td>Published APK integrity</td>
-<td>PASS — 91,543,576 bytes; SHA-256
-<code>6cf0c250e134a877ce4adcd3fdcb3220d80ff195fb190a155035fd68835683b2</code></td>
-</tr>
-<tr>
-<td>Published APK signature</td>
-<td>PASS — certificate SHA-256
-<code>fac61745dc0903786fb9ede62a962b399f7348f0bb6f899b8332667591033b9c</code></td>
+<td>Android native build</td>
+<td>PASS — x86_64 debug APK assembled and installed</td>
 </tr>
 <tr>
 <td>Git whitespace check</td>
 <td>PASS</td>
+</tr>
+<tr>
+<td>GitHub rolling release</td>
+<td>PASS — workflow <code>30577193072</code>, Android build and Pages
+deploy</td>
+</tr>
+<tr>
+<td>Published APK integrity</td>
+<td>PASS — 91,548,964 bytes; SHA-256
+<code>69b04b2342ad37412f0bdf52bebea2f6cc49c8aaf674ac67203466a016fbfde2</code></td>
+</tr>
+<tr>
+<td>Published APK install</td>
+<td>PASS — <code>versionName=1.15.0</code>,
+<code>versionCode=31</code></td>
+</tr>
+<tr>
+<td>Published APK UI retest</td>
+<td>PASS — What’s New, Tasks <code>erp</code> search, accent gutter,
+readable relation, and Task <code>#17288</code> detail</td>
 </tr>
 </tbody>
 </table>
@@ -444,38 +430,40 @@ deploy</td>
 <tbody>
 <tr>
 <td>S1</td>
-<td>A supported ERP HTTPS link is handled by the installed app</td>
-<td>100% PASS in production</td>
+<td>Task list text is visually separated from the priority bar</td>
+<td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>The link resolves to the matching native record</td>
-<td>100% PASS in production</td>
+<td>Raw <code>erp_dev</code> is not exposed to users</td>
+<td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Unknown ERP pages remain inside the app</td>
-<td>100% PASS in production</td>
+<td>Opened Task, workflow, and generic ERP records identify their
+module</td>
+<td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>External and upload URLs are not captured by this feature</td>
-<td>100% PASS by contract/manifest inspection</td>
+<td>Short fields use available horizontal space</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Long/narrative fields retain readable full width</td>
+<td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Production domain verification</td>
-<td>100% PASS — Android reports verified</td>
-</tr>
-<tr>
-<td>S1</td>
-<td>Published v1.14.4 APK verification</td>
-<td>100% PASS — installed and exercised</td>
+<td>Existing data, actions, and routing remain operational</td>
+<td>100% PASS</td>
 </tr>
 </tbody>
 </table>
-<p><strong>QC and production deployment gates: PASS. No open Blocker,
-Major, or Minor defects in scope.</strong></p>
+<p><strong>Implementation, contract, emulator, release workflow, and
+published APK gates: PASS. No open Blocker, Major, or Minor defect
+remains in scope.</strong></p>
 <h2 id="code-git-and-deployment">5. Code, Git, and Deployment</h2>
 <table>
 <colgroup>
@@ -491,50 +479,37 @@ Major, or Minor defects in scope.</strong></p>
 <tbody>
 <tr>
 <td>Mobile implementation commit</td>
-<td><code>9a716ca</code></td>
+<td><code>1cc03be</code></td>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/erp-app-links</code></td>
+<td><code>codex/dense-task-record-ui</code></td>
 </tr>
 <tr>
-<td>Released version</td>
-<td>v1.14.4 / Android versionCode 30</td>
+<td>Release version</td>
+<td>v1.15.0 / Android versionCode 31</td>
 </tr>
 <tr>
-<td>Production asset association</td>
-<td><code>/var/www/html/.well-known/assetlinks.json</code>; HTTP 200 and
-Android verified</td>
+<td>Main deployment</td>
+<td><code>origin/main</code> at <code>1cc03be</code></td>
 </tr>
 <tr>
-<td>Mobile deployment</td>
-<td><code>origin/main</code> at <code>dc0aed0</code>; workflow
-<code>30571157067</code> succeeded</td>
+<td>GitHub workflow</td>
+<td><code>30577193072</code> — completed successfully</td>
 </tr>
 <tr>
 <td>Rolling APK</td>
-<td><code>latest/prizm-mobile.apk</code>; published, downloaded,
-signature-checked, installed, and exercised</td>
+<td><code>latest/prizm-mobile.apk</code> — published, hash-checked,
+installed, and exercised</td>
 </tr>
 <tr>
 <td>Rollback</td>
-<td>Revert commit <code>9a716ca</code>; remove the website association
-file if deployed</td>
+<td>Revert commit <code>1cc03be</code> and publish the previous v1.14.4
+APK</td>
 </tr>
 </tbody>
 </table>
-<h2 id="remaining-product-parity-scope">6. Remaining Product-Parity
-Scope</h2>
-<p>The automated checkpoint covers 131 registered resources, 43
-workflow-action modules, 107 searchable/filterable lists, 59 sortable
-lists, and 303 advertised mutations with zero skipped contract
-checks.</p>
-<p>Six backend contract repairs remain before full web/mobile parity can
-be claimed: Task Templates/Task Manage, Product Families, Client Items
-composition review, Cost Center child endpoints, Survey Results, and
-Knowledge article CRUD. Separately, several lower-priority web-only
-workflows remain deliberately deferred by product decision.</p>
-<h2 id="sign-off">7. Sign-off</h2>
+<h2 id="sign-off">6. Sign-off</h2>
 <table>
 <colgroup>
 <col style="width: 25%" />
@@ -554,14 +529,14 @@ workflows remain deliberately deferred by product decision.</p>
 <tr>
 <td>QA automation</td>
 <td>Codex</td>
-<td>Implementation, contracts, release workflow, published APK, and
-production App Link gates PASS</td>
-<td>2026-07-30</td>
+<td>Implementation, contracts, signed build, release workflow, and
+emulator gates PASS</td>
+<td>2026-07-31</td>
 </tr>
 <tr>
 <td>Product reviewer</td>
 <td>Osama Hassan</td>
-<td>Requested ERP links open the installed app</td>
+<td>Requested dense native UI refactor and deployment</td>
 <td>2026-07-30</td>
 </tr>
 </tbody>

@@ -1115,3 +1115,14 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Projects API deployed through `PrizmIT/prizm331#1132`; deployment run `30515446675` passed.
 - Emulator verified On Hold + Cancelled, AND, OR, negative, and release-APK scenarios against production data.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26010-R01__project-multi-logical-filters-emulator-20260730.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 11.0 2026-07-31 — Dense native record views
+
+- Mobile v1.15.0 deployed from commit `1cc03be`; Android/Pages workflow `30577193072` passed.
+- Shared generic detail screens now show group/module identity and pack short metadata into field-aware two-column rows.
+- Task list priority accents have a fixed text gutter; raw `erp_dev` now renders as `ERP Development Module` in list and detail views.
+- Approval headers identify Purchase Request, Purchase Order, Payment Request, or Expense Request explicitly.
+- Emulator verified Task `#17288`, Payment Request `#1208`, and Budget Item `#27386`; the published APK was installed as versionCode 31 and its Tasks path was retested.
+- QC: `PE-QAQC-QC-RPT-26012-R01__dense-native-record-ui-20260730.md` and PDF under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

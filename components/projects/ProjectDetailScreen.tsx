@@ -140,9 +140,12 @@ export function ProjectDetailScreen({ id }: Props) {
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="arrow-back" size={22} color="#0F172A" />
         </TouchableOpacity>
-        <Text className="ml-2 text-base font-semibold text-foreground flex-1" numberOfLines={1}>
-          {row.name || "Project"}
-        </Text>
+        <View className="ml-2 flex-1 py-1">
+          <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-blue-600">Work · Project</Text>
+          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            #{id} · {row.name || "Untitled project"}
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={() => router.push(`/(tabs)/projects/${encodeURIComponent(id)}/edit` as any)}
           className="w-8 h-8 items-center justify-center"

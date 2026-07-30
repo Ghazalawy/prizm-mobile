@@ -260,6 +260,7 @@ export function TicketDetailScreen({ id }: Props) {
             <Ionicons name="arrow-back" size={22} color="#0F172A" />
           </TouchableOpacity>
           <View className="flex-1 ml-2">
+            <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-red-600">Support · Ticket</Text>
             <Text className="text-sm font-bold text-foreground" numberOfLines={1} style={rtlTextStyle(ticket.subject)}>
               {ticket.subject}
             </Text>

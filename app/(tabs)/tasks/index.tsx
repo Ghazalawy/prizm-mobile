@@ -20,6 +20,7 @@ import { FilterSheet } from "@/components/ui/FilterSheet";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TASKS_FILTER_CONFIG } from "@/lib/filter-configs";
 import { useFilterState } from "@/lib/hooks/useFilterState";
+import { taskRelationSummary } from "@/lib/task-display";
 
 const ACCENT = colors.primary;
 
@@ -72,7 +73,7 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
   return (
     <DenseListRow
       title={task.name || `Task #${task.id}`}
-      subtitle={task.rel_name || task.rel_type || undefined}
+      subtitle={taskRelationSummary(task)}
       onPress={() => router.push(`/(tabs)/tasks/${task.id}` as any)}
       leftAccent={<View className="w-1 rounded-full self-stretch" style={{ backgroundColor: priority.color }} />}
       badges={

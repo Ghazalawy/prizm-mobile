@@ -974,7 +974,7 @@ export const MODULES: ModuleDefinition[] = [
     icon: "checkbox-outline",
     color: "#F59E0B",
     titleFields: ["name"],
-    subtitleFields: ["rel_type", "status", "duedate"],
+    subtitleFields: ["rel_type", "duedate"],
     searchFields: ["name", "description"],
     filterableFields: ["status", "priority", "billable"],
     statusField: "status",
@@ -5523,6 +5523,8 @@ function moduleFieldDisplayValue(module: ModuleDefinition, row: any, key: string
   const option = field?.options?.find((item) => String(item.value) === String(value));
   if (option) return option.label;
 
+  if (key === "rel_type") return relationTypeDisplayLabel(value);
+
   if (field?.relation === "customer") {
     return cleanModuleText(row?.company || row?.customer_name || row?.client_name || `Customer #${value}`);
   }
@@ -5564,6 +5566,15 @@ function cleanModuleText(value: any): string {
     .replace(/&gt;/gi, ">")
     .replace(/\s+/g, " ")
     .trim();
+}
+
+function relationTypeDisplayLabel(value: any): string {
+  const key = cleanModuleText(value).toLowerCase();
+  if (!key) return "";
+  if (key === "erp_dev") return "ERP Development Module";
+  return key
+    .replace(/[_-]+/g, " ")
+    .replace(/\b\w/g, (character) => character.toUpperCase());
 }
 
 export function isCrudEnabled(module: ModuleDefinition, action: "create" | "update" | "delete"): boolean {

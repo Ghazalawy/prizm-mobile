@@ -195,6 +195,7 @@ export function OpportunityDetailScreen() {
       <ScrollView contentContainerStyle={{ paddingBottom: 40 }}>
         {/* Header */}
         <View className="bg-white px-4 pt-4 pb-4 border-b border-slate-100">
+          <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-blue-600 mb-0.5">Sales · Opportunity</Text>
           <Text className="text-xl font-bold text-slate-900">
             {opp.opportunity_name || "Untitled"}
           </Text>

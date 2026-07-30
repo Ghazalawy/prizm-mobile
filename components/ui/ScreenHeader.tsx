@@ -8,6 +8,9 @@ import { density } from "@/lib/theme";
 type ScreenHeaderProps = {
   title: string;
   subtitle?: string;
+  eyebrow?: string;
+  icon?: keyof typeof Ionicons.glyphMap;
+  color?: string;
   onBack?: () => void;
   rightAction?: ReactNode;
   /** Minimum 44px touch target for back button */
@@ -20,6 +23,9 @@ type ScreenHeaderProps = {
 export function ScreenHeader({
   title,
   subtitle,
+  eyebrow,
+  icon,
+  color = "#0284C7",
   onBack,
   rightAction,
   showBack = true,
@@ -28,8 +34,8 @@ export function ScreenHeader({
 
   return (
     <View
-      className="flex-row items-center px-2 bg-surface"
-      style={{ minHeight: density.compact.minTouch }}
+      className="flex-row items-center px-2 bg-white border-b border-slate-200"
+      style={{ minHeight: Math.max(56, density.compact.minTouch) }}
     >
       {showBack ? (
         <TouchableOpacity
@@ -44,9 +50,26 @@ export function ScreenHeader({
       ) : (
         <View className="w-10" />
       )}
-      <View className="flex-1 px-1">
+      {icon ? (
+        <View
+          className="w-9 h-9 rounded-xl items-center justify-center mr-2"
+          style={{ backgroundColor: `${color}16` }}
+        >
+          <Ionicons name={icon} size={19} color={color} />
+        </View>
+      ) : null}
+      <View className="flex-1 px-1 py-1.5">
+        {eyebrow ? (
+          <Text
+            className="text-[9px] font-bold uppercase tracking-[1.2px] mb-0.5"
+            style={{ color }}
+            numberOfLines={1}
+          >
+            {eyebrow}
+          </Text>
+        ) : null}
         <Text
-          className="text-sm font-bold text-foreground"
+          className="text-base font-bold text-foreground"
           numberOfLines={1}
           style={rtlTextStyle(title)}
         >
@@ -54,7 +77,7 @@ export function ScreenHeader({
         </Text>
         {subtitle ? (
           <Text
-            className="text-xs text-muted"
+            className="text-[11px] text-muted"
             numberOfLines={1}
             style={rtlTextStyle(subtitle)}
           >

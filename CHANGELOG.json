@@ -2,6 +2,17 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.15.0",
+      "date": "2026-07-30",
+      "title": "Dense, unmistakable record views",
+      "highlights": [
+        "Opened records now identify their module clearly at the top of the screen.",
+        "Short metadata fields share rows while descriptions keep the full reading width.",
+        "Task priority bars no longer touch task text, even in dense list mode.",
+        "Internal task relation keys now appear as readable module names."
+      ]
+    },
+    {
       "version": "1.14.4",
       "date": "2026-07-30",
       "title": "ERP web links open in the installed app",

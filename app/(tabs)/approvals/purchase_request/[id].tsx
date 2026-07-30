@@ -79,6 +79,7 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
   endpointBase: string;
   moduleKey: string;
   webPath: (id: number) => string;
+  icon: keyof typeof Ionicons.glyphMap;
 }> = {
   purchase_request: {
     fallbackPrefix: "PR-",
@@ -86,6 +87,7 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
     endpointBase: "purchase_api/requests",
     moduleKey: "purchase_requests",
     webPath: (id) => `przpurchase/ag_view_purchase_request/${id}`,
+    icon: "cart-outline",
   },
   purchase_order: {
     fallbackPrefix: "PO-",
@@ -93,6 +95,7 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
     endpointBase: "purchase_api/orders",
     moduleKey: "purchase_orders",
     webPath: (id) => `przpurchase/PurOrder/ag_view_purchase_order/${id}`,
+    icon: "receipt-outline",
   },
   payment_request: {
     fallbackPrefix: "MT-",
@@ -100,6 +103,7 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
     endpointBase: "purchase_api/payment_requests",
     moduleKey: "purchase_payment_requests",
     webPath: (id) => `przpurchase/Payment_Request/view_payment_request/${id}`,
+    icon: "card-outline",
   },
   expense_request: {
     fallbackPrefix: "ER-",
@@ -107,6 +111,7 @@ const APPROVAL_CONFIG: Record<PurchaseApprovalKind, {
     endpointBase: "purchase_api/expense_requests",
     moduleKey: "purchase_expense_requests",
     webPath: (id) => `przpurchase/Expense_Request/view_expense_request/${id}`,
+    icon: "wallet-outline",
   },
 };
 
@@ -207,8 +212,11 @@ export function PurchaseWorkflowApprovalScreen({
       {stackHeaderHidden}
       <View className="flex-1 bg-surface">
         <ScreenHeader
+          eyebrow="Approvals"
           title={entityTypeLabel(kind)}
           subtitle={code}
+          icon={cfg.icon}
+          color="#0284C7"
           onBack={() => router.back()}
           rightAction={
             <TouchableOpacity onPress={handleShare} hitSlop={10} className="p-2" accessibilityLabel="Share">

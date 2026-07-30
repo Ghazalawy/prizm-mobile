@@ -29,7 +29,12 @@ export function DenseListRow({
       className="flex-row items-center border-b border-slate-100"
       style={{ minHeight: density.compact.rowHeight, paddingVertical: 8 }}
     >
-      {leftAccent}
+      {leftAccent ? (
+        <>
+          {leftAccent}
+          <View style={{ width: 10 }} />
+        </>
+      ) : null}
       <View className="flex-1 min-w-0">
         <Text
           className="text-sm font-medium text-foreground"

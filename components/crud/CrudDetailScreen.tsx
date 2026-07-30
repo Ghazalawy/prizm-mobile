@@ -36,6 +36,8 @@ import { usePermissions } from "@/lib/permission-context";
 import { FilesTab } from "./FilesTab";
 import { ActionRunner } from "./ActionRunner";
 import { navigateInAppOrExternalLink } from "@/lib/native-routing";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { taskRelationTypeLabel } from "@/lib/task-display";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -134,39 +136,42 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
 
   return (
     <View className="flex-1 bg-surface">
-      <View className="bg-white px-4 py-3 flex-row items-center border-b border-gray-100">
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={24} color="#0F172A" />
-        </TouchableOpacity>
-        <Text className="ml-3 text-lg font-semibold text-foreground flex-1" numberOfLines={1}>
-          {row ? moduleTitle(module, row) : module.title}
-        </Text>
-        {row && isCrudEnabled(module, "update") && canEditModule(module, permissions) && recordAllows(row, "edit") ? (
-          <TouchableOpacity
-            onPress={() => router.push(`${path}/${encodeURIComponent(id)}/edit` as any)}
-            className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100 mr-2"
-          >
-            <Ionicons name="create-outline" size={20} color="#0F172A" />
-          </TouchableOpacity>
-        ) : null}
-        {row && isCrudEnabled(module, "delete") && canDeleteModule(module, permissions) && recordAllows(row, "delete") ? (
-          <TouchableOpacity
-            onPress={() => confirmDelete(module, deleteMutation.mutate)}
-            className="w-9 h-9 rounded-lg items-center justify-center bg-red-50 mr-2"
-            disabled={deleteMutation.isPending}
-          >
-            <Ionicons name="trash-outline" size={20} color="#DC2626" />
-          </TouchableOpacity>
-        ) : null}
-        {row && availableActions.length > 0 ? (
-          <TouchableOpacity
-            onPress={() => setActionsOpen(true)}
-            className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100"
-          >
-            <Ionicons name="ellipsis-vertical" size={20} color="#0F172A" />
-          </TouchableOpacity>
-        ) : null}
-      </View>
+      <ScreenHeader
+        eyebrow={module.group}
+        title={module.title}
+        subtitle={row ? `#${moduleId(module, row)} · ${moduleTitle(module, row)}` : "Loading record…"}
+        icon={module.icon as keyof typeof Ionicons.glyphMap}
+        color={module.color}
+        rightAction={
+          <View className="flex-row items-center">
+            {row && isCrudEnabled(module, "update") && canEditModule(module, permissions) && recordAllows(row, "edit") ? (
+              <TouchableOpacity
+                onPress={() => router.push(`${path}/${encodeURIComponent(id)}/edit` as any)}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100 mr-1"
+              >
+                <Ionicons name="create-outline" size={19} color="#0F172A" />
+              </TouchableOpacity>
+            ) : null}
+            {row && isCrudEnabled(module, "delete") && canDeleteModule(module, permissions) && recordAllows(row, "delete") ? (
+              <TouchableOpacity
+                onPress={() => confirmDelete(module, deleteMutation.mutate)}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-red-50 mr-1"
+                disabled={deleteMutation.isPending}
+              >
+                <Ionicons name="trash-outline" size={19} color="#DC2626" />
+              </TouchableOpacity>
+            ) : null}
+            {row && availableActions.length > 0 ? (
+              <TouchableOpacity
+                onPress={() => setActionsOpen(true)}
+                className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100"
+              >
+                <Ionicons name="ellipsis-vertical" size={19} color="#0F172A" />
+              </TouchableOpacity>
+            ) : null}
+          </View>
+        }
+      />
 
       {row && availableActions.length > 0 ? (
         <ActionRunner
@@ -640,23 +645,28 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
 
   return (
     <View className="p-3">
-      <View className="bg-white rounded-2xl p-5 mb-3 shadow-sm">
-        <View className="flex-row">
+      <View className="bg-white rounded-2xl p-4 mb-3 shadow-sm">
+        <View className="flex-row items-start">
           <View
-            className="w-12 h-12 rounded-2xl items-center justify-center"
+            className="w-10 h-10 rounded-xl items-center justify-center"
             style={{ backgroundColor: `${module.color}1A` }}
           >
-            <Ionicons name={module.icon as any} size={24} color={module.color} />
+            <Ionicons name={module.icon as any} size={21} color={module.color} />
           </View>
           <View className="ml-3 flex-1">
-            <Text className="text-2xl font-bold text-foreground" selectable>
+            <Text className="text-xl font-bold text-foreground leading-6" selectable>
               {moduleTitle(module, row)}
             </Text>
             {subtitle ? (
-              <Text className="text-muted mt-1" selectable>
+              <Text className="text-xs text-muted mt-1" selectable numberOfLines={2}>
                 {subtitle}
               </Text>
             ) : null}
+          </View>
+          <View className="ml-2 px-2 py-1 rounded-lg" style={{ backgroundColor: `${module.color}12` }}>
+            <Text className="text-[10px] font-bold" style={{ color: module.color }}>
+              #{moduleId(module, row)}
+            </Text>
           </View>
         </View>
       </View>
@@ -667,13 +677,22 @@ function RecordSummary({ module, row }: { module: ModuleDefinition; row: any }) 
             {section}
           </Text>
           <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
-            {sectionFields.map((field, index) => (
+            {packFieldRows(sectionFields, row).map((fieldRow, rowIndex) => (
               <View
-                key={field.key}
-                className={`px-4 py-3 ${index > 0 ? "border-t border-gray-100" : ""}`}
+                key={`${section}-${rowIndex}`}
+                className={`flex-row ${rowIndex > 0 ? "border-t border-gray-100" : ""}`}
               >
-                <Text className="text-xs text-muted">{field.label}</Text>
-                <View className="mt-1">{renderValue(row[field.key], field, row, lookups)}</View>
+                {fieldRow.map((field, cellIndex) => (
+                  <View
+                    key={field.key}
+                    className={`flex-1 px-3 py-2.5 ${cellIndex > 0 ? "border-l border-gray-100" : ""}`}
+                  >
+                    <Text className="text-[10px] uppercase tracking-wide text-muted" numberOfLines={1}>
+                      {field.label}
+                    </Text>
+                    <View className="mt-0.5">{renderValue(row[field.key], field, row, lookups)}</View>
+                  </View>
+                ))}
               </View>
             ))}
           </View>
@@ -714,13 +733,22 @@ function CustomFieldsSection({
         Custom Fields
       </Text>
       <View className="bg-white rounded-2xl shadow-sm overflow-hidden">
-        {populated.map((cf, index) => (
+        {packCustomFieldRows(populated).map((fieldRow, rowIndex) => (
           <View
-            key={String(cf.custom_field_id)}
-            className={`px-4 py-3 ${index > 0 ? "border-t border-gray-100" : ""}`}
+            key={`custom-${rowIndex}`}
+            className={`flex-row ${rowIndex > 0 ? "border-t border-gray-100" : ""}`}
           >
-            <Text className="text-xs text-muted">{cf.label}</Text>
-            <View className="mt-1">{renderCustomFieldValue(cf)}</View>
+            {fieldRow.map((cf, cellIndex) => (
+              <View
+                key={String(cf.custom_field_id)}
+                className={`flex-1 px-3 py-2.5 ${cellIndex > 0 ? "border-l border-gray-100" : ""}`}
+              >
+                <Text className="text-[10px] uppercase tracking-wide text-muted" numberOfLines={1}>
+                  {cf.label}
+                </Text>
+                <View className="mt-0.5">{renderCustomFieldValue(cf)}</View>
+              </View>
+            ))}
           </View>
         ))}
       </View>
@@ -1073,6 +1101,59 @@ function groupFields(fields: ModuleField[]): Array<[string, ModuleField[]]> {
   return Array.from(sections.entries());
 }
 
+/**
+ * Pack short metadata into two columns while preserving reading width for
+ * descriptions, URLs, JSON and other narrative values.
+ */
+function packFieldRows(fields: ModuleField[], row: any): ModuleField[][] {
+  const rows: ModuleField[][] = [];
+  let pending: ModuleField | null = null;
+
+  for (const field of fields) {
+    if (fieldNeedsFullWidth(field, row?.[field.key])) {
+      if (pending) rows.push([pending]);
+      pending = null;
+      rows.push([field]);
+    } else if (pending) {
+      rows.push([pending, field]);
+      pending = null;
+    } else {
+      pending = field;
+    }
+  }
+  if (pending) rows.push([pending]);
+  return rows;
+}
+
+function fieldNeedsFullWidth(field: ModuleField, value: any): boolean {
+  if (["multiline", "json", "signature"].includes(field.type || "")) return true;
+  if (/(description|notes?|address|content|terms|scope|specification|reason|remarks?)/i.test(field.key)) return true;
+  const text = cleanDisplayText(value);
+  if ((field.type === "url" || field.type === "email") && text.length > 30) return true;
+  return text.length > 52;
+}
+
+function packCustomFieldRows(fields: CustomFieldRow[]): CustomFieldRow[][] {
+  const rows: CustomFieldRow[][] = [];
+  let pending: CustomFieldRow | null = null;
+  for (const field of fields) {
+    const value = decodeCustomFieldValue(field);
+    const full = ["textarea", "hyperlink"].includes(field.type) || value.length > 52;
+    if (full) {
+      if (pending) rows.push([pending]);
+      pending = null;
+      rows.push([field]);
+    } else if (pending) {
+      rows.push([pending, field]);
+      pending = null;
+    } else {
+      pending = field;
+    }
+  }
+  if (pending) rows.push([pending]);
+  return rows;
+}
+
 function isEmpty(value: any, field?: ModuleField): boolean {
   if (value === undefined || value === null) return true;
   if (Array.isArray(value)) return value.length === 0;
@@ -1108,6 +1189,10 @@ function humanize(key: string): string {
 
 function renderValue(value: any, field: ModuleField, row: any, lookups: LookupMaps): ReactNode {
   if (isEmpty(value, field)) return <Text className="text-muted italic">-</Text>;
+
+  if (field.key === "rel_type") {
+    return <Text className="text-foreground">{taskRelationTypeLabel(value)}</Text>;
+  }
 
   const relationText = resolveRelationValue(value, field, row, lookups);
   if (relationText) {

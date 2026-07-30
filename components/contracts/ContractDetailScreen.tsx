@@ -185,6 +185,7 @@ export function ContractDetailScreen() {
             <Ionicons name="arrow-back" size={24} color="#0F172A" />
           </TouchableOpacity>
           <View className="flex-1">
+            <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-slate-500 mb-0.5">CRM · Contract</Text>
             <Text className="text-lg font-bold text-slate-900" numberOfLines={2}>
               {c.subject || "Untitled Contract"}
             </Text>

@@ -57,6 +57,8 @@ import {
   type TimesheetEntry,
   type TaskReminder,
 } from "@/lib/queries/tasks";
+import { ScreenHeader } from "@/components/ui/ScreenHeader";
+import { taskRelationSummary } from "@/lib/task-display";
 
 /**
  * Tightly-packed mobile task detail. Replaces the generic CrudDetailScreen
@@ -355,30 +357,32 @@ export function TaskDetailScreen({ id }: Props) {
       behavior={Platform.OS === "ios" ? "padding" : undefined}
       keyboardVerticalOffset={0}
     >
-      {/* Header — back, title fragment, edit/delete. Compact 48px. */}
-      <View className="bg-white border-b border-slate-200 flex-row items-center px-3" style={{ minHeight: 48 }}>
-        <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
-          <Ionicons name="arrow-back" size={22} color="#0F172A" />
-        </TouchableOpacity>
-        <Text className="ml-2 text-base font-semibold text-foreground flex-1" numberOfLines={1}>
-          {row.name || "Task"}
-        </Text>
-        <TouchableOpacity
-          onPress={() => router.push(`/(tabs)/tasks/${encodeURIComponent(id)}/edit` as any)}
-          className="w-8 h-8 items-center justify-center"
-          hitSlop={6}
-        >
-          <Ionicons name="create-outline" size={20} color="#0F172A" />
-        </TouchableOpacity>
-        <TouchableOpacity
-          onPress={handleDelete}
-          className="w-8 h-8 items-center justify-center"
-          hitSlop={6}
-          disabled={deleteMutation.isPending}
-        >
-          <Ionicons name="trash-outline" size={20} color="#DC2626" />
-        </TouchableOpacity>
-      </View>
+      <ScreenHeader
+        eyebrow="Work"
+        title="Task"
+        subtitle={`#${id} · ${row.name || "Untitled task"}`}
+        icon="checkbox-outline"
+        color="#F59E0B"
+        rightAction={
+          <View className="flex-row items-center">
+            <TouchableOpacity
+              onPress={() => router.push(`/(tabs)/tasks/${encodeURIComponent(id)}/edit` as any)}
+              className="w-9 h-9 rounded-lg bg-slate-100 items-center justify-center mr-1"
+              hitSlop={6}
+            >
+              <Ionicons name="create-outline" size={19} color="#0F172A" />
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handleDelete}
+              className="w-9 h-9 rounded-lg bg-red-50 items-center justify-center"
+              hitSlop={6}
+              disabled={deleteMutation.isPending}
+            >
+              <Ionicons name="trash-outline" size={19} color="#DC2626" />
+            </TouchableOpacity>
+          </View>
+        }
+      />
 
       <ScrollView
         className="flex-1"
@@ -426,12 +430,12 @@ export function TaskDetailScreen({ id }: Props) {
                 marginLeft={6}
               />
             ) : null}
-            {row.rel_type ? (
+            {taskRelationSummary(row) ? (
               <Pill
                 bg="#F1F5F9"
                 color="#475569"
                 icon="link-outline"
-                label={`${row.rel_type} #${row.rel_id ?? "-"}`}
+                label={taskRelationSummary(row)!}
                 marginLeft={6}
               />
             ) : null}

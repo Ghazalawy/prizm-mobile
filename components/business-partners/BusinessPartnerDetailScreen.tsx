@@ -56,9 +56,12 @@ export function BusinessPartnerDetailScreen({ id }: Props) {
         <TouchableOpacity onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="arrow-back" size={24} color="#0F172A" />
         </TouchableOpacity>
-        <Text className="ml-3 text-lg font-semibold text-foreground flex-1" numberOfLines={1}>
-          {p.company || p.name || "Partner"}
-        </Text>
+        <View className="ml-3 flex-1 py-1">
+          <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-cyan-700">CRM · Business Partner</Text>
+          <Text className="text-base font-semibold text-foreground" numberOfLines={1}>
+            #{id} · {p.company || p.name || "Unnamed partner"}
+          </Text>
+        </View>
         <TouchableOpacity
           onPress={() => router.push(`/(tabs)/erp/business_partners/${encodeURIComponent(id)}/edit` as any)}
           className="w-9 h-9 rounded-lg items-center justify-center bg-gray-100"

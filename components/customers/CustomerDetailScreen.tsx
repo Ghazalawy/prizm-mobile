@@ -92,6 +92,7 @@ export function CustomerDetailScreen() {
             <Ionicons name="arrow-back" size={24} color="#0F172A" />
           </TouchableOpacity>
           <View className="flex-1">
+            <Text className="text-[9px] font-bold uppercase tracking-[1.2px] text-sky-600 mb-0.5">CRM · Customer</Text>
             <View className="flex-row items-center">
               <Text className="text-xl font-bold text-slate-900 flex-1" numberOfLines={1}>
                 {c.company || "Unnamed"}

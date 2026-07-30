@@ -2,7 +2,7 @@
   "expo": {
     "name": "Prizm CRM",
     "slug": "prizm-mobile",
-    "version": "1.14.3",
+    "version": "1.14.4",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "prizmcrm",
@@ -23,13 +23,35 @@
       },
       "edgeToEdgeEnabled": true,
       "package": "com.prizmenergy.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "ms.prizm-energy.com",
+              "path": "/MS"
+            },
+            {
+              "scheme": "https",
+              "host": "ms.prizm-energy.com",
+              "pathPrefix": "/MS/admin"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
+        }
+      ],
       "permissions": [
         "POST_NOTIFICATIONS",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 29
+      "versionCode": 30
     },
     "web": {
       "bundler": "metro",

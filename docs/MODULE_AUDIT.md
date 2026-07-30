@@ -5,8 +5,8 @@
 > Update this file at the end of every batch — it replaces the need to
 > re-audit modules manually.
 
-**Last updated:** 2026-07-29 (native parity, auth, search/filter contract hardening)
-**Recent:** authenticated requests now share the impersonation-aware header path; only a genuine HTTP 401 can end a session; biometric re-sign-in uses the encrypted credential vault; native routing, field schemas, list search, advanced filters, sorts, and CRUD controls are checked against the backend source.
+**Last updated:** 2026-07-30 (Android ERP App Links)
+**Recent:** verified Android App Links claim production `/MS/admin/*` URLs when Prizm CRM is installed, then reuse the native URL resolver to open the matching screen or the ERP hub. Authenticated requests share the impersonation-aware header path; only a genuine HTTP 401 can end a session; biometric re-sign-in uses the encrypted credential vault; native routing, field schemas, list search, advanced filters, sorts, and CRUD controls are checked against the backend source.
 **Maintained by:** the coding session that ships each batch
 **Lives in:** `prizm-mobile/docs/MODULE_AUDIT.md` (mobile repo — easy to keep in sync with `lib/module-registry.ts`)
 
@@ -39,6 +39,7 @@ Status legend:
 - Contract coverage has **zero skipped complex endpoints**.
 - TypeScript, release metadata, Expo dependency alignment, and Android Hermes export pass.
 - New native surfaces include Custom Statuses, Advance Leads, DEWA Contacts, Prizm Documents, Resource Kits/components, Material Categories, UNSPSC commodity search/specifications, Calculation Sheets/line items, Survey Send History, Budget Item Specifications, and Technical Inquiry item editing.
+- Android ERP web links use a verified App Link association and are rewritten through the same native route map used inside the app; unsupported ERP URLs land on the native ERP hub rather than reopening the browser.
 
 ### Backend-only blockers found during web-first review
 

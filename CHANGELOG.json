@@ -2,6 +2,17 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.14.4",
+      "date": "2026-07-30",
+      "title": "ERP web links open in the installed app",
+      "highlights": [
+        "Android opens supported Prizm ERP links in the installed mobile app instead of the browser.",
+        "ERP record links are translated to their matching native mobile screen.",
+        "Unsupported ERP links remain inside the app and open the native ERP hub.",
+        "When the app is not installed, the same link continues to open normally in the browser."
+      ]
+    },
+    {
       "version": "1.14.3",
       "date": "2026-07-30",
       "title": "Project filters combine statuses and logical rules",

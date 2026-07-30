@@ -348,6 +348,13 @@ export function isCompanyInternalLink(rawLink: string | null | undefined): boole
   return normalizeInternalPath(raw) !== null;
 }
 
+export function resolveIncomingAppLink(rawLink: string): string {
+  const route = resolveNativeRoute(rawLink);
+  if (route) return route;
+  if (isCompanyInternalLink(rawLink)) return "/(tabs)/erp";
+  return rawLink;
+}
+
 export async function navigateInAppOrExternalLink(
   rawLink: string | null | undefined,
   opts: NavigateOptions = {},

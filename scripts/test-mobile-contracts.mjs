@@ -53,6 +53,9 @@ const routing = loadTypeScriptModule("lib/native-routing.ts", {
   "react-native-toast-message": { __esModule: true, default: { show: () => undefined } },
   "./config": { BASE_URL: "https://ms.prizm-energy.com/MS" },
 });
+const nativeIntent = loadTypeScriptModule("app/+native-intent.ts", {
+  "../lib/native-routing": routing,
+});
 
 assert.equal(isInvalidTokenResponse(401, { status: false, message: "Permission lookup failed" }, true), false);
 assert.equal(isInvalidTokenResponse(403, { status: false, message: "Forbidden" }, true), false);
@@ -175,6 +178,47 @@ assert.equal(
   routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/credit_notes/list_credit_notes/42"),
   "/(tabs)/erp/credit_notes/42",
 );
+assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/projects/view/42"),
+  "/(tabs)/projects/42",
+  "an Android App Link must be rewritten to the native project screen",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
+  "/(tabs)/erp",
+  "an unmatched ERP URL must stay inside the app on the native ERP hub",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("https://example.com/external"),
+  "https://example.com/external",
+  "non-Prizm URLs must not be captured by the ERP rewrite",
+);
+assert.equal(
+  nativeIntent.redirectSystemPath({
+    path: "https://ms.prizm-energy.com/MS/admin/invoices/list_invoices/17",
+    initial: true,
+  }),
+  "/(tabs)/invoices/17",
+  "cold-start ERP links must reach their native record",
+);
+
+const appConfig = JSON.parse(fs.readFileSync(path.join(workspace, "app.json"), "utf8"));
+const appLinkFilter = appConfig.expo.android.intentFilters?.find(
+  (item) => item.action === "VIEW" && item.autoVerify === true,
+);
+assert.ok(appLinkFilter, "Android App Links must use a verified VIEW intent filter");
+assert.ok(appLinkFilter.category.includes("BROWSABLE") && appLinkFilter.category.includes("DEFAULT"));
+assert.ok(
+  appLinkFilter.data.some(
+    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS/admin",
+  ),
+  "the verified intent filter must capture production ERP admin links",
+);
+const assetLinks = JSON.parse(
+  fs.readFileSync(path.join(workspace, "public/.well-known/assetlinks.json"), "utf8"),
+);
+assert.equal(assetLinks[0].target.package_name, appConfig.expo.android.package);
+assert.match(assetLinks[0].target.sha256_cert_fingerprints[0], /^(?:[0-9A-F]{2}:){31}[0-9A-F]{2}$/);
 assert.equal(routing.routeForModuleRecord("credit_note", 42), "/(tabs)/erp/credit_notes/42");
 assert.equal(routing.routeForModuleList("credit_notes"), "/(tabs)/erp/credit_notes");
 assert.equal(

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>QC Report — Dense Native Record Views</title>
+  <title>QC-REPORT-TEMPLATE</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -172,11 +172,8 @@
   </style>
 </head>
 <body>
-<header id="title-block-header">
-<h1 class="title">QC Report — Dense Native Record Views</h1>
-</header>
-<h1 id="qc-report-dense-native-record-views">QC Report — Dense Native
-Record Views</h1>
+<h1 id="qc-report-purchasing-android-app-links">QC Report — Purchasing
+Android App Links</h1>
 <h2 id="report-header">Report Header</h2>
 <table>
 <thead>
@@ -188,15 +185,15 @@ Record Views</h1>
 <tbody>
 <tr>
 <td>Report Code</td>
-<td><code>PE-QAQC-QC-RPT-26012-R01</code></td>
+<td><code>PE-QAQC-QC-RPT-26013-R01</code></td>
 </tr>
 <tr>
 <td>Session ID</td>
-<td><code>dense-native-record-ui-20260730</code></td>
+<td><code>przpurchase-app-links-20260802</code></td>
 </tr>
 <tr>
 <td>Date / Time</td>
-<td><code>2026-07-31 00:31 +04:00</code></td>
+<td><code>2026-08-02 01:37 +04:00</code></td>
 </tr>
 <tr>
 <td>Agent / Model</td>
@@ -204,11 +201,15 @@ Record Views</h1>
 </tr>
 <tr>
 <td>Workspace</td>
-<td><code>C:\wamp64\www\prizm-mobile</code></td>
+<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/dense-task-record-ui</code></td>
+<td><code>codex/fix-przpurchase-app-links</code></td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Current task continuation</td>
 </tr>
 <tr>
 <td>Classification</td>
@@ -217,16 +218,16 @@ Record Views</h1>
 </tbody>
 </table>
 <h2 id="executive-summary">1. Executive Summary</h2>
-<p>Mobile v1.15.0 makes opened records unmistakable and substantially
-denser. Shared and high-traffic detail screens now show a module/group
-eyebrow, module icon, record type, ID, and record title at the top.
-Generic record metadata uses a field-aware two-column layout for short
-values while preserving full width for names, descriptions, notes, URLs,
-and other narrative content.</p>
-<p>The Tasks list defect is fixed: priority bars retain their full
-height with a 10 px text gutter, and internal relation keys such as
-<code>erp_dev</code> render as <code>ERP Development Module</code>. The
-relation label is also used in task detail.</p>
+<p>Android v1.15.0 did not hand production purchasing URLs such as
+<code>https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211</code>
+to the installed Prizm app. The JavaScript router already mapped that
+exact URL to the native Payment Request approval route, but the Android
+manifest claimed only <code>/MS</code> and <code>/MS/admin/*</code>, so
+Chrome remained the handler for <code>/MS/przpurchase/*</code>.</p>
+<p>Release v1.15.1 adds a narrow verified Android App Link prefix for
+<code>/MS/przpurchase</code>. It deliberately does not claim unrelated
+website or upload URLs. The exact reported URL was tested from Android’s
+HTTPS intent boundary against local debug and release APKs.</p>
 <h2 id="implementation">2. Implementation</h2>
 <table>
 <colgroup>
@@ -241,43 +242,41 @@ relation label is also used in task detail.</p>
 </thead>
 <tbody>
 <tr>
-<td>Shared record header</td>
-<td><code>ScreenHeader</code> supports module eyebrow, icon, color,
-title, ID, and record subtitle.</td>
+<td>Android App Links</td>
+<td>Added the verified
+<code>https://ms.prizm-energy.com/MS/przpurchase/*</code> path
+prefix.</td>
 </tr>
 <tr>
-<td>Generic record density</td>
-<td>Short metadata and custom fields pack into two columns; narrative
-and long fields remain full width.</td>
+<td>Native routing</td>
+<td>Preserved the existing Payment Request parser, which maps record
+<code>1211</code> to
+<code>/(tabs)/approvals/payment_request/1211</code>.</td>
 </tr>
 <tr>
-<td>Task list</td>
-<td>Priority accent remains visible and is separated from text by a
-fixed gutter.</td>
+<td>Regression coverage</td>
+<td>Added assertions for the exact reported URL and the Android manifest
+path prefix.</td>
 </tr>
 <tr>
-<td>Task relation</td>
-<td>Perfex relation keys map to readable module labels; related record
-IDs/names remain visible.</td>
+<td>Cross-platform test harness</td>
+<td>Normalized CRLF to LF when contract tests inspect
+<code>module-registry.ts</code>.</td>
 </tr>
 <tr>
-<td>Workflow approvals</td>
-<td>Purchase Request, Purchase Order, Payment Request, and Expense
-Request headers identify their exact module.</td>
-</tr>
-<tr>
-<td>High-traffic detail screens</td>
-<td>Project, Lead, Customer, Contract, Ticket, Opportunity, and Business
-Partner surfaces expose module identity.</td>
+<td>Release metadata</td>
+<td>Bumped app version to <code>1.15.1</code> and Android versionCode to
+<code>32</code>.</td>
 </tr>
 </tbody>
 </table>
-<p>No API endpoints, database schemas, authentication behavior, CSRF
-handling, or workflow permission rules changed in this release.</p>
+<p>No API endpoint, database schema, authentication, CSRF, biometric,
+workflow permission, or file-storage behavior changed in this
+hotfix.</p>
 <h2 id="android-emulator-verification">3. Android Emulator
 Verification</h2>
-<p>Tests ran on <code>emulator-5554</code> using the locally built
-x86_64 debug APK, followed by the published signed v1.15.0 APK.</p>
+<p>Tests ran on <code>emulator-5554</code> with software rendering
+because the shared GPU was occupied.</p>
 <table>
 <colgroup>
 <col style="width: 25%" />
@@ -295,53 +294,57 @@ x86_64 debug APK, followed by the published signed v1.15.0 APK.</p>
 </thead>
 <tbody>
 <tr>
-<td>Dedicated Tasks list</td>
-<td>Priority bar does not touch title</td>
-<td>Full-height colored bar with visible gutter on every rendered
-row</td>
+<td>v1.15.0 baseline resolver</td>
+<td>Reported purchasing URL does not reach app</td>
+<td>Android resolved the exact URL to Chrome</td>
+<td>REPRODUCED</td>
+</tr>
+<tr>
+<td>Generated Android manifest</td>
+<td>Purchasing path is declared narrowly</td>
+<td><code>PatternMatcher{PREFIX: /MS/przpurchase}</code> present</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Task search <code>erp</code></td>
-<td>No raw internal relation key</td>
-<td><code>ERP Development Module · #266</code> and
-<code>ERP Development Module · #260</code> rendered</td>
+<td>Domain ownership</td>
+<td>Production domain remains verified</td>
+<td>Android listed <code>com.prizmenergy.mobile</code> as
+<code>VERIFIED</code> owner</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Task detail <code>#17288</code></td>
-<td>Clear context and readable relation</td>
-<td>Header shows <code>WORK / Task / #17288</code>; relation pill shows
-<code>ERP Development Module · #266</code></td>
+<td>Exact URL activity candidates</td>
+<td>Prizm is eligible for the literal HTTPS URL</td>
+<td>Prizm <code>MainActivity</code> and Chrome were listed; Prizm is the
+verified owner</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>ERP Tasks list</td>
-<td>No redundant raw status code</td>
-<td>Status appears as <code>Not Started</code>; raw numeric
-<code>1</code> is absent</td>
+<td>Debug APK exact URL launch</td>
+<td>Android opens installed app</td>
+<td><code>Activity: com.prizmenergy.mobile/.MainActivity</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Payment Request <code>#1208</code></td>
-<td>Opened module is immediately obvious</td>
-<td>Header shows
-<code>APPROVALS / Payment Request / MT-26070029</code></td>
+<td>Release APK exact URL launch</td>
+<td>Embedded production app opens</td>
+<td><code>Status: ok</code>;
+<code>Activity: com.prizmenergy.mobile/.MainActivity</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Budget Item <code>#27386</code></td>
-<td>Dense layout without crushing long text</td>
-<td>Long name/description use full width; short classification metadata
-shares rows</td>
+<td>Native route parser</td>
+<td>Record ID is preserved</td>
+<td>Exact URL resolved to
+<code>/(tabs)/approvals/payment_request/1211</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Live workflow content</td>
-<td>Existing approval controls remain usable</td>
-<td>Approve/Reject, tabs, approvers, and line items rendered without
-overlap</td>
-<td>PASS</td>
+<td>Destination data boundary</td>
+<td>Native screen attempts authenticated record load</td>
+<td>Expired emulator JWT produced <code>Unauthenticated</code>; Chrome
+was not opened</td>
+<td>PASS WITH TEST-ACCOUNT LIMITATION</td>
 </tr>
 </tbody>
 </table>
@@ -360,7 +363,7 @@ overlap</td>
 <tbody>
 <tr>
 <td>Release metadata</td>
-<td>PASS — v1.15.0, Android versionCode 31</td>
+<td>PASS — v1.15.1, Android versionCode 32</td>
 </tr>
 <tr>
 <td>TypeScript</td>
@@ -372,7 +375,8 @@ overlap</td>
 </tr>
 <tr>
 <td>Mobile contract tests</td>
-<td>PASS — auth, filters, routing, schemas, workflows</td>
+<td>PASS — exact App Link, routing, auth, filters, schemas, purchasing,
+and module contracts</td>
 </tr>
 <tr>
 <td>CRUD contract audit</td>
@@ -380,12 +384,17 @@ overlap</td>
 </tr>
 <tr>
 <td>List contract audit</td>
-<td>PASS — 107 searchable and filterable lists, 59 sortable, 0
+<td>PASS — 107 filterable lists and 59 sortable endpoints, 0
 skipped</td>
 </tr>
 <tr>
-<td>Android native build</td>
-<td>PASS — x86_64 debug APK assembled and installed</td>
+<td>Android debug build</td>
+<td>PASS — x86_64 APK assembled and installed</td>
+</tr>
+<tr>
+<td>Android release build</td>
+<td>PASS — 40,222,555-byte local release APK assembled and
+installed</td>
 </tr>
 <tr>
 <td>Git whitespace check</td>
@@ -393,23 +402,22 @@ skipped</td>
 </tr>
 <tr>
 <td>GitHub rolling release</td>
-<td>PASS — workflow <code>30577193072</code>, Android build and Pages
-deploy</td>
+<td>PASS — workflow <code>30719192704</code>; Android build 25m52s;
+Pages deploy 38s</td>
 </tr>
 <tr>
 <td>Published APK integrity</td>
-<td>PASS — 91,548,964 bytes; SHA-256
-<code>69b04b2342ad37412f0bdf52bebea2f6cc49c8aaf674ac67203466a016fbfde2</code></td>
+<td>PASS — 91,549,412 bytes; SHA-256
+<code>c656b2c6aadb26cd0344ade2c6af499291a54a6124a81f5931b64d9cd24bf8c0</code></td>
 </tr>
 <tr>
 <td>Published APK install</td>
-<td>PASS — <code>versionName=1.15.0</code>,
-<code>versionCode=31</code></td>
+<td>PASS — v1.15.1, versionCode 32, expected signing fingerprint</td>
 </tr>
 <tr>
-<td>Published APK UI retest</td>
-<td>PASS — What’s New, Tasks <code>erp</code> search, accent gutter,
-readable relation, and Task <code>#17288</code> detail</td>
+<td>Published APK exact URL retest</td>
+<td>PASS — cold launch selected Prizm <code>MainActivity</code> in 1.36
+seconds</td>
 </tr>
 </tbody>
 </table>
@@ -430,40 +438,35 @@ readable relation, and Task <code>#17288</code> detail</td>
 <tbody>
 <tr>
 <td>S1</td>
-<td>Task list text is visually separated from the priority bar</td>
+<td>The exact Payment Request URL opens the installed Prizm app</td>
+<td>100% PASS locally</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Record <code>1211</code> maps to the native Payment Request
+route</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Raw <code>erp_dev</code> is not exposed to users</td>
-<td>100% PASS</td>
-</tr>
-<tr>
-<td>S1</td>
-<td>Opened Task, workflow, and generic ERP records identify their
-module</td>
+<td>Production domain ownership remains verified</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Short fields use available horizontal space</td>
-<td>100% PASS</td>
-</tr>
-<tr>
-<td>S2</td>
-<td>Long/narrative fields retain readable full width</td>
+<td>Unrelated website and upload paths remain unclaimed</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Existing data, actions, and routing remain operational</td>
+<td>Signed published APK contains and exercises the fix</td>
 <td>100% PASS</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Implementation, contract, emulator, release workflow, and
-published APK gates: PASS. No open Blocker, Major, or Minor defect
-remains in scope.</strong></p>
+<p><strong>Implementation, automated contracts, local builds, production
+workflow, signed APK, and exact-URL emulator handoff gates pass. No open
+Blocker, Major, or Minor defect remains in scope.</strong></p>
 <h2 id="code-git-and-deployment">5. Code, Git, and Deployment</h2>
 <table>
 <colgroup>
@@ -479,23 +482,23 @@ remains in scope.</strong></p>
 <tbody>
 <tr>
 <td>Mobile implementation commit</td>
-<td><code>1cc03be</code></td>
+<td><code>ea292bb</code></td>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/dense-task-record-ui</code></td>
+<td><code>codex/fix-przpurchase-app-links</code></td>
 </tr>
 <tr>
 <td>Release version</td>
-<td>v1.15.0 / Android versionCode 31</td>
+<td>v1.15.1 / Android versionCode 32</td>
 </tr>
 <tr>
 <td>Main deployment</td>
-<td><code>origin/main</code> at <code>1cc03be</code></td>
+<td><code>origin/main</code> at <code>ea292bb</code></td>
 </tr>
 <tr>
 <td>GitHub workflow</td>
-<td><code>30577193072</code> — completed successfully</td>
+<td><code>30719192704</code> — completed successfully</td>
 </tr>
 <tr>
 <td>Rolling APK</td>
@@ -504,8 +507,7 @@ installed, and exercised</td>
 </tr>
 <tr>
 <td>Rollback</td>
-<td>Revert commit <code>1cc03be</code> and publish the previous v1.14.4
-APK</td>
+<td>Revert <code>ea292bb</code> and republish v1.15.0</td>
 </tr>
 </tbody>
 </table>
@@ -529,15 +531,15 @@ APK</td>
 <tr>
 <td>QA automation</td>
 <td>Codex</td>
-<td>Implementation, contracts, signed build, release workflow, and
-emulator gates PASS</td>
-<td>2026-07-31</td>
+<td>Implementation, contracts, local builds, workflow, signed APK, and
+exact URL handoff PASS</td>
+<td>2026-08-02</td>
 </tr>
 <tr>
 <td>Product reviewer</td>
 <td>Osama Hassan</td>
-<td>Requested dense native UI refactor and deployment</td>
-<td>2026-07-30</td>
+<td>Reported the exact production Payment Request URL</td>
+<td>2026-08-02</td>
 </tr>
 </tbody>
 </table>

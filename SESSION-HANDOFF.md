@@ -1,5 +1,37 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-08-02 — Purchasing Android App Links
+
+**Status:** Release `1.15.1` (Android versionCode `32`) is deployed. `origin/main` shipped commit `ea292bb`; GitHub Actions run `30719192704` completed successfully and refreshed the rolling signed APK.
+
+### Completed
+
+- Added a narrow verified Android App Link declaration for `/MS/przpurchase/*`.
+- Preserved existing native routing from Payment Request web URLs to the approval detail screen.
+- Added regression coverage for the exact reported `/view_payment_request/1211` URL and manifest scope.
+- Normalized CRLF input in the Windows contract-test harness so the complete suite runs locally.
+
+### Verified
+
+- v1.15.0 baseline sent the exact URL to Chrome because the manifest did not claim the purchasing path.
+- Local debug and release APKs sent the same literal HTTPS URL to `com.prizmenergy.mobile/.MainActivity`.
+- The signed published APK cold-started Prizm from the exact URL in 1.36 seconds.
+- Android reports `ms.prizm-energy.com: verified`, with the expected stable signing fingerprint.
+- TypeScript, Expo alignment, release metadata, mobile contracts, 303 mutation contracts, 107 list contracts, and native debug/release builds pass.
+- Published APK is 91,549,412 bytes with SHA-256 `c656b2c6aadb26cd0344ade2c6af499291a54a6124a81f5931b64d9cd24bf8c0`.
+
+### Test Limitation
+
+- The emulator's cached JWT is expired, so the native record screen reaches its authenticated boundary and displays `Unauthenticated`; the routing contract independently confirms Payment Request `1211` maps to `/(tabs)/approvals/payment_request/1211`.
+
+### Evidence
+
+- Workflow: `30719192704` — success.
+- Rolling release: `https://github.com/Ghazalawy/prizm-mobile/releases/download/latest/prizm-mobile.apk`.
+- QC report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26013-R01__przpurchase-app-links-20260802.md/.pdf`.
+
+---
+
 ## Current Session — 2026-07-30 — Android ERP App Links
 
 **Status:** Release `1.14.4` (Android versionCode `30`) is deployed. `origin/main` shipped commit `dc0aed0`; GitHub Actions run `30571157067` completed successfully, and the production website association is verified by Android.

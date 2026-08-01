@@ -394,7 +394,9 @@ assert.equal(
 const registryKeys = moduleRegistryKeys();
 assert.equal(new Set(registryKeys).size, registryKeys.length, "Module registry keys must be unique");
 
-const registrySource = fs.readFileSync(path.join(workspace, "lib/module-registry.ts"), "utf8");
+const registrySource = fs
+  .readFileSync(path.join(workspace, "lib/module-registry.ts"), "utf8")
+  .replace(/\r\n/g, "\n");
 const relationPickerSource = fs.readFileSync(path.join(workspace, "components/crud/RelationPicker.tsx"), "utf8");
 const fixedEquipmentBlock = registrySource.match(/key: "fixed_equipment",[\s\S]*?(?=\s+key: "knowledge",)/)?.[0] ?? "";
 assert.ok(fixedEquipmentBlock, "Fixed Equipment must remain registered as a native module");

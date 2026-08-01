@@ -16,7 +16,7 @@ const TASK_RELATION_LABELS: Record<string, string> = {
   purchase_order: "Purchase Order",
   payment_request: "Payment Request",
   expense_request: "Expense Request",
-  erp_dev: "ERP Development Module",
+  erp_dev: "ERP Work",
   internal: "Internal",
 };
 
@@ -31,10 +31,18 @@ export function taskRelationSummary(task: {
   rel_id?: unknown;
   rel_name?: unknown;
 }): string | undefined {
+  const relationKey = String(task.rel_type ?? "").trim().toLowerCase();
   const typeLabel = taskRelationTypeLabel(task.rel_type);
   const rawName = String(task.rel_name ?? "").trim();
   const relName = isUsefulRelationName(rawName, task.rel_type, task.rel_id) ? rawName : "";
   const relId = String(task.rel_id ?? "").trim();
+
+  // `erp_dev` and `internal` are implementation buckets, not useful record
+  // identities. Show a real linked name when supplied, otherwise keep this
+  // technical metadata out of the task list.
+  if (relationKey === "erp_dev" || relationKey === "internal") {
+    return relName || undefined;
+  }
 
   if (typeLabel && relName) return `${typeLabel} · ${relName}`;
   if (typeLabel && relId && relId !== "0") return `${typeLabel} · #${relId}`;

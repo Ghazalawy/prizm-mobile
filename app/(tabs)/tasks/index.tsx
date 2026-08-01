@@ -15,12 +15,12 @@ import { useMyTasks, type TaskListItem } from "@/lib/queries/tasks";
 import { useMyTasksSummary } from "@/lib/queries/dashboard";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { colors } from "@/lib/theme";
-import { DenseListRow } from "@/components/ui/DenseListRow";
 import { FilterSheet } from "@/components/ui/FilterSheet";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { TASKS_FILTER_CONFIG } from "@/lib/filter-configs";
 import { useFilterState } from "@/lib/hooks/useFilterState";
 import { taskRelationSummary } from "@/lib/task-display";
+import { rtlTextStyle } from "@/lib/rtl";
 
 const ACCENT = colors.primary;
 
@@ -69,15 +69,36 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
   const priority = PRIORITY[String(task.priority || "2")] || PRIORITY["2"];
   const status = STATUS_CONFIG[String(task.status || "1")] || STATUS_CONFIG["1"];
   const due = dueCountdown(task.duedate);
+  const relation = taskRelationSummary(task);
 
   return (
-    <DenseListRow
-      title={task.name || `Task #${task.id}`}
-      subtitle={taskRelationSummary(task)}
+    <TouchableOpacity
       onPress={() => router.push(`/(tabs)/tasks/${task.id}` as any)}
-      leftAccent={<View className="w-1 rounded-full self-stretch" style={{ backgroundColor: priority.color }} />}
-      badges={
-        <View className="flex-row flex-wrap gap-1">
+      activeOpacity={0.72}
+      className="bg-white rounded-xl px-3 py-3 shadow-sm"
+    >
+      <View className="flex-row items-center">
+        <View
+          className="w-1 h-10 rounded-full mr-3 shrink-0"
+          style={{ backgroundColor: priority.color }}
+        />
+        <View className="flex-1 min-w-0">
+          <Text
+            className="text-sm font-semibold text-foreground leading-5"
+            numberOfLines={2}
+            style={rtlTextStyle(task.name || `Task #${task.id}`)}
+          >
+            {task.name || `Task #${task.id}`}
+          </Text>
+          {relation ? (
+            <View className="flex-row items-center mt-0.5">
+              <Ionicons name="link-outline" size={11} color="#94A3B8" />
+              <Text className="text-[11px] text-muted ml-1 flex-1" numberOfLines={1}>
+                {relation}
+              </Text>
+            </View>
+          ) : null}
+          <View className="flex-row flex-wrap mt-1.5 gap-1">
           <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: status.bg }}>
             <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>{status.label}</Text>
           </View>
@@ -85,18 +106,20 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
             <Text style={{ color: priority.color, fontSize: 10, fontWeight: "700" }}>{priority.label}</Text>
           </View>
         </View>
-      }
-      rightMeta={
-        due ? (
-          <View className="items-end">
+        </View>
+        <View className="items-end ml-3 shrink-0">
+          {due ? (
+            <>
             <Ionicons name="calendar-outline" size={12} color={due.color} />
             <Text className="text-[10px] font-semibold mt-0.5" style={{ color: due.color }}>
               {due.label}
             </Text>
-          </View>
-        ) : null
-      }
-    />
+            </>
+          ) : null}
+          <Ionicons name="chevron-forward" size={16} color="#94A3B8" style={{ marginTop: due ? 5 : 0 }} />
+        </View>
+      </View>
+    </TouchableOpacity>
   );
 });
 

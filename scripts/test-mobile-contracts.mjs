@@ -45,6 +45,7 @@ function loadTypeScriptModule(relativePath, imports = {}) {
 }
 
 const { isInvalidTokenResponse } = loadTypeScriptModule("lib/auth-response.ts");
+const { taskRelationSummary, taskRelationTypeLabel } = loadTypeScriptModule("lib/task-display.ts");
 const { serializeDirectFilterGroup, serializeModuleFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
 const authEvents = loadTypeScriptModule("lib/auth-events.ts");
 const routing = loadTypeScriptModule("lib/native-routing.ts", {
@@ -56,13 +57,65 @@ const routing = loadTypeScriptModule("lib/native-routing.ts", {
 const nativeIntent = loadTypeScriptModule("app/+native-intent.ts", {
   "../lib/native-routing": routing,
 });
+const secureValues = new Map();
+const secureOptions = new Map();
+let biometricPromptOptions = null;
+const biometric = loadTypeScriptModule("lib/biometric.ts", {
+  "expo-local-authentication": {
+    hasHardwareAsync: async () => true,
+    isEnrolledAsync: async () => true,
+    authenticateAsync: async (options) => {
+      biometricPromptOptions = options;
+      return { success: true };
+    },
+  },
+  "expo-secure-store": {
+    WHEN_UNLOCKED_THIS_DEVICE_ONLY: "when-unlocked-this-device-only",
+    getItemAsync: async (key, options) => {
+      if (options) secureOptions.set(`get:${key}`, options);
+      return secureValues.get(key) ?? null;
+    },
+    setItemAsync: async (key, value, options) => {
+      secureValues.set(key, value);
+      if (options) secureOptions.set(`set:${key}`, options);
+    },
+    deleteItemAsync: async (key) => { secureValues.delete(key); },
+  },
+});
 
-assert.equal(isInvalidTokenResponse(401, { status: false, message: "Permission lookup failed" }, true), false);
+assert.equal(isInvalidTokenResponse(401, { status: false, message: "Unauthenticated" }, true), true);
 assert.equal(isInvalidTokenResponse(403, { status: false, message: "Forbidden" }, true), false);
+assert.equal(isInvalidTokenResponse(403, { status: false, message: "Signature verification failed" }, true), false);
 assert.equal(isInvalidTokenResponse(419, { status: false, message: "CSRF token mismatch" }, true), false);
 assert.equal(isInvalidTokenResponse(404, { status: false, message: "Signature verification failed" }, true), true);
+assert.equal(isInvalidTokenResponse(404, { status: false, message: "Wrong number of segments" }, true), true);
+assert.equal(isInvalidTokenResponse(404, { status: false, message: "Unknown API method" }, true), false);
 assert.equal(isInvalidTokenResponse(401, { status: false, message: "Token Time Expire." }, true), true);
 assert.equal(isInvalidTokenResponse(401, { status: false, message: "Token expired" }, false), false);
+
+assert.equal(taskRelationTypeLabel("erp_dev"), "ERP Work");
+assert.equal(taskRelationSummary({ rel_type: "erp_dev", rel_id: "12" }), undefined);
+assert.equal(taskRelationSummary({ rel_type: "erp_dev", rel_id: "12", rel_name: "Mobile parity" }), "Mobile parity");
+assert.equal(taskRelationSummary({ rel_type: "project", rel_id: "42", rel_name: "Solar Farm" }), "Project · Solar Farm");
+
+await biometric.saveBiometricCredentials("qa@prizm-energy.com", "device-secret");
+assert.equal(await biometric.isBiometricAvailable(), true);
+assert.equal(await biometric.isBiometricEnabled(), true);
+assert.equal(await biometric.hasBiometricCredentials(), true);
+assert.equal(secureOptions.get("set:prizm_biometric_credentials")?.requireAuthentication, true);
+assert.equal(
+  secureOptions.get("set:prizm_biometric_credentials")?.keychainAccessible,
+  "when-unlocked-this-device-only",
+);
+assert.deepEqual(await biometric.getBiometricCredentials(), {
+  email: "qa@prizm-energy.com",
+  password: "device-secret",
+});
+assert.equal(secureOptions.get("get:prizm_biometric_credentials")?.requireAuthentication, true);
+assert.equal(await biometric.promptBiometric(), true);
+assert.equal(biometricPromptOptions?.disableDeviceFallback, false);
+assert.equal(await biometric.keepBiometricCredentialsForAccount("other@prizm-energy.com"), false);
+assert.equal(await biometric.hasBiometricCredentials(), false, "cross-account login must clear the old fingerprint vault");
 
 const serialized = serializePerfexFilterGroup({
   match_type: "or",
@@ -165,13 +218,10 @@ authEvents.setInvalidTokenHandler(() => { invalidTokenEvents += 1; });
 const staleGeneration = authEvents.getSessionGeneration();
 authEvents.resetInvalidTokenDebounce();
 const currentGeneration = authEvents.getSessionGeneration();
-const originalNow = Date.now;
-Date.now = () => originalNow() + 10_000;
 authEvents.notifyInvalidToken(staleGeneration);
 assert.equal(invalidTokenEvents, 0, "a response from the previous login must not clear the fresh session");
 authEvents.notifyInvalidToken(currentGeneration);
-assert.equal(invalidTokenEvents, 1, "the current session's explicit JWT failure must reach AuthContext");
-Date.now = originalNow;
+assert.equal(invalidTokenEvents, 1, "the current session's explicit JWT failure must reach AuthContext immediately");
 authEvents.setInvalidTokenHandler(null);
 
 assert.equal(

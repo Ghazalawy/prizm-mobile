@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>QC-REPORT-TEMPLATE</title>
+  <title>PE QAQC QC Report 26014 R01</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -169,11 +169,12 @@
       vertical-align: middle;
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+    tr { break-inside: avoid; page-break-inside: avoid; }
   </style>
 </head>
 <body>
-<h1 id="qc-report-purchasing-android-app-links">QC Report — Purchasing
-Android App Links</h1>
+<h1 id="qc-report-mobile-jwt-identity-and-native-authentication">QC
+Report — Mobile JWT Identity and Native Authentication</h1>
 <h2 id="report-header">Report Header</h2>
 <table>
 <thead>
@@ -185,27 +186,35 @@ Android App Links</h1>
 <tbody>
 <tr>
 <td>Report Code</td>
-<td><code>PE-QAQC-QC-RPT-26013-R01</code></td>
+<td><code>PE-QAQC-QC-RPT-26014-R01</code></td>
 </tr>
 <tr>
 <td>Session ID</td>
-<td><code>przpurchase-app-links-20260802</code></td>
+<td><code>mobile-jwt-auth-20260802</code></td>
 </tr>
 <tr>
 <td>Date / Time</td>
-<td><code>2026-08-02 01:37 +04:00</code></td>
+<td><code>2026-08-02 02:23 +04:00</code></td>
 </tr>
 <tr>
 <td>Agent / Model</td>
 <td><code>Codex / GPT-5</code></td>
 </tr>
 <tr>
-<td>Workspace</td>
+<td>Backend workspace</td>
+<td><code>C:\wamp64\www\prizm331-wt-mobile-jwt-auth</code></td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
 <td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
 </tr>
 <tr>
+<td>Backend branch</td>
+<td><code>fix/mobile-jwt-staff-resolution-DESKTOP-9GO5QC0</code></td>
+</tr>
+<tr>
 <td>Mobile branch</td>
-<td><code>codex/fix-przpurchase-app-links</code></td>
+<td><code>codex/native-parity-continuation</code></td>
 </tr>
 <tr>
 <td>Turns</td>
@@ -218,137 +227,90 @@ Android App Links</h1>
 </tbody>
 </table>
 <h2 id="executive-summary">1. Executive Summary</h2>
-<p>Android v1.15.0 did not hand production purchasing URLs such as
-<code>https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211</code>
-to the installed Prizm app. The JavaScript router already mapped that
-exact URL to the native Payment Request approval route, but the Android
-manifest claimed only <code>/MS</code> and <code>/MS/admin/*</code>, so
-Chrome remained the handler for <code>/MS/przpurchase/*</code>.</p>
-<p>Release v1.15.1 adds a narrow verified Android App Link prefix for
-<code>/MS/przpurchase</code>. It deliberately does not claim unrelated
-website or upload URLs. The exact reported URL was tested from Android’s
-HTTPS intent boundary against local debug and release APKs.</p>
-<h2 id="implementation">2. Implementation</h2>
+<p>A freshly issued, cryptographically valid mobile JWT could
+authenticate at the REST filter but still receive HTTP 401 from
+hand-written controllers. Those controllers resolved staff only through
+the exact token stored in <code>tbluser_api</code>; a self-validating
+JWT is not guaranteed to be present there. The Payment Request deep-link
+reproduction exposed the contradiction:
+<code>/api/my/tasks-summary</code> accepted the token while
+<code>/api/purchase_api/payment_requests/1211</code> returned
+<code>Unauthenticated</code>.</p>
+<p>The backend now delegates Purchase, Inbox, Admin, My, and the shared
+mobile-parity helper to
+<code>api_resolve_real_staff_from_token()</code>, which resolves Perfex
+session staff, legacy token-table identity, then the validated JWT
+email. The shared helper also covers Tasks, Reports, Opportunities,
+Materials, and mobile-parity controllers. Mobile invalid-token handling
+now treats authenticated HTTP 401 as session expiry, preserves sessions
+on permission HTTP 403 and CSRF HTTP 419, recognizes the legacy JWT HTTP
+404 messages, and removes the five-second grace window that masked
+genuine post-login failures.</p>
+<p>The mobile task row was also rebuilt as a compact information card:
+the priority accent has a fixed gutter, long titles wrap without
+collision, internal <code>erp_dev</code> metadata is hidden, and a
+meaningful linked record remains visible. Release v1.15.2/code 33 was
+built locally, installed on the Android emulator, and the reported
+Payment Request URL opened the native app on a cold start through a
+verified Android App Link.</p>
+<h2 id="authentication-and-csrf-contract">2. Authentication and CSRF
+Contract</h2>
 <table>
 <colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
 </colgroup>
 <thead>
 <tr>
-<th>Area</th>
-<th>Change</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Android App Links</td>
-<td>Added the verified
-<code>https://ms.prizm-energy.com/MS/przpurchase/*</code> path
-prefix.</td>
-</tr>
-<tr>
-<td>Native routing</td>
-<td>Preserved the existing Payment Request parser, which maps record
-<code>1211</code> to
-<code>/(tabs)/approvals/payment_request/1211</code>.</td>
-</tr>
-<tr>
-<td>Regression coverage</td>
-<td>Added assertions for the exact reported URL and the Android manifest
-path prefix.</td>
-</tr>
-<tr>
-<td>Cross-platform test harness</td>
-<td>Normalized CRLF to LF when contract tests inspect
-<code>module-registry.ts</code>.</td>
-</tr>
-<tr>
-<td>Release metadata</td>
-<td>Bumped app version to <code>1.15.1</code> and Android versionCode to
-<code>32</code>.</td>
-</tr>
-</tbody>
-</table>
-<p>No API endpoint, database schema, authentication, CSRF, biometric,
-workflow permission, or file-storage behavior changed in this
-hotfix.</p>
-<h2 id="android-emulator-verification">3. Android Emulator
-Verification</h2>
-<p>Tests ran on <code>emulator-5554</code> with software rendering
-because the shared GPU was occupied.</p>
-<table>
-<colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-</colgroup>
-<thead>
-<tr>
-<th>Test</th>
-<th>Expected</th>
-<th>Observed</th>
+<th>Contract</th>
+<th>Evidence</th>
 <th>Result</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>v1.15.0 baseline resolver</td>
-<td>Reported purchasing URL does not reach app</td>
-<td>Android resolved the exact URL to Chrome</td>
-<td>REPRODUCED</td>
-</tr>
-<tr>
-<td>Generated Android manifest</td>
-<td>Purchasing path is declared narrowly</td>
-<td><code>PatternMatcher{PREFIX: /MS/przpurchase}</code> present</td>
+<td>Native auth does not post to an admin login form</td>
+<td>Mobile uses <code>mobile_auth.php</code>, then
+<code>/api/login/auth</code> fallback</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Domain ownership</td>
-<td>Production domain remains verified</td>
-<td>Android listed <code>com.prizmenergy.mobile</code> as
-<code>VERIFIED</code> owner</td>
+<td>REST login is outside browser CSRF enforcement</td>
+<td><code>application/config/config.php</code> excludes
+<code>api\/.+</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Exact URL activity candidates</td>
-<td>Prizm is eligible for the literal HTTPS URL</td>
-<td>Prizm <code>MainActivity</code> and Chrome were listed; Prizm is the
-verified owner</td>
+<td>REST login accepts JSON POST and mints JWT</td>
+<td>Explicit route to <code>Login::login_api</code>; contract inspection
+covers request method, JSON input, and <code>JWT::encode</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Debug APK exact URL launch</td>
-<td>Android opens installed app</td>
-<td><code>Activity: com.prizmenergy.mobile/.MainActivity</code></td>
+<td>HTTP 403 does not sign out</td>
+<td>Mobile contract assertion</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Release APK exact URL launch</td>
-<td>Embedded production app opens</td>
-<td><code>Status: ok</code>;
-<code>Activity: com.prizmenergy.mobile/.MainActivity</code></td>
+<td>HTTP 419 does not sign out</td>
+<td>Mobile contract assertion</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Native route parser</td>
-<td>Record ID is preserved</td>
-<td>Exact URL resolved to
-<code>/(tabs)/approvals/payment_request/1211</code></td>
+<td>Authenticated HTTP 401 signs out immediately</td>
+<td>Mobile session-generation regression assertion</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Destination data boundary</td>
-<td>Native screen attempts authenticated record load</td>
-<td>Expired emulator JWT produced <code>Unauthenticated</code>; Chrome
-was not opened</td>
-<td>PASS WITH TEST-ACCOUNT LIMITATION</td>
+<td>Legacy JWT HTTP 404 is recognized</td>
+<td><code>Signature verification failed</code> and
+<code>Wrong number of segments</code> assertions</td>
+<td>PASS</td>
 </tr>
 </tbody>
 </table>
-<h2 id="automated-quality-gates">4. Automated Quality Gates</h2>
+<h2 id="backend-verification">3. Backend Verification</h2>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -362,66 +324,131 @@ was not opened</td>
 </thead>
 <tbody>
 <tr>
-<td>Release metadata</td>
-<td>PASS — v1.15.1, Android versionCode 32</td>
+<td>Failing-first baseline</td>
+<td>53/58 existing contracts passed; exactly five new JWT resolver
+contracts failed</td>
+</tr>
+<tr>
+<td>Resolver implementation</td>
+<td>61/61 Daleela MCP/API contracts passed after implementation</td>
+</tr>
+<tr>
+<td>PHP syntax</td>
+<td>PASS for 5 changed implementation files, test, changelog, and
+developer documentation</td>
+</tr>
+<tr>
+<td>Fork CI</td>
+<td>PASS — workflow <code>30720992774</code>, PHP 8.3 contracts</td>
+</tr>
+<tr>
+<td>Fork PR</td>
+<td>PASS — <code>Ghazalawy/prizm331#310</code>, merged as
+<code>cc848afa</code></td>
+</tr>
+<tr>
+<td>Upstream PR</td>
+<td>PASS — <code>PrizmIT/prizm331#1192</code>, merged as
+<code>b14e6fac</code></td>
+</tr>
+<tr>
+<td>Production deploy</td>
+<td>PASS — on-demand workflow <code>30721136898</code>; production HEAD
+<code>b14e6fac67</code></td>
+</tr>
+<tr>
+<td>Fresh JWT production matrix</td>
+<td>PASS — a valid, deliberately unstored JWT returned HTTP 200 from
+My/Profile, Inbox, Admin/Me, Payment Request 1211, and Tasks</td>
+</tr>
+<tr>
+<td>Git whitespace</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<h2 id="mobile-verification">4. Mobile Verification</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile contract suite</td>
+<td>PASS — auth, Perfex multi/logical filters, App Links, native
+routing, schemas, purchasing, and module contracts</td>
 </tr>
 <tr>
 <td>TypeScript</td>
 <td>PASS — <code>npx tsc --noEmit -p tsconfig.json</code></td>
 </tr>
 <tr>
-<td>Expo dependency alignment</td>
-<td>PASS — dependencies up to date</td>
+<td>Invalid token production probe</td>
+<td>HTTP 404 <code>Wrong number of segments</code> reproduced on My and
+Purchase endpoints and is now classified correctly</td>
 </tr>
 <tr>
-<td>Mobile contract tests</td>
-<td>PASS — exact App Link, routing, auth, filters, schemas, purchasing,
-and module contracts</td>
+<td>Immediate fresh-session 401</td>
+<td>PASS — generation guard ignores stale requests while current-session
+401 fires immediately</td>
 </tr>
 <tr>
-<td>CRUD contract audit</td>
-<td>PASS — 303 advertised mutations, 0 skipped</td>
+<td>Emulator session transition</td>
+<td>REPRODUCED — the previous false 401 cleared the stored session and
+routed to Login</td>
 </tr>
 <tr>
-<td>List contract audit</td>
-<td>PASS — 107 filterable lists and 59 sortable endpoints, 0
-skipped</td>
+<td>Fresh JWT production API matrix</td>
+<td>PASS — five authenticated production endpoint families returned HTTP
+200</td>
 </tr>
 <tr>
-<td>Android debug build</td>
-<td>PASS — x86_64 APK assembled and installed</td>
+<td>Fingerprint security/runtime contracts</td>
+<td>PASS — authenticated SecureStore vault, device-only accessibility,
+biometric enrollment, OS authentication prompt, device fallback, and
+cross-account vault clearing</td>
 </tr>
 <tr>
-<td>Android release build</td>
-<td>PASS — 40,222,555-byte local release APK assembled and
-installed</td>
+<td>Fingerprint re-sign-in with a real account</td>
+<td>NOT RUN — emulator contains no saved test-account biometric vault;
+no production password was created or reset</td>
 </tr>
 <tr>
-<td>Git whitespace check</td>
-<td>PASS</td>
+<td>Multi-filter regressions</td>
+<td>PASS — On Hold + Cancelled, AND/OR, negative, and range
+combinations</td>
 </tr>
 <tr>
-<td>GitHub rolling release</td>
-<td>PASS — workflow <code>30719192704</code>; Android build 25m52s;
-Pages deploy 38s</td>
+<td>Task-card visual QA</td>
+<td>PASS — production component rendered on emulator; accent gutter,
+wrapping, metadata suppression, and linked-record display verified;
+temporary fixture removed</td>
 </tr>
 <tr>
-<td>Published APK integrity</td>
-<td>PASS — 91,549,412 bytes; SHA-256
-<code>c656b2c6aadb26cd0344ade2c6af499291a54a6124a81f5931b64d9cd24bf8c0</code></td>
+<td>Local signed release APK</td>
+<td>PASS — v1.15.2/code 33, 91,543,032 bytes, SHA-256
+<code>9b3ba8f50d073633151e6b7a1557db658d69a6441026b9c4de8d146a4bda39fd</code></td>
 </tr>
 <tr>
-<td>Published APK install</td>
-<td>PASS — v1.15.1, versionCode 32, expected signing fingerprint</td>
+<td>Installed package</td>
+<td>PASS — emulator reports v1.15.2/code 33</td>
 </tr>
 <tr>
-<td>Published APK exact URL retest</td>
-<td>PASS — cold launch selected Prizm <code>MainActivity</code> in 1.36
-seconds</td>
+<td>Exact Payment Request App Link</td>
+<td>PASS — cold launch handled by
+<code>com.prizmenergy.mobile/.MainActivity</code>; domain state
+verified</td>
 </tr>
 </tbody>
 </table>
-<h3 id="acceptance-criteria">Acceptance Criteria</h3>
+<h2 id="acceptance-criteria">5. Acceptance Criteria</h2>
 <table>
 <colgroup>
 <col style="width: 33%" />
@@ -438,36 +465,53 @@ seconds</td>
 <tbody>
 <tr>
 <td>S1</td>
-<td>The exact Payment Request URL opens the installed Prizm app</td>
-<td>100% PASS locally</td>
+<td>Valid fresh JWT resolves the same staff identity across hand-written
+API families</td>
+<td>100% PASS in contracts and production</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Record <code>1211</code> maps to the native Payment Request
-route</td>
+<td>Native sign-in is independent of browser CSRF cookie/token
+state</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Production domain ownership remains verified</td>
+<td>403 permission and 419 CSRF responses never erase the mobile
+session</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Current-session 401 immediately returns the user to Login</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Unrelated website and upload paths remain unclaimed</td>
+<td>Biometric vault behavior remains device-bound and
+authentication-gated</td>
+<td>100% automated contract PASS; real-account manual exercise
+unavailable</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Multi-filter logic and task-card presentation are
+regression-protected</td>
 <td>100% PASS</td>
 </tr>
 <tr>
-<td>S1</td>
-<td>Signed published APK contains and exercises the fix</td>
+<td>S2</td>
+<td>Auth behavior is documented and regression-protected</td>
 <td>100% PASS</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Implementation, automated contracts, local builds, production
-workflow, signed APK, and exact-URL emulator handoff gates pass. No open
-Blocker, Major, or Minor defect remains in scope.</strong></p>
-<h2 id="code-git-and-deployment">5. Code, Git, and Deployment</h2>
+<p><strong>Pre-publication quality gate: PASS. Backend production
+verification and local signed-APK emulator verification are complete.
+GitHub rolling-release publication and verification of that exact
+published artifact remain before final sign-off.</strong></p>
+<h2 id="code-git-deployment-and-rollback">6. Code, Git, Deployment, and
+Rollback</h2>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -481,37 +525,42 @@ Blocker, Major, or Minor defect remains in scope.</strong></p>
 </thead>
 <tbody>
 <tr>
-<td>Mobile implementation commit</td>
-<td><code>ea292bb</code></td>
+<td>Backend implementation commit</td>
+<td><code>eb39adf84</code></td>
 </tr>
 <tr>
-<td>Mobile branch</td>
-<td><code>codex/fix-przpurchase-app-links</code></td>
+<td>Fork merge</td>
+<td><code>cc848afa</code></td>
 </tr>
 <tr>
-<td>Release version</td>
-<td>v1.15.1 / Android versionCode 32</td>
+<td>Upstream merge</td>
+<td><code>b14e6fac</code> via <code>PrizmIT/prizm331#1192</code></td>
 </tr>
 <tr>
-<td>Main deployment</td>
-<td><code>origin/main</code> at <code>ea292bb</code></td>
+<td>Production deployment</td>
+<td>PASS — workflow <code>30721136898</code>; HEAD
+<code>b14e6fac67</code></td>
 </tr>
 <tr>
-<td>GitHub workflow</td>
-<td><code>30719192704</code> — completed successfully</td>
+<td>Local mobile release candidate</td>
+<td>PASS — v1.15.2/code 33 installed and exercised on emulator</td>
 </tr>
 <tr>
-<td>Rolling APK</td>
-<td><code>latest/prizm-mobile.apk</code> — published, hash-checked,
-installed, and exercised</td>
+<td>GitHub mobile release</td>
+<td>Pending implementation commit and rolling-release workflow</td>
 </tr>
 <tr>
-<td>Rollback</td>
-<td>Revert <code>ea292bb</code> and republish v1.15.0</td>
+<td>Backend rollback</td>
+<td>Revert <code>eb39adf84</code>, merge through the same PR workflow,
+deploy on demand</td>
+</tr>
+<tr>
+<td>Mobile rollback</td>
+<td>Revert v1.15.2 and republish v1.15.1</td>
 </tr>
 </tbody>
 </table>
-<h2 id="sign-off">6. Sign-off</h2>
+<h2 id="sign-off">7. Sign-off</h2>
 <table>
 <colgroup>
 <col style="width: 25%" />
@@ -531,14 +580,15 @@ installed, and exercised</td>
 <tr>
 <td>QA automation</td>
 <td>Codex</td>
-<td>Implementation, contracts, local builds, workflow, signed APK, and
-exact URL handoff PASS</td>
+<td>Backend production and local signed-release gates PASS; published
+artifact pending</td>
 <td>2026-08-02</td>
 </tr>
 <tr>
 <td>Product reviewer</td>
 <td>Osama Hassan</td>
-<td>Reported the exact production Payment Request URL</td>
+<td>Requested fingerprint, CSRF, emulator, and production
+verification</td>
 <td>2026-08-02</td>
 </tr>
 </tbody>

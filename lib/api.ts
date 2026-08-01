@@ -9,8 +9,8 @@ export { isInvalidTokenResponse } from "./auth-response";
 //
 // After the JWT signing key rotated on 2026-05-23, every cached token began
 // failing server-side validation. Perfex returns this in two flavours:
-//   1. HTTP 401 / 403 with empty or short body, OR
-//   2. HTTP 404 (REST_Controller default for "missing creds") with body
+//   1. HTTP 401 from controller-managed authentication, OR
+//   2. HTTP 404 (legacy REST_Controller default for invalid JWTs) with body
 //      {"status":false,"message":"Signature verification failed"}.
 //
 // We treat both as token-expiry, but ONLY when the response body's message
@@ -21,7 +21,8 @@ export { isInvalidTokenResponse } from "./auth-response";
 // returns "Token is not defined" from its DEFAULT 404 handler when a route
 // doesn't exist at all (not just when the token failed), which falsely
 // signed out users hitting a not-yet-deployed endpoint. Only the JWT-
-// specific phrases stay in the unambiguous list now.
+// specific phrases stay in the unambiguous 404 list now. HTTP 403 is a
+// permission denial and HTTP 419 is a CSRF failure; neither clears auth.
 /**
  * Parse a response once (body is consumed) and detect invalid-token. If
  * detected, fires the global handler (which AuthContext registers — see

@@ -15,24 +15,19 @@
  * /login). The handler fires at most once every DEBOUNCE_MS so a screen
  * with several parallel queries doesn't trigger N kick-outs.
  *
- * Post-login grace period: after a successful login, the dashboard fires
- * 12+ parallel queries. If any endpoint on the server returns 401 for a
- * reason OTHER than an invalid token (e.g. missing route, permission
- * misconfiguration), we must NOT treat it as session-expired — the token
- * was literally just obtained and is known-good.  All stale-token
- * responses from a previous session are already filtered by the
- * generation guard.  Therefore, any invalid-token signal arriving within
- * GRACE_PERIOD_MS of login is a false positive and is silently ignored.
+ * A successful login advances `sessionGeneration`. Parallel responses from
+ * the previous session are ignored by that generation guard, while a real
+ * 401 from the new session is handled immediately. Do not add a time-based
+ * grace window here: it masks genuine post-login authentication failures
+ * and leaves the user stranded on a protected screen.
  */
 type Handler = () => void;
 
 let handler: Handler | null = null;
 let lastFiredAt = 0;
 let sessionGeneration = 0;
-let loggedInAt = 0;
 
 const DEBOUNCE_MS = 5000;
-const GRACE_PERIOD_MS = 5000;
 
 export function setInvalidTokenHandler(h: Handler | null) {
   handler = h;
@@ -52,10 +47,6 @@ export function notifyInvalidToken(requestGeneration?: number) {
   // If the request was made in a previous session (generation mismatch),
   // ignore it — a fresh login has already replaced the token.
   if (requestGeneration !== undefined && requestGeneration !== sessionGeneration) return;
-  // Post-login grace period: the token was just obtained.  Any 401
-  // arriving now is a false positive from the dashboard query burst
-  // hitting an endpoint that returns 401 for non-auth reasons.
-  if (loggedInAt > 0 && Date.now() - loggedInAt < GRACE_PERIOD_MS) return;
   const now = Date.now();
   if (now - lastFiredAt < DEBOUNCE_MS) return;
   lastFiredAt = now;
@@ -66,5 +57,4 @@ export function notifyInvalidToken(requestGeneration?: number) {
 export function resetInvalidTokenDebounce() {
   lastFiredAt = 0;
   sessionGeneration++;
-  loggedInAt = Date.now();
 }

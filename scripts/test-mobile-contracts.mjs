@@ -184,6 +184,13 @@ assert.equal(
   "an Android App Link must be rewritten to the native project screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink(
+    "https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211",
+  ),
+  "/(tabs)/approvals/payment_request/1211",
+  "a Payment Request web link must be rewritten to its native approval screen",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
   "/(tabs)/erp",
   "an unmatched ERP URL must stay inside the app on the native ERP hub",
@@ -213,6 +220,12 @@ assert.ok(
     (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS/admin",
   ),
   "the verified intent filter must capture production ERP admin links",
+);
+assert.ok(
+  appLinkFilter.data.some(
+    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS/przpurchase",
+  ),
+  "the verified intent filter must capture production purchasing record links",
 );
 const assetLinks = JSON.parse(
   fs.readFileSync(path.join(workspace, "public/.well-known/assetlinks.json"), "utf8"),

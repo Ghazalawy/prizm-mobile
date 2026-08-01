@@ -2,7 +2,7 @@
   "expo": {
     "name": "Prizm CRM",
     "slug": "prizm-mobile",
-    "version": "1.15.0",
+    "version": "1.15.1",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "prizmcrm",
@@ -37,6 +37,11 @@
               "scheme": "https",
               "host": "ms.prizm-energy.com",
               "pathPrefix": "/MS/admin"
+            },
+            {
+              "scheme": "https",
+              "host": "ms.prizm-energy.com",
+              "pathPrefix": "/MS/przpurchase"
             }
           ],
           "category": [
@@ -51,7 +56,7 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 31
+      "versionCode": 32
     },
     "web": {
       "bundler": "metro",

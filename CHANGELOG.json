@@ -2,6 +2,16 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.15.1",
+      "date": "2026-08-02",
+      "title": "Purchasing links open in the app",
+      "highlights": [
+        "Payment Request and other purchasing record links now open in the installed Android app.",
+        "Exact purchasing links resolve to their matching native approval screen.",
+        "Unrelated website and upload links continue to open normally in the browser."
+      ]
+    },
+    {
       "version": "1.15.0",
       "date": "2026-07-30",
       "title": "Dense, unmistakable record views",

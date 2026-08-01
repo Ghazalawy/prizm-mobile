@@ -170,6 +170,8 @@
     }
     .display.math{display: block; text-align: center; margin: 0.5rem auto;}
     tr { break-inside: avoid; page-break-inside: avoid; }
+    table { width: 100%; table-layout: fixed; }
+    th, td { overflow-wrap: anywhere; word-break: break-word; }
   </style>
 </head>
 <body>
@@ -446,6 +448,17 @@ temporary fixture removed</td>
 <code>com.prizmenergy.mobile/.MainActivity</code>; domain state
 verified</td>
 </tr>
+<tr>
+<td>GitHub rolling release</td>
+<td>PASS — workflow <code>30722148753</code>; asset v1.15.2/code 33,
+91,550,628 bytes, SHA-256
+<code>7a51c97e33fdd20bf35045501871a9ce948d06bf38414335d75041cac198e629</code></td>
+</tr>
+<tr>
+<td>Published APK emulator retest</td>
+<td>PASS — exact GitHub asset installed; Payment Request 1211 URL
+cold-launched Prizm in 1.48 seconds</td>
+</tr>
 </tbody>
 </table>
 <h2 id="acceptance-criteria">5. Acceptance Criteria</h2>
@@ -506,10 +519,10 @@ regression-protected</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Pre-publication quality gate: PASS. Backend production
-verification and local signed-APK emulator verification are complete.
-GitHub rolling-release publication and verification of that exact
-published artifact remain before final sign-off.</strong></p>
+<p><strong>Final quality gate: PASS. Backend production verification,
+combined-filter and biometric contracts, local signed-APK review, GitHub
+publication, and emulator verification of the exact published artifact
+are complete.</strong></p>
 <h2 id="code-git-deployment-and-rollback">6. Code, Git, Deployment, and
 Rollback</h2>
 <table>
@@ -542,12 +555,17 @@ Rollback</h2>
 <code>b14e6fac67</code></td>
 </tr>
 <tr>
+<td>Mobile implementation commit</td>
+<td><code>f0c488b</code></td>
+</tr>
+<tr>
 <td>Local mobile release candidate</td>
 <td>PASS — v1.15.2/code 33 installed and exercised on emulator</td>
 </tr>
 <tr>
 <td>GitHub mobile release</td>
-<td>Pending implementation commit and rolling-release workflow</td>
+<td>PASS — workflow <code>30722148753</code>; rolling
+<code>latest</code> asset published and retested</td>
 </tr>
 <tr>
 <td>Backend rollback</td>
@@ -580,8 +598,8 @@ deploy on demand</td>
 <tr>
 <td>QA automation</td>
 <td>Codex</td>
-<td>Backend production and local signed-release gates PASS; published
-artifact pending</td>
+<td>Final backend, contracts, published APK, and emulator gates
+PASS</td>
 <td>2026-08-02</td>
 </tr>
 <tr>

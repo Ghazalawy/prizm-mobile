@@ -66,6 +66,8 @@ The mobile task row was also rebuilt as a compact information card: the priority
 | Local signed release APK | PASS — v1.15.2/code 33, 91,543,032 bytes, SHA-256 `9b3ba8f50d073633151e6b7a1557db658d69a6441026b9c4de8d146a4bda39fd` |
 | Installed package | PASS — emulator reports v1.15.2/code 33 |
 | Exact Payment Request App Link | PASS — cold launch handled by `com.prizmenergy.mobile/.MainActivity`; domain state verified |
+| GitHub rolling release | PASS — workflow `30722148753`; asset v1.15.2/code 33, 91,550,628 bytes, SHA-256 `7a51c97e33fdd20bf35045501871a9ce948d06bf38414335d75041cac198e629` |
+| Published APK emulator retest | PASS — exact GitHub asset installed; Payment Request 1211 URL cold-launched Prizm in 1.48 seconds |
 
 ## 5. Acceptance Criteria
 
@@ -79,7 +81,7 @@ The mobile task row was also rebuilt as a compact information card: the priority
 | S2 | Multi-filter logic and task-card presentation are regression-protected | 100% PASS |
 | S2 | Auth behavior is documented and regression-protected | 100% PASS |
 
-**Pre-publication quality gate: PASS. Backend production verification and local signed-APK emulator verification are complete. GitHub rolling-release publication and verification of that exact published artifact remain before final sign-off.**
+**Final quality gate: PASS. Backend production verification, combined-filter and biometric contracts, local signed-APK review, GitHub publication, and emulator verification of the exact published artifact are complete.**
 
 ## 6. Code, Git, Deployment, and Rollback
 
@@ -89,8 +91,9 @@ The mobile task row was also rebuilt as a compact information card: the priority
 | Fork merge | `cc848afa` |
 | Upstream merge | `b14e6fac` via `PrizmIT/prizm331#1192` |
 | Production deployment | PASS — workflow `30721136898`; HEAD `b14e6fac67` |
+| Mobile implementation commit | `f0c488b` |
 | Local mobile release candidate | PASS — v1.15.2/code 33 installed and exercised on emulator |
-| GitHub mobile release | Pending implementation commit and rolling-release workflow |
+| GitHub mobile release | PASS — workflow `30722148753`; rolling `latest` asset published and retested |
 | Backend rollback | Revert `eb39adf84`, merge through the same PR workflow, deploy on demand |
 | Mobile rollback | Revert v1.15.2 and republish v1.15.1 |
 
@@ -98,7 +101,7 @@ The mobile task row was also rebuilt as a compact information card: the priority
 
 | Role | Name | Status | Date |
 |---|---|---|---|
-| QA automation | Codex | Backend production and local signed-release gates PASS; published artifact pending | 2026-08-02 |
+| QA automation | Codex | Final backend, contracts, published APK, and emulator gates PASS | 2026-08-02 |
 | Product reviewer | Osama Hassan | Requested fingerprint, CSRF, emulator, and production verification | 2026-08-02 |
 
 Generated under Prizm QA/QC Policy. Classification: Internal.

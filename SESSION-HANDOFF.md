@@ -1158,3 +1158,16 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Approval headers identify Purchase Request, Purchase Order, Payment Request, or Expense Request explicitly.
 - Emulator verified Task `#17288`, Payment Request `#1208`, and Budget Item `#27386`; the published APK was installed as versionCode 31 and its Tasks path was retested.
 - QC: `PE-QAQC-QC-RPT-26012-R01__dense-native-record-ui-20260730.md` and PDF under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 12.0 2026-08-02 — Mobile JWT identity and task-list polish
+
+- Backend resolver fix deployed from `eb39adf84` through `PrizmIT/prizm331#1192`; production workflow `30721136898` passed and HEAD is `b14e6fac67`.
+- A valid JWT deliberately absent from the legacy token table returned HTTP 200 from My/Profile, Inbox, Admin/Me, Payment Request 1211, and Tasks in production.
+- Mobile v1.15.2/code 33 deployed from `f0c488b`; Android/Pages workflow `30722148753` passed.
+- Auth handling now signs out on authenticated 401, preserves the session on 403/419, recognizes legacy JWT 404 failures, and relies on session generations instead of a five-second grace window.
+- Fingerprint vault/runtime contracts cover authenticated device-only SecureStore storage, enrollment, OS prompts, device fallback, credential retrieval, and cross-account clearing. A real-account manual biometric exercise was not run because the emulator has no saved production credential vault.
+- Task list rows now keep the priority bar clear of text, wrap long titles, hide raw `erp_dev` metadata, and preserve meaningful linked records.
+- The exact published APK (`7a51c97e…e629`) was installed on the emulator; the reported Payment Request 1211 HTTPS URL cold-launched Prizm in 1.48 seconds with the domain verified.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26014-R01__mobile-jwt-auth-20260802.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

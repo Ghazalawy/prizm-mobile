@@ -106,6 +106,20 @@ finally {
     [IO.File]::WriteAllBytes($packageManifestPath, $packageManifestBackup)
     [IO.File]::WriteAllBytes($packageLockPath, $packageLockBackup)
 }
+$androidSdk = @(
+    $env:ANDROID_HOME,
+    $env:ANDROID_SDK_ROOT,
+    $(if ($env:LOCALAPPDATA) { Join-Path $env:LOCALAPPDATA "Android\Sdk" })
+) | Where-Object { $_ -and (Test-Path -LiteralPath $_) } | Select-Object -First 1
+if (-not $androidSdk) {
+    throw "Android SDK was not found. Set ANDROID_HOME or ANDROID_SDK_ROOT."
+}
+$androidSdk = (Resolve-Path $androidSdk).Path
+$env:ANDROID_HOME = $androidSdk
+$env:ANDROID_SDK_ROOT = $androidSdk
+$localPropertiesPath = Join-Path $repoRoot "android\local.properties"
+$escapedSdkPath = $androidSdk -replace "\\", "\\\\"
+[IO.File]::WriteAllText($localPropertiesPath, "sdk.dir=$escapedSdkPath`n", [Text.UTF8Encoding]::new($false))
 Invoke-NativeStep "Verify release metadata" { npm run verify:release }
 Invoke-NativeStep "TypeScript check" { npx tsc --noEmit -p tsconfig.json }
 Invoke-NativeStep "Mobile contract tests" { npm run test:contracts }

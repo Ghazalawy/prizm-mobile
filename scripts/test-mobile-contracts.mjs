@@ -1321,6 +1321,7 @@ for (const safetyGate of [
   /PRIZM331_SOURCE_ROOT/,
   /assetlinks\.json/,
   /keytoolErrorPreference/,
+  /sdk\.dir=/,
   /apksigner/,
   /Payment_Request\/view_payment_request\/1211/,
   /gh release upload latest/,

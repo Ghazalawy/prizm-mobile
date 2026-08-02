@@ -1242,3 +1242,16 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu audit baseline is 93/347 native destinations, with 254 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `233d78d`; backend `d797b637f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26018-R01__tender-triage-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 15.0 2026-08-02 — Native Setup administration and shared CRUD stability
+
+- Added twelve administrator-only native Setup catalogs: Customer Groups, Ticket Priorities, Predefined Replies, Ticket Statuses, Ticket Services, Lead Sources, Lead Statuses, Taxes, Currencies, Payment Modes, Expense Categories, and Contract Types.
+- Backend Setup endpoints use explicit read/write allowlists, canonical Perfex models, strict validation, no-trace admin permissions, protected default deletion, and the canonical currency Make Base action.
+- Corrected Setup logical-filter transport so full Perfex AND/OR groups reach the API instead of being flattened into ineffective ordinary query parameters.
+- Corrected the shared CRUD form lifecycle so typing no longer resets fields on rerender, and removed the empty-custom-fields maximum-update-depth loop.
+- API testing passed all 12 lists, non-admin 404, search, invalid filters, constraints, AND/OR, and a reversible create/update/detail/delete matrix. Emulator testing passed exact OR and AND results plus reversible create/edit/delete with no warning left behind.
+- Static web-menu parity is now 105/347 native destinations, with 242 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `ddf454e`; backend `5bcc4caeb`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26019-R01__setup-native-admin-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

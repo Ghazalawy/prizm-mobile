@@ -30,6 +30,7 @@ import { RolePermissionsEditor } from "./RolePermissionsEditor";
 import { CustomFieldDefinitionEditor } from "./CustomFieldDefinitionEditor";
 import { EmailTemplateEditor } from "./EmailTemplateEditor";
 import { SupplierInvoiceEditor } from "./SupplierInvoiceEditor";
+import { GatepassRequestEditor } from "./GatepassRequestEditor";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -361,6 +362,17 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
           {module.key === "purchase_supplier_invoices" ? (
             <SupplierInvoiceEditor
+              row={row}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "gatepass_requests" ? (
+            <GatepassRequestEditor
               row={row}
               values={values}
               onChange={(field, value) => {

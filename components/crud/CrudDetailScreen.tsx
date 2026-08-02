@@ -41,6 +41,7 @@ import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { taskRelationTypeLabel } from "@/lib/task-display";
 import { EmailTemplateSummary } from "./EmailTemplateSummary";
 import { SupplierInvoiceSummary } from "./SupplierInvoiceSummary";
+import { GatepassRequestSummary } from "./GatepassRequestSummary";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -247,6 +248,8 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
                 ? <EmailTemplateSummary row={row} />
                 : module.key === "purchase_supplier_invoices"
                   ? <SupplierInvoiceSummary row={row} />
+                  : module.key === "gatepass_requests"
+                    ? <GatepassRequestSummary row={row} />
                   : <RecordSummary module={module} row={row} />}
             </ScrollView>
           ) : (() => {

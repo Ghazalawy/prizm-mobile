@@ -1228,6 +1228,28 @@ const supplierInvoiceSummarySource = fs.readFileSync(path.join(workspace, "compo
 for (const section of ["Supplier Invoice", "Commercial snapshot", "Invoice lines", "Approval route", "Activity"]) {
   assert.match(supplierInvoiceSummarySource, new RegExp(section));
 }
+for (const [link, expected] of [
+  ["https://ms.prizm-energy.com/MS/admin/gatepass/RequestManager", "/(tabs)/erp/gatepass_requests"],
+  ["https://ms.prizm-energy.com/MS/admin/gatepass/RequestManager/view/1211", "/(tabs)/erp/gatepass_requests/1211"],
+  ["https://ms.prizm-energy.com/MS/api/gatepass_api/requests/1211", "/(tabs)/erp/gatepass_requests/1211"],
+]) {
+  assert.equal(routing.resolveNativeRoute(link), expected);
+}
+const gatepassRequestBlock = registrySource.match(/key: "gatepass_requests",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
+assert.match(gatepassRequestBlock, /permissionFeature: "gatepass_RequestManager"/);
+assert.match(gatepassRequestBlock, /request_classification: \{ ruleType: "MultiSelectRule" \}/);
+assert.match(gatepassRequestBlock, /key: "convert"/);
+for (const field of ["request_classification", "rel_type", "rel_id", "duration", "duration_from", "duration_to", "staff_id", "vehicle_id"]) {
+  assert.match(gatepassRequestBlock, new RegExp(`key: "${field}"`));
+}
+const gatepassRequestEditorSource = fs.readFileSync(path.join(workspace, "components/crud/GatepassRequestEditor.tsx"), "utf8");
+for (const token of ["Gate Pass Request Workspace", "gatepass_api/requests/options", "Work authorization", "People & vehicles"]) {
+  assert.match(gatepassRequestEditorSource, new RegExp(token));
+}
+const gatepassRequestSummarySource = fs.readFileSync(path.join(workspace, "components/crud/GatepassRequestSummary.tsx"), "utf8");
+for (const section of ["Gate Pass Request", "Access window", "Work authorization", "Access roster", "Workflow owners"]) {
+  assert.match(gatepassRequestSummarySource, new RegExp(section));
+}
 assert.ok(apiRoutesSource.indexOf("api/purchase_api/vendor_contact/(:num)") >= 0, "Vendor contact detail route must exist separately from the vendor child list");
 const purchaseContactsBlock = registrySource.match(/key: "purchase_vendor_contacts",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
 assert.match(purchaseContactsBlock, /detailEndpoint: "purchase_api\/vendor_contact"/);

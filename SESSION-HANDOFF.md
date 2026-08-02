@@ -1360,3 +1360,15 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Verified the current local keystore and existing release APK both use production fingerprint `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`.
 - PowerShell parsing, mobile contracts, TypeScript, release metadata, and Expo dependency checks pass. No APK was compiled or uploaded in this change; the unfinished parity candidate remains undeployed.
 - Operator guide: `docs/LOCAL-ANDROID-RELEASE.md`.
+
+---
+
+## 24.0 2026-08-02 — Native parity v1.18 production release
+
+- Consolidated backend parity merged through `Ghazalawy/prizm331#321` and `PrizmIT/prizm331#1200`; PHP 8.3 CI run `30754815885` and production deployment run `30754870469` passed. Production backend `main` is `45895ef7fc8906fc854b56a725d98e884d3bdc75`.
+- Mobile parity merged through `Ghazalawy/prizm-mobile#7`. Local-release Windows hardening merged through PRs #8 and #9; release source is synchronized `main` at `ecd0892acadc8ea171b52626d5e5becf1c609e52`.
+- Android v1.18.0/code36 was built locally, signer-checked, installed on `emulator-5554`, and smoke-tested with the exact Payment Request 1211 HTTPS App Link before publishing.
+- Rolling APK SHA-256 is `BA162C57CB5E951F3DC55BFE267687E47A40C477A3C8A663F40A86B98A8E1794`; size is 91,697,024 bytes; installed package reports versionName 1.18.0/versionCode 36.
+- No new GitHub-hosted Android workflow was triggered; the most recent hosted run remains `30732511640` on the older `c06f94d` commit.
+- All release, TypeScript, mobile, list, and CRUD contracts passed. Static parity remains honestly open at 111/347, with 236 missing static destinations and four dynamic expressions unresolved.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26027-R01__native-parity-v1.18-production-20260802.md`; canonical Markdown/PDF under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>QC-REPORT-TEMPLATE</title>
+  <title>Prizm QC Report 26017</title>
   <style>
     /* Default styles provided by pandoc.
     ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
@@ -172,14 +172,13 @@
   </style>
 </head>
 <body>
-<h1 id="qc-report-native-admin-parity-and-universal-erp-app-links">QC
-Report — Native Admin Parity and Universal ERP App Links</h1>
+<header id="title-block-header">
+<h1 class="title">Prizm QC Report 26017</h1>
+</header>
+<h1 id="qc-report-full-native-parity-release-v1.17.0">QC Report — Full
+Native Parity Release v1.17.0</h1>
 <h2 id="report-header">Report Header</h2>
 <table>
-<colgroup>
-<col style="width: 50%" />
-<col style="width: 50%" />
-</colgroup>
 <thead>
 <tr>
 <th>Field</th>
@@ -189,15 +188,15 @@ Report — Native Admin Parity and Universal ERP App Links</h1>
 <tbody>
 <tr>
 <td>Report Code</td>
-<td><code>PE-QAQC-QC-RPT-26015-R01</code></td>
+<td><code>PE-QAQC-QC-RPT-26017-R01</code></td>
 </tr>
 <tr>
 <td>Session ID</td>
-<td><code>admin-parity-universal-links-20260802</code></td>
+<td><code>full-native-parity-release-20260802</code></td>
 </tr>
 <tr>
 <td>Date / Time</td>
-<td><code>2026-08-02 04:55 +04:00</code></td>
+<td><code>2026-08-02 08:09 +04:00</code></td>
 </tr>
 <tr>
 <td>Agent / Model</td>
@@ -205,24 +204,19 @@ Report — Native Admin Parity and Universal ERP App Links</h1>
 </tr>
 <tr>
 <td>Backend workspace</td>
-<td><code>C:\wamp64\www\prizm331-wt-mobile-admin-parity</code></td>
+<td><code>C:\wamp64\www\prizm331-wt-full-native-parity</code></td>
 </tr>
 <tr>
 <td>Mobile workspace</td>
 <td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
 </tr>
 <tr>
-<td>Backend branches</td>
-<td><code>feat/mobile-native-admin-parity-DESKTOP-9GO5QC0</code>;
-<code>fix/cost-center-query-builder-DESKTOP-9GO5QC0</code></td>
+<td>Backend branch</td>
+<td><code>feat/mobile-full-native-parity-DESKTOP-9GO5QC0</code></td>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/native-parity-continuation</code></td>
-</tr>
-<tr>
-<td>Turns</td>
-<td>Current task continuation</td>
+<td><code>codex/full-native-parity-continuation</code></td>
 </tr>
 <tr>
 <td>Classification</td>
@@ -231,28 +225,23 @@ Report — Native Admin Parity and Universal ERP App Links</h1>
 </tbody>
 </table>
 <h2 id="executive-summary">1. Executive Summary</h2>
-<p>Release v1.16.0/code 34 broadens the Android verified App Link from
-selected ERP paths to every HTTPS path under
-<code>https://ms.prizm-energy.com/MS</code>. Android Settings now
-includes a direct shortcut to the app’s supported-link controls for
-Xiaomi/HyperOS and other devices that retain a browser preference. The
-exact reported Payment Request URL resolves to
-<code>com.prizmenergy.mobile/.MainActivity</code>, and the published APK
-contains the verified <code>/MS</code> intent filter.</p>
-<p>The native administration batch adds Knowledge Base
-create/edit/delete and publish controls, a dense Survey Results tab, and
-Cost Center members, supervisors, and activity tabs. Backend controllers
-mirror the real Perfex models, permissions, storage tables, and web
-workflows. Lists accept allowlisted Perfex-style AND/OR advanced filters
-with typed, multi-select, range, negative, and dynamic-date
-operators.</p>
-<p>Live production probing caught and prevented a Cost Center list
-regression before the APK shipped: <code>staff_can()</code> reset
-CodeIgniter’s shared query builder, producing MySQL
-<code>No tables used</code>. The permission check now runs before
-list-query construction; a regression contract was added and the
-redeployed endpoint returns HTTP 200.</p>
-<h2 id="backend-verification">2. Backend Verification</h2>
+<p>Prizm Mobile v1.17.0 completes the current native parity batch and
+fixes the reported additive-filter failure. Selecting <strong>On
+Hold</strong> and then <strong>Cancelled</strong> now produces the union
+of both statuses. Custom Perfex funnel rules combine correctly with the
+status chips using AND/OR logic, exclusions, date ranges, and
+search.</p>
+<p>Task cards now separate the priority rail from their text and
+suppress the internal <code>erp_dev</code> relation key. Detail pages
+identify the module at the top and pack short metadata fields into dense
+two-column layouts. Site-report uploads now use Hetzner’s canonical
+<code>uploads/prizm_reports/{report}/images</code> tree while the mobile
+resolver retains the legacy fallback.</p>
+<p>The exact Payment Request URL is mapped to the native Payment Request
+detail route and the production browser bridge explicitly targets
+<code>com.prizmenergy.mobile</code> when a browser bypasses normal
+Android App Link resolution.</p>
+<h2 id="test-results">2. Test Results</h2>
 <table>
 <colgroup>
 <col style="width: 33%" />
@@ -267,106 +256,6 @@ redeployed endpoint returns HTTP 200.</p>
 </tr>
 </thead>
 <tbody>
-<tr>
-<td>PHP syntax</td>
-<td>Advanced-filter helper plus Knowledge, Surveys, and Cost Centers
-controllers</td>
-<td>PASS</td>
-</tr>
-<tr>
-<td>Advanced-filter unit contract</td>
-<td><code>advanced_filters_contract_test.php</code></td>
-<td>PASS</td>
-</tr>
-<tr>
-<td>API/web workflow contracts</td>
-<td>Final Daleela suite</td>
-<td>PASS — 72/72</td>
-</tr>
-<tr>
-<td>Knowledge production list</td>
-<td><code>/api/knowledge_api?limit=2</code></td>
-<td>HTTP 200</td>
-</tr>
-<tr>
-<td>Survey production list</td>
-<td><code>/api/surveys_api?limit=2</code></td>
-<td>HTTP 200; production currently has zero survey rows</td>
-</tr>
-<tr>
-<td>Cost Center production list</td>
-<td>Initial probe exposed HTTP 500; post-hotfix probe</td>
-<td>HTTP 200</td>
-</tr>
-<tr>
-<td>Combined Knowledge filter</td>
-<td>subject contains + active IN, AND</td>
-<td>HTTP 200; 2 rules applied</td>
-</tr>
-<tr>
-<td>Combined Survey filter</td>
-<td>subject contains + sender contains, OR</td>
-<td>HTTP 200; 2 rules applied</td>
-</tr>
-<tr>
-<td>Dynamic Cost Center filter</td>
-<td>created_at relative date + status IN, AND</td>
-<td>HTTP 200; 2 rules applied</td>
-</tr>
-<tr>
-<td>Invalid filter field</td>
-<td>non-allowlisted <code>password</code></td>
-<td>HTTP 400</td>
-</tr>
-<tr>
-<td>Cost Center child reads</td>
-<td>members, supervisors, activity</td>
-<td>HTTP 200 for all three</td>
-</tr>
-<tr>
-<td>Fork CI</td>
-<td>Workflows <code>30724686469</code> and <code>30724943620</code></td>
-<td>PASS</td>
-</tr>
-<tr>
-<td>Production PRs</td>
-<td><code>PrizmIT/prizm331#1193</code> and hotfix
-<code>#1194</code></td>
-<td>MERGED</td>
-</tr>
-<tr>
-<td>Production deploys</td>
-<td>Workflows <code>30724732433</code> and <code>30724970553</code></td>
-<td>PASS</td>
-</tr>
-<tr>
-<td>Production HEAD</td>
-<td><code>4d257f54e5e6d4756be621129b5436c1c7ec0e2d</code></td>
-<td>VERIFIED</td>
-</tr>
-</tbody>
-</table>
-<h2 id="mobile-verification">3. Mobile Verification</h2>
-<table>
-<colgroup>
-<col style="width: 33%" />
-<col style="width: 33%" />
-<col style="width: 33%" />
-</colgroup>
-<thead>
-<tr>
-<th>Check</th>
-<th>Evidence</th>
-<th>Result</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Focused deployable parity suite</td>
-<td><code>npm run test:admin-parity</code> with clean backend
-source</td>
-<td>PASS</td>
-</tr>
 <tr>
 <td>TypeScript</td>
 <td><code>npx tsc --noEmit -p tsconfig.json</code></td>
@@ -378,63 +267,124 @@ source</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Release metadata</td>
-<td><code>npm run verify:release</code></td>
-<td>PASS — v1.16.0/code34</td>
-</tr>
-<tr>
-<td>Local production release build</td>
+<td>Independent production APK build</td>
 <td>Gradle <code>assembleRelease</code>; 696 tasks</td>
-<td>PASS in 3m36s</td>
-</tr>
-<tr>
-<td>Local APK</td>
-<td>91,555,612 bytes; SHA-256
-<code>5b51001b5076f6dcf3a5bd23dd5652d1594df1bf817c48f035df872c1a802d4a</code></td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>GitHub release workflow</td>
-<td><code>30725249245</code></td>
+<td>Release metadata</td>
+<td>v1.17.0 / Android versionCode 35</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Published APK</td>
-<td>91,563,048 bytes; SHA-256
-<code>3809566ecbb6f0640ba4baed702fd97224cec4b556bc2ef8e322a83f7e3b19f8</code></td>
+<td>List contract audit</td>
+<td>105 server-searchable + 2 client-searchable; 107 filterable; 60
+sortable</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Published version/signature</td>
-<td>v1.16.0/code34; signer
-<code>FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C</code></td>
+<td>CRUD contract audit</td>
+<td>308 advertised mutations; zero unresolved endpoints</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Packaged App Link manifest</td>
-<td><code>autoVerify=true</code>, host <code>ms.prizm-energy.com</code>,
-pathPrefix <code>/MS</code></td>
+<td>Mobile contracts</td>
+<td>Auth, CSRF behavior, filters, routing, purchasing, OTP, automation,
+materials, estimate requests</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Android domain state</td>
-<td><code>pm get-app-links</code>; production domain</td>
-<td>VERIFIED</td>
+<td>Admin parity batch</td>
+<td>Native administration contract batch</td>
+<td>PASS</td>
 </tr>
 <tr>
-<td>Exact Payment Request resolver</td>
-<td>Published APK versus Chrome for
-<code>view_payment_request/1211</code></td>
-<td>Prizm match <code>0x508000</code>; Chrome <code>0x208000</code></td>
+<td>PHP syntax</td>
+<td>48 modified PHP files</td>
+<td>PASS</td>
 </tr>
 <tr>
-<td>Published APK install</td>
-<td>Emulator reports v1.16.0/code34</td>
+<td>Daleela API contracts</td>
+<td><code>87/87</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Projects multi-status emulator</td>
+<td>On Hold only = 4; On Hold + Cancelled = 5</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Projects custom AND emulator</td>
+<td>Status in On Hold/Cancelled AND Billing Type = Fixed Rate = 4</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Projects logical runtime matrix</td>
+<td>AND, OR, <code>not_in</code>, date range, text search,
+multi-status</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Customers logical runtime matrix</td>
+<td>Inactive predicate and inactive OR Dubai exact union</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Tasks logical runtime matrix</td>
+<td>Status OR priority exact union = 13,700</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Purchase Requests runtime matrix</td>
+<td>Multi current-status exact union = 1,529</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Payment Requests runtime matrix</td>
+<td>Multi current-status exact union = 1,178</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Payment Request details</td>
+<td>Local authenticated detail and approval endpoints</td>
+<td>HTTP 200 / 200</td>
+</tr>
+<tr>
+<td>Report image resolution</td>
+<td>New per-report image URL with spaces encoded</td>
+<td>HTTP 200 image/jpeg</td>
+</tr>
+<tr>
+<td>Exact HTTPS App Link</td>
+<td>Android resolver selects
+<code>com.prizmenergy.mobile/.MainActivity</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Forced-Chrome bridge</td>
+<td>Chrome launched exact URL; live bridge foregrounded Prizm
+sign-in</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Browser bridge</td>
+<td>Live page contains package intent, manual button, and loop-safe
+opt-out</td>
+<td>HTTP 200 / PASS</td>
+</tr>
+<tr>
+<td>Browser opt-out</td>
+<td><code>prizm_web=1</code> continues normal web authentication</td>
+<td>HTTP 307 / PASS</td>
+</tr>
+<tr>
+<td>Backend deployment</td>
+<td>GitHub on-demand run <code>30731664609</code></td>
 <td>PASS</td>
 </tr>
 </tbody>
 </table>
-<h2 id="acceptance-criteria">4. Acceptance Criteria</h2>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
 <table>
 <colgroup>
 <col style="width: 33%" />
@@ -451,82 +401,53 @@ pathPrefix <code>/MS</code></td>
 <tbody>
 <tr>
 <td>S1</td>
-<td>Every <code>/MS</code> ERP HTTPS link is declared and verified for
-native Android handoff</td>
+<td>Status chips remain additive and return the exact union</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Exact Payment Request URL resolves to the installed
-production-signed app</td>
+<td>Custom AND/OR funnel rules preserve all selected rules</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>New client APIs are deployed before the APK and return authenticated
-production responses</td>
+<td>Native authentication remains JWT-based and REST calls remain
+outside browser CSRF enforcement</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Invalid advanced-filter fields are rejected before database
-execution</td>
+<td>Exact ERP links enter the installed app or use the explicit browser
+bridge</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Combined AND, OR, multi-select, and dynamic-date filters survive
-production query execution</td>
+<td>Task cards do not collide and do not expose
+<code>erp_dev</code></td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Knowledge and Cost Center workflows mirror web models and permission
-checks</td>
-<td>100% contract PASS; read endpoints production-verified</td>
+<td>Opened records clearly identify their module and use dense
+layouts</td>
+<td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Survey result aggregation handles production storage</td>
-<td>100% contract PASS; live result payload not exercised because
-production has no survey rows</td>
+<td>New and legacy report-image paths remain readable</td>
+<td>100% PASS</td>
 </tr>
 <tr>
-<td>S3</td>
-<td>Legacy monolithic parity suite represents deployable backend
-truth</td>
-<td>Corrected source root; suite now honestly exposes older Contacts
-parity debt</td>
+<td>S2</td>
+<td>Advertised search/filter/sort and mutation contracts resolve to
+backend implementations</td>
+<td>100% PASS</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Release quality gate: PASS for v1.16.0. The scoped release is
-built, deployed, production-probed, published, installed, and App-Link
-verified. Overall native-web parity remains an open programme goal; it
-is not falsely declared complete.</strong></p>
-<h2 id="known-debt-and-non-regression-notes">5. Known Debt and
-Non-Regression Notes</h2>
-<ul>
-<li>The legacy <code>test:contracts</code> suite stops at a pre-existing
-Contacts assertion for undeployed <code>global_list_get</code>. Before
-this correction it silently read a dirty prototype backend worktree. The
-focused v1.16.0 suite reads the clean deployable backend and
-passes.</li>
-<li>Production currently contains no surveys, so Survey Results could
-not be populated from a live record without creating test business data.
-Storage queries, routing, types, rendering, and response contracts
-pass.</li>
-<li>Authentication, CSRF classification, biometric vault, task-card,
-project multi-filter, and site-report image-path code were not modified
-in this release. Their previous evidence remains in report 26014; no
-real-account biometric credential was introduced for this session.</li>
-<li>Typing a URL manually into a browser address bar is browser
-navigation and may not trigger Android App Links. Tapping a link invokes
-Android resolution. Devices with a retained browser preference can use
-Settings → Open ERP links in Prizm CRM to enable supported links.</li>
-</ul>
-<h2 id="code-git-deployment-and-rollback">6. Code, Git, Deployment, and
-Rollback</h2>
+<p><strong>Quality gate: PASS.</strong></p>
+<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -541,45 +462,72 @@ Rollback</h2>
 <tbody>
 <tr>
 <td>Backend implementation</td>
-<td><code>7767c42ea</code></td>
+<td><code>e42429f5da30d8ce70d37e2a923bfb9360c3c4d4</code></td>
 </tr>
 <tr>
-<td>Backend production merge</td>
-<td><code>3b7991f0</code> via <code>PrizmIT/prizm331#1193</code></td>
+<td>Backend fork PR</td>
+<td><code>Ghazalawy/prizm331#315</code> — merged as
+<code>3f9bcf238</code></td>
 </tr>
 <tr>
-<td>Backend hotfix</td>
-<td><code>ae5e00912</code></td>
+<td>Backend upstream PR</td>
+<td><code>PrizmIT/prizm331#1197</code> — merged as
+<code>f94a2528bd6071106e2eaa4428ad8f3c7daae507</code></td>
 </tr>
 <tr>
-<td>Backend hotfix production merge</td>
-<td><code>4d257f54</code> via <code>PrizmIT/prizm331#1194</code></td>
+<td>Backend production</td>
+<td>Hetzner <code>/var/www/html/MS</code> at
+<code>f94a2528bd6071106e2eaa4428ad8f3c7daae507</code></td>
 </tr>
 <tr>
 <td>Mobile implementation</td>
-<td><code>d838c06</code></td>
+<td><code>74ce4d265b7e301638cd803240d2edb2cf98c541</code></td>
 </tr>
 <tr>
-<td>Mobile main merge</td>
-<td><code>b0fe7af8</code> via <code>Ghazalawy/prizm-mobile#2</code></td>
+<td>Mobile PR</td>
+<td><code>Ghazalawy/prizm-mobile#4</code> — merged as
+<code>a83f365647790301c252c23c809533cd384b4dd7</code></td>
 </tr>
 <tr>
-<td>Mobile rolling release</td>
-<td>Workflow <code>30725249245</code>;
-<code>https://github.com/Ghazalawy/prizm-mobile/releases/latest</code></td>
+<td>Android release</td>
+<td>v1.17.0 / versionCode 35; GitHub Actions run
+<code>30731645014</code> passed</td>
 </tr>
 <tr>
-<td>Backend rollback</td>
-<td>Revert the two backend production merges through the normal PR and
-deploy-on-demand path</td>
+<td>Published APK</td>
+<td>SHA-256
+<code>d5592221603c034583dc3959ee9165f9d9732292e1c3c4795f82907d6f35b030</code></td>
 </tr>
 <tr>
-<td>Mobile rollback</td>
-<td>Revert v1.16.0 and republish v1.15.2</td>
+<td>Rollback</td>
+<td>Revert upstream PR #1197 and mobile PR #4 through their normal
+repository workflows</td>
 </tr>
 </tbody>
 </table>
-<h2 id="sign-off">7. Sign-off</h2>
+<h2 id="emulator-and-production-evidence">5. Emulator and Production
+Evidence</h2>
+<ul>
+<li>Multi-status result:
+<code>artifacts/prizm-onhold-cancelled.png</code>.</li>
+<li>Combined status and Billing Type funnel:
+<code>artifacts/prizm-filter-combined-results.png</code>.</li>
+<li>Task card spacing and labels:
+<code>artifacts/qa-tasks2.png</code>.</li>
+<li>Dense Payment Request detail:
+<code>artifacts/qa-prdetail2.png</code>.</li>
+<li>Dense Project detail:
+<code>artifacts/qa-projectdetail.png</code>.</li>
+<li>Published v1.17.0 exact-link result:
+<code>artifacts/published-v117-exact-link.png</code>.</li>
+<li>Emulator: <code>emulator-5554</code>.</li>
+<li>No production password was reset and no privileged production token
+was fabricated.</li>
+<li>A temporary local-only QA token, local API selection, and release
+cleartext allowance were removed before commit; emulator app data was
+cleared before production installation.</li>
+</ul>
+<h2 id="sign-off">6. Sign-off</h2>
 <table>
 <colgroup>
 <col style="width: 25%" />
@@ -599,14 +547,14 @@ deploy-on-demand path</td>
 <tr>
 <td>QA automation</td>
 <td>Codex</td>
-<td>Scoped release PASS; broader parity debt recorded</td>
+<td>PASS — static, runtime, emulator, CI, and production evidence
+captured</td>
 <td>2026-08-02</td>
 </tr>
 <tr>
 <td>Product reviewer</td>
 <td>Osama Hassan</td>
-<td>Requested exact-link correction, emulator verification, and
-deployment</td>
+<td>Reported filter/UI/link defects and authorized deployment</td>
 <td>2026-08-02</td>
 </tr>
 </tbody>

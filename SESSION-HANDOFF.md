@@ -1231,3 +1231,132 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Published APK SHA-256 is `3809566ecbb6f0640ba4baed702fd97224cec4b556bc2ef8e322a83f7e3b19f8`; production signer and domain verification passed after emulator installation.
 - The legacy monolithic contract now reads the deployable backend and honestly exposes an older missing Contacts `global_list_get` contract; this remains open parity debt and is not represented as complete.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26015-R01__admin-parity-universal-links-20260802.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 14.0 2026-08-02 — Native Tender Triage and truthful parity baseline
+
+- Added an admin-only native Tender Triage queue with dense KPIs, buckets, search, country filters, Perfex advanced filters, details, decisions, undo, bulk dismiss, and reversible mute controls.
+- Backend endpoints mirror the web schema, transition rules, permission/no-trace behavior, activity logging, and optimistic concurrency.
+- Emulator and direct API tests passed default, Low override, multi-value, AND, OR, cross-field OR, search-plus-filter, decision/undo, selection, and no-trace cases.
+- Static web-menu audit baseline is 93/347 native destinations, with 254 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `233d78d`; backend `d797b637f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26018-R01__tender-triage-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 15.0 2026-08-02 — Native Setup administration and shared CRUD stability
+
+- Added twelve administrator-only native Setup catalogs: Customer Groups, Ticket Priorities, Predefined Replies, Ticket Statuses, Ticket Services, Lead Sources, Lead Statuses, Taxes, Currencies, Payment Modes, Expense Categories, and Contract Types.
+- Backend Setup endpoints use explicit read/write allowlists, canonical Perfex models, strict validation, no-trace admin permissions, protected default deletion, and the canonical currency Make Base action.
+- Corrected Setup logical-filter transport so full Perfex AND/OR groups reach the API instead of being flattened into ineffective ordinary query parameters.
+- Corrected the shared CRUD form lifecycle so typing no longer resets fields on rerender, and removed the empty-custom-fields maximum-update-depth loop.
+- API testing passed all 12 lists, non-admin 404, search, invalid filters, constraints, AND/OR, and a reversible create/update/detail/delete matrix. Emulator testing passed exact OR and AND results plus reversible create/edit/delete with no warning left behind.
+- Static web-menu parity is now 105/347 native destinations, with 242 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `ddf454e`; backend `5bcc4caeb`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26019-R01__setup-native-admin-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 16.0 2026-08-02 — Native Departments and authenticated Activity hardening
+
+- Added the full administrator-only Departments workflow natively: list, search, sorting, advanced filters, dense detail, create, edit, guarded delete, IMAP folder retrieval, and connection testing.
+- Mirrored the canonical web controller/model semantics for checkbox fields, unique non-empty email, encryption choices, saved-password retention, referenced-ticket deletion, and mailbox validation.
+- Department passwords are excluded from every API read. Existing encrypted credentials are decrypted only in server memory for folder/test actions, and error messages redact the submitted secret.
+- Corrected generic CRUD deletion so success immediately replaces the deleted detail route with its owning list and failures are no longer silent.
+- Replaced Dashboard/My Activity generic entity reads with authenticated `GET /api/my/activity`, scoped to the effective staff identity and compatible with View-As.
+- Emulator testing passed the exact Departments HTTPS App Link, 11-row list, safe HTTP 422 mailbox feedback, create/edit/detail/delete, checkbox persistence, secure replacement input, immediate list return, and fixture cleanup.
+- Static web-menu parity is now 106/347 native destinations, with 241 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `b2827b7` plus activity `acd1f2f`; backend `8ef3ab497` plus activity `aa6485e55`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26020-R01__departments-activity-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 17.0 2026-08-02 — Native Roles, combined filters, and App-Link release provenance
+
+- Added Setup → Roles natively with list/search/sort/advanced filters, dense detail, create/edit/delete, assigned-staff coverage, and a live permission editor sourced from Perfex's hook-extended registry.
+- Preserved web permission rules: View versus View Own exclusion, blocked capabilities, not-applicable grants, strict server validation, capability gates, and optional propagation to assigned staff.
+- Corrected cached post-write Role reads and Perfex's missing-row null dereference; a deleted Role detail now returns HTTP 404 and a native Record not found state instead of HTTP 500.
+- Emulator CRUD created ID 24 with two grants, renamed it and added a third grant, then deleted it; the baseline returned from 22 to 21 with no fixture remaining.
+- Rigorous funnel tests passed exact two-rule behavior: mutually exclusive names with AND returned zero rows, while the same rules with OR returned exactly Admin Manager and Field Engineer.
+- Moved the shared Advanced Filters modal below Android's status bar so header controls and Clear all remain tappable app-wide.
+- Reproduced the reported Payment Request 1211 URL. The published APK `c06f94d` predates host-wide hardening commit `006bf61`; the hardened emulator build is domain-verified, opens Prizm MainActivity, and rewrites the exact URL to the native Payment Request route.
+- Static web-menu parity is now 107/347 native destinations, with 240 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `adbf0c2`; backend `caecbf51f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26021-R01__native-roles-app-link-filters-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 18.0 2026-08-02 — Native Custom Fields and /MS App-Link release gate
+
+- Added the administrator-only Custom Fields workflow natively with list/search/sort/advanced filters, dense detail, a compact purpose-built editor, create/edit/delete, hook-provided targets, type-specific defaults, visibility rules, and schema locks once saved values exist.
+- Backend writes delegate to Perfex's canonical `Custom_fields_model`, including the historical `disalow_client_to_edit` field and preservation of options already used on records.
+- Emulator CRUD created ID 19, found it through search, renamed it, verified persistence in MySQL, and deleted it; the database returned from 18 to its original 17 rows with zero QA fixtures.
+- Exact combined funnel tests passed end to end: Projects AND Select returned 3 rows, while the identical two rules under OR returned 8; both matched direct SQL counts.
+- Tightened the Android App Link declaration to the enforced `/MS` prefix for HTTP and HTTPS after the release contract caught the missing prefix. The installed APK still predates this candidate and requires the consolidated final build.
+- Static web-menu parity is now 108/347 native destinations, with 239 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `46a2c9e`; backend `fdc7beebd`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26022-R01__native-custom-fields-app-link-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 19.0 2026-08-02 — Native Email Templates and logical-filter regression
+
+- Added Setup → Email Templates natively with an English-canonical 101-row list, server search, sorting, Perfex advanced filters, dense summary, responsive 27-language editor, delivery controls, merge-field insertion, and native list/detail routing.
+- Backend reads and writes mirror the canonical Emails controller/model: fixed system records have no create/delete path, all language rows sharing a slug update together, status changes are slug-wide, and the two-factor authentication template cannot be disabled.
+- Reversible API testing searched 8/8 Invoice templates, matched SQL for direct AND 9/9 and OR 23/23 groups, updated and restored template ID 1 exactly, and left zero QA activity rows.
+- Emulator testing caught and fixed a BooleanRule/MultiSelectRule contract mismatch. Enabled returned 14 rows; adding Disabled retained both chips and returned all 101. Adding Template contains Invoice produced AND = 0 and OR = 21 without replacing either rule.
+- Visual QA corrected dark-hero contrast, HTML preview spacing, duplicate list metadata, sender field proportions, and toggle dimensions. Language switching and all 27 safe merge fields were verified; logcat contained no app runtime errors.
+- Static web-menu parity is now 109/347 native destinations, with 238 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `e11b5c7`; backend `3973fecf9`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26023-R01__native-email-templates-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 20.0 2026-08-02 — Payment Request App Link and native detail recovery
+
+- Reproduced the exact Payment Request 1211 URL through Android. Production `assetlinks.json`, APK signature, domain verification, and supported-link state are correct; the emulator handed HTTPS to Prizm MainActivity and reached the native Payment Request module.
+- Found the native `Payment Request not found` root cause after reading the web controller/model: the API detail path joined nonexistent `suppliers`, while production uses `tblsuppliers`. The prefixed join returns record 1211 in read-only production SQL.
+- Hardened the browser/WebView bridge to use the installed `prizmcrm` scheme with the complete original ERP URL, browser fallback, and an internal-host fence. The scheme went from Expo Unmatched Route to the native Payment Request route in the emulator.
+- Contract and syntax gates pass: TypeScript, complete mobile contracts, 11/11 bridge checks, 4/4 payment-detail checks, and production schema/query probes.
+- Checkpoint commits: mobile `f980d65`; backend `0ef48f2f3`. Nothing was pushed or deployed; no Android build was started, preserving the single consolidated release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26024-R01__payment-request-app-link-detail-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 21.0 2026-08-02 — Native Supplier Invoices and production browser handoff
+
+- Added native Supplier Invoices with permission-scoped list/detail, server search/sort, additive direct filters, Perfex AND/OR filters, purpose-built dense editor/summary, PO-line import, supplier-item mappings, attachments, atomic CRUD, approval stages, and exact workflow actions.
+- Real HTTP runtime testing passed 12/12 scenarios, including Draft + Cancelled, Draft + Submitted, three-rule AND/OR, atomic update, submit, dense detail, delete, and complete temporary-table cleanup.
+- Emulator visual QA passed the Supplier Invoice workspace, responsive field grouping, totals, notes, and line-card states. The frontend-polish skill guided its compact information hierarchy.
+- Corrected the final `sequence_number` funnel contract to `NumberRule`; list audit now passes 122 server + 2 client searchable, 124 filterable, 77 sortable, with 0 skipped. CRUD audit passes all 357 advertised mutations.
+- Reproduced the exact Payment Request 1211 URL in real Chrome. The previous unattended intent was blocked and immediately fell through to web login. Production now uses a legacy-compatible, package-targeted `prizmcrm` handoff and retains the one-tap page Chrome permits.
+- Hotfix PRs `Ghazalawy/prizm331#320` and `PrizmIT/prizm331#1199` merged; deploy workflow `30750340830` passed and production HEAD is `df0dcfa973`. Live Chrome → orange handoff → native Payment Request #1211 passed.
+- No Android build was triggered. Mobile remains v1.17.0/code35, preserving the single final APK build. Static parity is 110/347, with 237 missing and 4 dynamic paths unresolved.
+- Checkpoints: mobile `2c08131`, `cb99eb1`, `66641d1`; backend parity `f7b847e4e`, `ab6fcd90c`; isolated production hotfix `f9e10f8e9`.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26025-R01__supplier-invoice-app-handoff-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 22.0 2026-08-02 — Native Gate Pass Request Manager parity
+
+- Added Gate Pass Request Manager natively with permission-scoped list/detail/options, server search/sort, additive direct filters, Perfex advanced filters, purpose-built dense editor/summary, staff and vehicle assignment, atomic CRUD, and guarded conversion into a linked Gate Pass.
+- Read the canonical RequestManager controller, Requests model, list, form, detail, menu, and install sources first; the API mirrors its classification-sensitive fields, responsible-user rules, conversion conditions, and canonical GPR display number.
+- Real HTTP runtime testing passed 12/12 scenarios: options, create, search, direct multi-classification, four-rule AND, four-rule OR, atomic update/clear, dense detail, conversion, duplicate rejection, converted-state plus search, delete, and exact cleanup.
+- Emulator QA passed list, detail, create, edit, multi-staff selection, and conversion to Gate Pass #159. It caught and corrected list-title clutter, dark-hero contrast, picker status-bar overlap, divider orientation, and picker reset behavior.
+- Final list audit passes 123 server + 2 client searchable, 125 filterable, 78 sortable with 0 skipped. CRUD audit passes 360 advertised mutations. The BooleanRule metadata is aligned to the scalar mobile SelectRule contract.
+- Static web-menu parity is now 111/347 native destinations, with 236 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoints: mobile `8e0d995` and `c5c9e5d`; backend `cb9aa2a50`. Nothing was pushed or deployed; no Android build was started, and release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26026-R01__gatepass-request-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 23.0 2026-08-02 — Zero-hosted-minute Android release path
+
+- Changed the APK workflow from automatic `main` push builds to a manual-only fallback, preventing an ordinary merge from silently consuming another 20–27 GitHub-hosted minutes.
+- Replaced runner-side Java apt installation with `actions/setup-java`, changed dependency installation to locked `npm ci`, enabled the official Gradle cache action, and enabled Gradle's build cache for faster emergency hosted builds.
+- Added `scripts/release-android-local.ps1` and `npm run release:android:local`. The script runs all release/static/contract audits, builds from the local Gradle cache, checks the generated keystore and completed APK against production `assetlinks.json`, and optionally installs the exact APK and tests Payment Request 1211 routing.
+- Publication is opt-in only. `-Publish` requires a clean, synchronized `main`, an explicit Android device/emulator serial, a successful install/App-Link smoke test, a matching signer, and valid GitHub authentication before replacing the rolling release asset.
+- Verified the current local keystore and existing release APK both use production fingerprint `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`.
+- PowerShell parsing, mobile contracts, TypeScript, release metadata, and Expo dependency checks pass. No APK was compiled or uploaded in this change; the unfinished parity candidate remains undeployed.
+- Operator guide: `docs/LOCAL-ANDROID-RELEASE.md`.

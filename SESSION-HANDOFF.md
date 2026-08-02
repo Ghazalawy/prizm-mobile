@@ -1297,3 +1297,16 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 108/347 native destinations, with 239 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `46a2c9e`; backend `fdc7beebd`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26022-R01__native-custom-fields-app-link-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 19.0 2026-08-02 — Native Email Templates and logical-filter regression
+
+- Added Setup → Email Templates natively with an English-canonical 101-row list, server search, sorting, Perfex advanced filters, dense summary, responsive 27-language editor, delivery controls, merge-field insertion, and native list/detail routing.
+- Backend reads and writes mirror the canonical Emails controller/model: fixed system records have no create/delete path, all language rows sharing a slug update together, status changes are slug-wide, and the two-factor authentication template cannot be disabled.
+- Reversible API testing searched 8/8 Invoice templates, matched SQL for direct AND 9/9 and OR 23/23 groups, updated and restored template ID 1 exactly, and left zero QA activity rows.
+- Emulator testing caught and fixed a BooleanRule/MultiSelectRule contract mismatch. Enabled returned 14 rows; adding Disabled retained both chips and returned all 101. Adding Template contains Invoice produced AND = 0 and OR = 21 without replacing either rule.
+- Visual QA corrected dark-hero contrast, HTML preview spacing, duplicate list metadata, sender field proportions, and toggle dimensions. Language switching and all 27 safe merge fields were verified; logcat contained no app runtime errors.
+- Static web-menu parity is now 109/347 native destinations, with 238 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `e11b5c7`; backend `3973fecf9`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26023-R01__native-email-templates-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

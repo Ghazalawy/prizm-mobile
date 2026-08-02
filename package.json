@@ -13,7 +13,8 @@
     "audit:web-parity": "node scripts/audit-web-menu-parity.mjs",
     "test:crud-contracts": "node scripts/audit-crud-contracts.mjs",
     "test:list-contracts": "node scripts/audit-list-contracts.mjs",
-    "verify:release": "node scripts/verify-release-metadata.mjs"
+    "verify:release": "node scripts/verify-release-metadata.mjs",
+    "release:android:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-android-local.ps1"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.1.1",

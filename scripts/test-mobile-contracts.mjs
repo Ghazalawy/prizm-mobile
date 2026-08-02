@@ -1297,4 +1297,34 @@ assert.doesNotMatch(registrySource, /key: "task_template_(?:groups|tasks|milesto
 assert.doesNotMatch(registrySource, /key: "(?:product_families|client_items)"/);
 assert.doesNotMatch(materialsApiSource, /function (?:product_families|client_items)_/);
 
+// A push to main must never spend 20+ hosted minutes implicitly. The release
+// workflow is a manual cached fallback; normal publication is local, signer-
+// verified, emulator-smoke-tested, and requires an explicit -Publish switch.
+const androidReleaseWorkflowSource = fs.readFileSync(
+  path.join(workspace, ".github/workflows/build-and-deploy.yml"),
+  "utf8",
+);
+assert.match(androidReleaseWorkflowSource, /workflow_dispatch:/);
+assert.doesNotMatch(androidReleaseWorkflowSource, /^\s{2}push:/m);
+assert.match(androidReleaseWorkflowSource, /gradle\/actions\/setup-gradle@v4/);
+assert.match(androidReleaseWorkflowSource, /npm ci --no-audit --no-fund --legacy-peer-deps/);
+assert.match(androidReleaseWorkflowSource, /assembleRelease --build-cache/);
+const localAndroidReleaseSource = fs.readFileSync(
+  path.join(workspace, "scripts/release-android-local.ps1"),
+  "utf8",
+);
+for (const safetyGate of [
+  /if \(\$Publish\)/,
+  /branch -ne "main"/,
+  /headSha -ne \$originMain/,
+  /Publishing requires -DeviceSerial/,
+  /PRIZM331_SOURCE_ROOT/,
+  /assetlinks\.json/,
+  /apksigner/,
+  /Payment_Request\/view_payment_request\/1211/,
+  /gh release upload latest/,
+]) {
+  assert.match(localAndroidReleaseSource, safetyGate);
+}
+
 console.log("Mobile contract tests passed: auth, Perfex filters/UI, native routing, complete related-record tabs, live-schema module contracts, purchasing, fixed-equipment workflows/settings, OTP, Automation, Materials, and Estimate Request settings.");

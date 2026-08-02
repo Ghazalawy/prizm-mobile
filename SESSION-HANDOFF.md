@@ -1348,3 +1348,15 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 111/347 native destinations, with 236 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoints: mobile `8e0d995` and `c5c9e5d`; backend `cb9aa2a50`. Nothing was pushed or deployed; no Android build was started, and release metadata remains v1.17.0/code35 until the single consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26026-R01__gatepass-request-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 23.0 2026-08-02 — Zero-hosted-minute Android release path
+
+- Changed the APK workflow from automatic `main` push builds to a manual-only fallback, preventing an ordinary merge from silently consuming another 20–27 GitHub-hosted minutes.
+- Replaced runner-side Java apt installation with `actions/setup-java`, changed dependency installation to locked `npm ci`, enabled the official Gradle cache action, and enabled Gradle's build cache for faster emergency hosted builds.
+- Added `scripts/release-android-local.ps1` and `npm run release:android:local`. The script runs all release/static/contract audits, builds from the local Gradle cache, checks the generated keystore and completed APK against production `assetlinks.json`, and optionally installs the exact APK and tests Payment Request 1211 routing.
+- Publication is opt-in only. `-Publish` requires a clean, synchronized `main`, an explicit Android device/emulator serial, a successful install/App-Link smoke test, a matching signer, and valid GitHub authentication before replacing the rolling release asset.
+- Verified the current local keystore and existing release APK both use production fingerprint `FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C`.
+- PowerShell parsing, mobile contracts, TypeScript, release metadata, and Expo dependency checks pass. No APK was compiled or uploaded in this change; the unfinished parity candidate remains undeployed.
+- Operator guide: `docs/LOCAL-ANDROID-RELEASE.md`.

@@ -242,6 +242,11 @@ assert.equal(
   "a Payment Request web link must be rewritten to its native approval screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/roles/role/24"),
+  "/(tabs)/erp/setup_roles/24",
+  "a web Role detail link must open the native Role detail screen",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
   "/(tabs)/erp",
   "an unmatched ERP URL must stay inside the app on the native ERP hub",
@@ -491,6 +496,7 @@ for (const [webPath, nativePath] of [
   ["expenses/categories", "/(tabs)/erp/setup_expense_categories"],
   ["contracts/types", "/(tabs)/erp/setup_contract_types"],
   ["departments", "/(tabs)/erp/setup_departments"],
+  ["roles", "/(tabs)/erp/setup_roles"],
 ]) {
   assert.equal(
     routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
@@ -644,6 +650,21 @@ assert.match(departmentToolsSource, /setup_api\/departments\/\$\{id \|\| 0\}\/\$
 assert.match(departmentToolsSource, /Retrieve folders/);
 assert.match(departmentToolsSource, /Test connection/);
 assert.doesNotMatch(departmentToolsSource, /console\.(?:log|warn|error)/);
+assert.ok(registryKeys.includes("setup_roles"), "Roles must be registered as a native module");
+const rolesBlock = registrySource.match(/key: "setup_roles",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(rolesBlock, /permissionFeature: "roles"/);
+assert.match(rolesBlock, /supportsAdvancedFilters: true/);
+assert.match(rolesBlock, /permissions_summary/);
+assert.doesNotMatch(rolesBlock, /adminOnlyAccess/);
+const rolesApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Roles_api.php"), "utf8");
+assert.match(rolesApiSource, /get_available_staff_permissions/);
+assert.match(rolesApiSource, /update_staff_permissions/);
+assert.match(rolesApiSource, /cannot grant View and View Own together/);
+const roleEditorSource = fs.readFileSync(path.join(workspace, "components/crud/RolePermissionsEditor.tsx"), "utf8");
+assert.match(roleEditorSource, /roles_api\/permissions/);
+assert.match(roleEditorSource, /View and View Own are mutually exclusive/);
+assert.match(roleEditorSource, /Update assigned staff/);
+assert.doesNotMatch(roleEditorSource, /Alert\.alert/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
@@ -835,6 +856,8 @@ assert.match(taskApiSource, /timer_tracking\([^;]*false, \$staffid\)/s);
 assert.match(taskApiSource, /\$adminStop, \$staffid\)/);
 const nativeRoutingSource = fs.readFileSync(path.join(workspace, "lib/native-routing.ts"), "utf8");
 assert.match(nativeRoutingSource, /timesheets: "\/\(tabs\)\/timesheets\/entries"/);
+const filterPanelSource = fs.readFileSync(path.join(workspace, "components/crud/FilterPanel.tsx"), "utf8");
+assert.match(filterPanelSource, /<SafeAreaView edges=\{\["top"\]\}/, "Advanced Filters controls must stay below the Android status bar");
 assert.equal(fs.existsSync(path.join(workspace, "lib/queries/advance-leads.ts")), false, "Unsupported legacy Advance Leads mutations must stay removed");
 assert.equal(fs.existsSync(path.join(workspace, "lib/queries/rfq.ts")), false, "Superseded RFQ client must stay removed in favor of RFQ2");
 const customStatusesBlock = registrySource.match(/key: "custom_statuses",[\s\S]*?(?=\n  \{\n    key: "automation")/)?.[0] ?? "";

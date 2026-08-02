@@ -26,6 +26,7 @@ import { usePermissions } from "@/lib/permission-context";
 import { FieldInput } from "./FieldInput";
 import { DateInput } from "./DateInput";
 import { DepartmentImapTools } from "./DepartmentImapTools";
+import { RolePermissionsEditor } from "./RolePermissionsEditor";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -314,6 +315,17 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
           {module.key === "setup_departments" ? (
             <DepartmentImapTools
+              id={id}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "setup_roles" ? (
+            <RolePermissionsEditor
               id={id}
               values={values}
               onChange={(field, value) => {

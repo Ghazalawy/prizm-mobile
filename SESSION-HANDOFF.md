@@ -1335,3 +1335,16 @@ When building a new detail screen for ANY module, apply these rules in order:
 - No Android build was triggered. Mobile remains v1.17.0/code35, preserving the single final APK build. Static parity is 110/347, with 237 missing and 4 dynamic paths unresolved.
 - Checkpoints: mobile `2c08131`, `cb99eb1`, `66641d1`; backend parity `f7b847e4e`, `ab6fcd90c`; isolated production hotfix `f9e10f8e9`.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26025-R01__supplier-invoice-app-handoff-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 22.0 2026-08-02 — Native Gate Pass Request Manager parity
+
+- Added Gate Pass Request Manager natively with permission-scoped list/detail/options, server search/sort, additive direct filters, Perfex advanced filters, purpose-built dense editor/summary, staff and vehicle assignment, atomic CRUD, and guarded conversion into a linked Gate Pass.
+- Read the canonical RequestManager controller, Requests model, list, form, detail, menu, and install sources first; the API mirrors its classification-sensitive fields, responsible-user rules, conversion conditions, and canonical GPR display number.
+- Real HTTP runtime testing passed 12/12 scenarios: options, create, search, direct multi-classification, four-rule AND, four-rule OR, atomic update/clear, dense detail, conversion, duplicate rejection, converted-state plus search, delete, and exact cleanup.
+- Emulator QA passed list, detail, create, edit, multi-staff selection, and conversion to Gate Pass #159. It caught and corrected list-title clutter, dark-hero contrast, picker status-bar overlap, divider orientation, and picker reset behavior.
+- Final list audit passes 123 server + 2 client searchable, 125 filterable, 78 sortable with 0 skipped. CRUD audit passes 360 advertised mutations. The BooleanRule metadata is aligned to the scalar mobile SelectRule contract.
+- Static web-menu parity is now 111/347 native destinations, with 236 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoints: mobile `8e0d995` and `c5c9e5d`; backend `cb9aa2a50`. Nothing was pushed or deployed; no Android build was started, and release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26026-R01__gatepass-request-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

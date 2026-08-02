@@ -1321,3 +1321,17 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Contract and syntax gates pass: TypeScript, complete mobile contracts, 11/11 bridge checks, 4/4 payment-detail checks, and production schema/query probes.
 - Checkpoint commits: mobile `f980d65`; backend `0ef48f2f3`. Nothing was pushed or deployed; no Android build was started, preserving the single consolidated release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26024-R01__payment-request-app-link-detail-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 21.0 2026-08-02 — Native Supplier Invoices and production browser handoff
+
+- Added native Supplier Invoices with permission-scoped list/detail, server search/sort, additive direct filters, Perfex AND/OR filters, purpose-built dense editor/summary, PO-line import, supplier-item mappings, attachments, atomic CRUD, approval stages, and exact workflow actions.
+- Real HTTP runtime testing passed 12/12 scenarios, including Draft + Cancelled, Draft + Submitted, three-rule AND/OR, atomic update, submit, dense detail, delete, and complete temporary-table cleanup.
+- Emulator visual QA passed the Supplier Invoice workspace, responsive field grouping, totals, notes, and line-card states. The frontend-polish skill guided its compact information hierarchy.
+- Corrected the final `sequence_number` funnel contract to `NumberRule`; list audit now passes 122 server + 2 client searchable, 124 filterable, 77 sortable, with 0 skipped. CRUD audit passes all 357 advertised mutations.
+- Reproduced the exact Payment Request 1211 URL in real Chrome. The previous unattended intent was blocked and immediately fell through to web login. Production now uses a legacy-compatible, package-targeted `prizmcrm` handoff and retains the one-tap page Chrome permits.
+- Hotfix PRs `Ghazalawy/prizm331#320` and `PrizmIT/prizm331#1199` merged; deploy workflow `30750340830` passed and production HEAD is `df0dcfa973`. Live Chrome → orange handoff → native Payment Request #1211 passed.
+- No Android build was triggered. Mobile remains v1.17.0/code35, preserving the single final APK build. Static parity is 110/347, with 237 missing and 4 dynamic paths unresolved.
+- Checkpoints: mobile `2c08131`, `cb99eb1`, `66641d1`; backend parity `f7b847e4e`, `ab6fcd90c`; isolated production hotfix `f9e10f8e9`.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26025-R01__supplier-invoice-app-handoff-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

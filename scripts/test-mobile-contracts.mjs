@@ -1320,6 +1320,7 @@ for (const safetyGate of [
   /Publishing requires -DeviceSerial/,
   /PRIZM331_SOURCE_ROOT/,
   /assetlinks\.json/,
+  /keytoolErrorPreference/,
   /apksigner/,
   /Payment_Request\/view_payment_request\/1211/,
   /gh release upload latest/,

@@ -11,14 +11,16 @@ import {
 } from "react-native";
 import { useState, useEffect } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { markBiometricAsked, saveBiometricCredentials } from "@/lib/biometric";
 import { useEnvironment } from "@/lib/environment";
+import { safePostAuthRoute } from "@/lib/post-auth-route";
 import { colors } from "@/lib/theme";
 
 export default function LoginScreen() {
   const { isAuthenticated, isLoading, login, biometricPending, retryBiometric } = useAuth();
+  const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [submitting, setSubmitting] = useState(false);
@@ -27,9 +29,9 @@ export default function LoginScreen() {
 
   useEffect(() => {
     if (isAuthenticated) {
-      router.replace("/(tabs)");
+      router.replace(safePostAuthRoute(returnTo) as any);
     }
-  }, [isAuthenticated]);
+  }, [isAuthenticated, returnTo]);
 
   const handleBiometric = async () => {
     if (biometricBusy) return;

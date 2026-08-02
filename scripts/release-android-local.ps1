@@ -93,6 +93,19 @@ Invoke-NativeStep "Install locked JavaScript dependencies" {
     npm ci --no-audit --no-fund --legacy-peer-deps
 }
 Invoke-NativeStep "Validate Expo dependency matrix" { npx expo install --check }
+$packageManifestPath = Join-Path $repoRoot "package.json"
+$packageLockPath = Join-Path $repoRoot "package-lock.json"
+$packageManifestBackup = [IO.File]::ReadAllBytes($packageManifestPath)
+$packageLockBackup = [IO.File]::ReadAllBytes($packageLockPath)
+try {
+    Invoke-NativeStep "Synchronize generated Android metadata" {
+        npx expo prebuild --platform android --no-install --clean
+    }
+}
+finally {
+    [IO.File]::WriteAllBytes($packageManifestPath, $packageManifestBackup)
+    [IO.File]::WriteAllBytes($packageLockPath, $packageLockBackup)
+}
 Invoke-NativeStep "Verify release metadata" { npm run verify:release }
 Invoke-NativeStep "TypeScript check" { npx tsc --noEmit -p tsconfig.json }
 Invoke-NativeStep "Mobile contract tests" { npm run test:contracts }
@@ -144,10 +157,6 @@ $($flagsMatch.Value)
 
     [IO.File]::WriteAllText($buildInfoPath, $generatedBuildInfo, [Text.UTF8Encoding]::new($false))
     [IO.File]::WriteAllText($envPath, "EXPO_PUBLIC_API_URL=$ApiUrl`n", [Text.UTF8Encoding]::new($false))
-
-    Invoke-NativeStep "Generate Android project" {
-        npx expo prebuild --platform android --no-install --clean
-    }
 
     $keystore = Join-Path $repoRoot "android\app\debug.keystore"
     if (-not (Test-Path -LiteralPath $keystore)) {

@@ -1,0 +1,572 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm QC Report 26020</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm QC Report 26020</h1>
+</header>
+<h1
+id="qc-report-native-departments-and-authenticated-activity-hardening">QC
+Report — Native Departments and Authenticated Activity Hardening</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td><code>PE-QAQC-QC-RPT-26020-R01</code></td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td><code>departments-activity-native-parity-20260802</code></td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td><code>2026-08-02 12:55 +04:00</code></td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td><code>Codex / GPT-5</code></td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td><code>C:\wamp64\www\prizm331-wt-mobile-parity-next</code></td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td><code>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</code></td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td><code>codex/full-native-parity-audit</code></td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Continuous parity task chain</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This scoped batch adds the full administrator-only Departments
+workflow natively after reading Perfex’s canonical Departments
+controller, model, and view. The native module now provides list,
+search, sorting, Perfex advanced filters, dense detail, create, edit,
+guarded delete, mailbox-folder discovery, and IMAP connection testing.
+It preserves web checkbox semantics and allows an administrator to
+replace an IMAP password on edit while a blank value retains the
+encrypted secret.</p>
+<p>The API exposes only an explicit safe read schema. Department
+passwords are never returned to the app. Existing encrypted credentials
+are decrypted only in server memory for folder/test actions, and
+connection errors redact the submitted secret. Writes delegate to
+<code>Departments_model</code>, enforce unique non-empty email addresses
+and the canonical TLS/SSL enumeration, and retain the web model’s
+referenced-ticket deletion guard.</p>
+<p>Emulator testing also found an app-wide generic deletion-navigation
+defect: a successful delete could leave the user on the deleted record
+because history-back returned to an earlier detail/edit entry. Delete
+success now immediately replaces the route with the owning list,
+refreshes the collection asynchronously, and surfaces mutation
+failures.</p>
+<p>This report additionally records the preceding authenticated Activity
+hardening: Dashboard/My Activity reads now use
+<code>GET /api/my/activity</code>, derive the effective authenticated
+staff identity, support View-As, cap results, and no longer use the
+forbidden generic entity endpoint.</p>
+<p>The scoped quality gate passes. Deployment remains held for the
+user’s requested single consolidated Android release. Static web-menu
+parity is now 106/347, leaving 241 static destinations and 4 dynamic
+destinations open.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>npm run test:contracts</code> against current backend
+worktree</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata safety</td>
+<td><code>npm run verify:release</code></td>
+<td>PASS — unchanged v1.17.0/code35</td>
+</tr>
+<tr>
+<td>Web-menu parity audit</td>
+<td><code>npm run audit:web-parity</code></td>
+<td>PASS — 106/347 covered; 241 missing; 4 dynamic</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP 8.2 lint, <code>Setup_api.php</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Setup backend contract</td>
+<td><code>setup_api_contract_test.php</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Activity backend contract</td>
+<td><code>my_activity_api_contract_test.php</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Diff hygiene</td>
+<td><code>git diff --check</code> in both worktrees</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Department list</td>
+<td>Authenticated admin list, 11 production-like local rows</td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>Department App Link</td>
+<td><code>/MS/admin/departments</code> into native module</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Department folder validation</td>
+<td>Unsaved form with missing IMAP configuration</td>
+<td>HTTP 422; inline safe message</td>
+</tr>
+<tr>
+<td>Department connection validation</td>
+<td>Unsaved form with missing IMAP configuration</td>
+<td>HTTP 422; inline safe message</td>
+</tr>
+<tr>
+<td>Department create</td>
+<td>Numeric fixture <code>260804</code></td>
+<td>HTTP 201</td>
+</tr>
+<tr>
+<td>Department detail</td>
+<td>Created record ID 16</td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>Department update</td>
+<td>Rename to <code>260805</code>, enable Hide from customers</td>
+<td>HTTP 200; persisted</td>
+</tr>
+<tr>
+<td>Department delete</td>
+<td>Fixture IDs 16, 17, and 18 across navigation retests</td>
+<td>HTTP 200; all removed</td>
+</tr>
+<tr>
+<td>Delete navigation regression</td>
+<td>Route immediately replaced by Departments list</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Post-delete refresh</td>
+<td>List returned from 12 to 11 and fixture disappeared</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Secret visibility</td>
+<td>List/detail safe-field schema and emulator UI</td>
+<td>PASS — no password returned</td>
+</tr>
+<tr>
+<td>Editable retained secret</td>
+<td>Edit form shows empty secure replacement input</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Activity dashboard query</td>
+<td><code>GET /api/my/activity?limit=10&amp;offset=0</code></td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>Activity full page query</td>
+<td><code>GET /api/my/activity?limit=200&amp;offset=0</code></td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>Generic activity access</td>
+<td>Mobile source and post-fix Apache traffic</td>
+<td>PASS — no <code>core_crm_api/entity</code> use</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Saved IMAP passwords never leave the backend</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Existing saved secret can be reused server-side for native IMAP
+actions</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Department writes mirror canonical Perfex model semantics</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Department CRUD is reversible and leaves no QA fixtures</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Activity data is scoped to the authenticated/effective staff
+identity</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Web Departments URL resolves to a dense native screen</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Folder/test actions provide inline, actionable feedback</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Generic deletion returns to the correct owning list</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Programme</td>
+<td>Every static web destination has a native equivalent</td>
+<td>OPEN — 106/347 (30.5%) covered</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scoped quality gate: PASS. Deployment gate: HELD. Overall
+native-web parity programme: OPEN.</strong></p>
+<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile Departments implementation</td>
+<td><code>b2827b7</code></td>
+</tr>
+<tr>
+<td>Backend Departments implementation</td>
+<td><code>8ef3ab497</code></td>
+</tr>
+<tr>
+<td>Mobile Activity hardening</td>
+<td><code>acd1f2f</code></td>
+</tr>
+<tr>
+<td>Backend Activity hardening</td>
+<td><code>aa6485e55</code></td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>Deliberately unchanged until the consolidated final release</td>
+</tr>
+<tr>
+<td>Push / PR / deploy</td>
+<td>Not performed</td>
+</tr>
+<tr>
+<td>Production data</td>
+<td>Not touched</td>
+</tr>
+<tr>
+<td>Local QA fixtures</td>
+<td>Department IDs 16, 17, 18 removed; list restored to 11</td>
+</tr>
+<tr>
+<td>User files</td>
+<td>Untracked <code>artifacts/</code> preserved</td>
+</tr>
+<tr>
+<td>Rollback</td>
+<td>Revert the scoped mobile/backend commits before any future
+merge</td>
+</tr>
+</tbody>
+</table>
+<h2 id="emulator-evidence-and-notes">5. Emulator Evidence and Notes</h2>
+<ul>
+<li>Emulator: <code>emulator-5554</code>, Android development
+build.</li>
+<li>Dense list screenshot:
+<code>artifacts/departments-list.png</code>.</li>
+<li>Dense mailbox tools screenshot:
+<code>artifacts/department-tools.png</code>.</li>
+<li>IMAP validation hierarchy:
+<code>artifacts/tools-error.xml</code>.</li>
+<li>CRUD hierarchies: <code>artifacts/dept-created.xml</code>,
+<code>artifacts/dept-edited.xml</code>,
+<code>artifacts/delete-refreshed.xml</code>.</li>
+<li>Authenticated Apache evidence recorded HTTP 200/201/422 for the
+expected Department paths and HTTP 200 for My Activity.</li>
+<li>The temporary WAMP worktree URL override was removed before commit;
+<code>lib/environment.ts</code> matches the branch baseline.</li>
+<li>Real outbound IMAP authentication was intentionally not attempted
+without a dedicated QA mailbox; canonical service wiring, missing-config
+behavior, saved-secret handling, and error redaction are covered.</li>
+</ul>
+<h2 id="sign-off">6. Sign-off</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA automation</td>
+<td>Codex</td>
+<td>Scoped PASS; deployment held; parity programme open</td>
+<td>2026-08-02</td>
+</tr>
+<tr>
+<td>Product reviewer</td>
+<td>Osama Hassan</td>
+<td>Final acceptance pending consolidated release</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<p>Generated under Prizm QA/QC Policy. Classification: Internal.</p>
+</body>
+</html>

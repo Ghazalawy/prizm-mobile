@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm Energy QC Report 26024</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">@page { size: A4; margin: 15mm 14mm 16mm; }
+:root { --ink: #0f172a; --muted: #64748b; --line: #dbe3ec; --soft: #f6f8fb; --accent: #ef5b00; --blue: #087ea4; }
+* { box-sizing: border-box; }
+body { color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.45; max-width: 1000px; margin: 0 auto; padding: 22px 26px; }
+h1 { color: var(--ink); font-size: 23pt; line-height: 1.12; margin: 0 0 18px; padding: 0 0 12px; border-bottom: 4px solid var(--accent); }
+h2 { color: var(--blue); font-size: 15pt; margin: 24px 0 9px; page-break-after: avoid; }
+p { margin: 0 0 9px; }
+strong { color: var(--ink); }
+code { background: #eef2f6; border-radius: 4px; color: #334155; font-family: Consolas, monospace; font-size: 8.7pt; padding: 1px 4px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 17px; font-size: 8.7pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { background: #172033; color: #fff; font-weight: 650; text-align: left; padding: 7px 8px; border: 1px solid #172033; }
+td { vertical-align: top; padding: 6px 8px; border: 1px solid var(--line); }
+tbody tr:nth-child(even) td { background: var(--soft); }
+ul { margin: 6px 0 14px; padding-left: 22px; }
+li { margin: 3px 0; }
+blockquote { margin: 12px 0; padding: 9px 13px; border-left: 4px solid var(--accent); background: #fff7ed; }
+@media print { body { max-width: none; padding: 0; } h2 { break-after: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm Energy QC Report 26024</h1>
+</header>
+<h1 id="qc-report-payment-request-app-link-and-native-detail-recovery">QC
+Report — Payment Request App Link and Native Detail Recovery</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td>PE-QAQC-QC-RPT-26024-R01</td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td>payment-request-app-link-detail-20260802</td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td>2026-08-02 16:22 +04:00</td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td>Codex / GPT-5</td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td>C:/wamp64/www/prizm331-wt-mobile-parity-next</td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td>C:/wamp64/www/prizm-mobile-app-link-fix</td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td>codex/full-native-parity-audit</td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Continuous parity task chain</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>The reported URL
+<code>https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211</code>
+was traced across the production association file, Android package
+resolver, browser bridge, native route resolver, mobile approval query,
+canonical Perfex Payment Request controller/model, and the production
+database.</p>
+<p>Android domain verification is healthy: the production
+<code>assetlinks.json</code> returns HTTP 200, its SHA-256 certificate
+fingerprint matches the installed application signature, the domain is
+verified, supported-link handling is enabled, and Android resolves the
+exact URL to <code>com.prizmenergy.mobile/.MainActivity</code>. The
+HTTPS handoff reached the native Payment Request screen in the
+emulator.</p>
+<p>That test exposed a separate S1 data defect. Production record 1211
+exists, but <code>Przpayment_model::get_payment_detail()</code> joined a
+nonexistent unprefixed <code>suppliers</code> table. The real table is
+<code>tblsuppliers</code>; the failed model query made the mobile API
+return <code>Payment Request not found</code>, while the web UI
+continued to work through a different read path. The join now uses
+<code>db_prefix() . &#39;suppliers&#39;</code>, and the corrected production
+read-only SQL returns record 1211.</p>
+<p>The browser bridge was also hardened for phones or embedded browsers
+that bypass verified HTTPS links. It now addresses the installed
+<code>prizmcrm</code> application scheme, carries the complete original
+ERP URL in a validated payload, retains the browser fallback, and
+rejects external targets. Before the change, the same scheme URL
+produced Expo’s Unmatched Route screen; after the change, it opened the
+native Payment Request route.</p>
+<p>The scoped candidate passes. Deployment remains held for the
+requested single consolidated Android release, so the production API and
+the currently installed phone APK do not yet contain this
+checkpoint.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Production association</td>
+<td><code>/.well-known/assetlinks.json</code></td>
+<td>HTTP 200; package and fingerprint match</td>
+</tr>
+<tr>
+<td>Android domain state</td>
+<td><code>pm get-app-links</code></td>
+<td><code>ms.prizm-energy.com: verified</code>; link handling
+enabled</td>
+</tr>
+<tr>
+<td>Exact HTTPS resolver</td>
+<td>Android package query</td>
+<td>Prizm MainActivity advertised for record 1211 URL</td>
+</tr>
+<tr>
+<td>Exact HTTPS launch</td>
+<td>Android activity manager</td>
+<td>PASS — native Payment Request route opened</td>
+</tr>
+<tr>
+<td>Production browser bridge</td>
+<td>Android document request</td>
+<td>HTTP 200; bridge and package intent present</td>
+</tr>
+<tr>
+<td>Web MVC source</td>
+<td>Payment_Request controller and Przpayment_model</td>
+<td>REVIEWED</td>
+</tr>
+<tr>
+<td>Production record</td>
+<td><code>tblprz_payment_request.id = 1211</code></td>
+<td>EXISTS</td>
+</tr>
+<tr>
+<td>Production schema</td>
+<td><code>suppliers</code> / <code>tblsuppliers</code></td>
+<td>0 / 1 tables</td>
+</tr>
+<tr>
+<td>Broken model join</td>
+<td>unprefixed supplier join</td>
+<td>Reproduced: table does not exist</td>
+</tr>
+<tr>
+<td>Corrected model join</td>
+<td>prefixed supplier join</td>
+<td>PASS — record 1211 returned</td>
+</tr>
+<tr>
+<td>Scheme routing before fix</td>
+<td><code>prizmcrm:///MS/.../1211</code></td>
+<td>Reproduced: Unmatched Route</td>
+</tr>
+<tr>
+<td>Scheme routing after fix</td>
+<td><code>prizmcrm://open?url=...1211</code></td>
+<td>PASS — native Payment Request route</td>
+</tr>
+<tr>
+<td>External-target fence</td>
+<td>custom scheme carrying example.com</td>
+<td>PASS — falls back to native ERP hub</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>node scripts/test-mobile-contracts.mjs</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP lint</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Browser bridge contract</td>
+<td><code>mobile_app_link_bridge_contract_test.php</code></td>
+<td>PASS — 11/11</td>
+</tr>
+<tr>
+<td>Payment detail contract</td>
+<td><code>payment_request_detail_contract_test.php</code></td>
+<td>PASS — 4/4</td>
+</tr>
+<tr>
+<td>Workspace safety</td>
+<td>git status</td>
+<td>PASS — user-owned <code>artifacts/</code> untouched</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Exact Payment Request URL reaches the native module</td>
+<td>100% PASS in candidate emulator</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Native detail query uses the canonical supplier table</td>
+<td>100% PASS in source, contract, and production read-only SQL</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>External URLs cannot be smuggled through the custom scheme</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Browser/WebView bypass has an explicit installed-app fallback</td>
+<td>100% PASS in candidate</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Browser fallback preserves the complete path and query</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>Corrected API and app behavior are visible on the physical
+phone</td>
+<td>PENDING consolidated deployment</td>
+</tr>
+</tbody>
+</table>
+<p>Scoped quality gate: PASS. Deployment gate: HELD for one consolidated
+APK. Overall parity programme: OPEN.</p>
+<h2 id="code-changes">4. Code Changes</h2>
+<h3 id="backend">Backend</h3>
+<ul>
+<li><code>modules/przpurchase/models/Przpayment_model.php</code></li>
+<li><code>modules/api/helpers/mobile_app_link_helper.php</code></li>
+<li><code>modules/api/tests/mobile_app_link_bridge_contract_test.php</code></li>
+<li><code>modules/api/tests/payment_request_detail_contract_test.php</code></li>
+<li>Commit <code>0ef48f2f3</code> —
+<code>fix(api): resolve payment request mobile links</code></li>
+</ul>
+<h3 id="mobile">Mobile</h3>
+<ul>
+<li><code>lib/native-routing.ts</code></li>
+<li><code>scripts/test-mobile-contracts.mjs</code></li>
+<li>Commit <code>f980d65</code> —
+<code>fix: harden browser deep-link fallback</code></li>
+</ul>
+<p>The document-generation skill was used only to produce and visually
+verify this mandatory QC artifact; it did not influence application
+behavior.</p>
+<h2 id="deployment-status">5. Deployment Status</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Target</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend production</td>
+<td>NOT DEPLOYED — production still has the broken unprefixed detail
+join</td>
+</tr>
+<tr>
+<td>Mobile GitHub/main</td>
+<td>NOT PUSHED</td>
+</tr>
+<tr>
+<td>Android APK</td>
+<td>NOT BUILT — preserving the requested single final build</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>v1.17.0 / versionCode 35 unchanged</td>
+</tr>
+<tr>
+<td>Existing phone</td>
+<td>Still runs the previously published behavior until consolidated
+update</td>
+</tr>
+</tbody>
+</table>
+<h2 id="evidence-and-residual-risk">6. Evidence and Residual Risk</h2>
+<ul>
+<li>HTTPS App Link evidence:
+<code>C:/wamp64/tmp/payment-request-app-link-1211.png</code>.</li>
+<li>Custom-scheme evidence:
+<code>C:/wamp64/tmp/payment-scheme-fixed-1211.png</code>.</li>
+<li>The screenshots still show <code>Payment Request not found</code>
+because the corrected backend commit is intentionally not deployed yet;
+routing itself is proven by reaching the correct native module.</li>
+<li>Chrome and some OEM browsers intentionally suppress automatic
+external-app launches without a user gesture. The verified HTTPS route
+remains primary; the bridge’s orange action now uses the installed app
+scheme as the deterministic fallback.</li>
+<li>Physical-phone verification is mandatory after the final backend
+deployment and consolidated APK installation.</li>
+<li>User-owned <code>artifacts/</code> remains untouched.</li>
+</ul>
+<h2 id="sign-off">7. Sign-Off</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engineering / Codex</td>
+<td>Scoped implementation and verification complete</td>
+</tr>
+<tr>
+<td>QA/QC</td>
+<td>PASS for candidate App Link handoff and Payment Request detail
+recovery</td>
+</tr>
+<tr>
+<td>Product owner</td>
+<td>Final acceptance pending consolidated release</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

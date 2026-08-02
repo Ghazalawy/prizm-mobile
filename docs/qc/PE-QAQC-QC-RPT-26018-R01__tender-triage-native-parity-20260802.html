@@ -1,0 +1,536 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm QC Report 26018</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm QC Report 26018</h1>
+</header>
+<h1 id="qc-report-native-tender-triage-and-web-parity-audit">QC Report —
+Native Tender Triage and Web-Parity Audit</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td><code>PE-QAQC-QC-RPT-26018-R01</code></td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td><code>tender-triage-native-parity-20260802</code></td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td><code>2026-08-02 10:13 +04:00</code></td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td><code>Codex / GPT-5</code></td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td><code>C:\wamp64\www\prizm331-wt-mobile-parity-next</code></td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td><code>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</code></td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td><code>codex/full-native-parity-audit</code></td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This scoped batch adds a true native, admin-only Tender Triage
+workflow. The mobile screen provides compact KPI and bucket navigation,
+search, country quick filters, Perfex funnel filters, record details,
+Watch/Pursue/Dismiss/Reopen/Converted decisions, undo, multi-selection,
+bulk dismiss, and reversible authority or branch mute controls.</p>
+<p>The API mirrors the web controller’s canonical schema, status
+transitions, dismissal reasons, activity logging, permissions, and
+no-trace behavior. A runtime defect found during combined-filter testing
+was corrected: once a custom funnel is active, its AND/OR expression is
+authoritative and the hidden High/Medium default can no longer erase
+valid Low-rating or OR-branch results.</p>
+<p>A new static web-menu audit establishes the honest programme
+baseline: 93 of 347 unique static web destinations resolve to existing
+native screens; 254 remain missing and 4 dynamic destinations require
+manual resolution. This batch is locally complete, but the broader
+parity goal is open and deployment is intentionally held for the user’s
+requested single final Android build.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>npm run test:contracts</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata safety</td>
+<td><code>npm run verify:release</code></td>
+<td>PASS — unchanged v1.17.0/code35</td>
+</tr>
+<tr>
+<td>Web-menu parity audit</td>
+<td><code>npm run audit:web-parity</code></td>
+<td>PASS — 93/347 covered; 254 missing; 4 dynamic</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP 8.2 lint on controller and routes</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Backend contracts</td>
+<td>Daleela MCP/API contract suite</td>
+<td>PASS — 95/95</td>
+</tr>
+<tr>
+<td>Diff hygiene</td>
+<td><code>git diff --check</code> in both worktrees</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Admin access</td>
+<td>Local authenticated overview probe</td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>No-trace permission</td>
+<td>Local authenticated non-admin overview probe</td>
+<td>HTTP 404</td>
+</tr>
+<tr>
+<td>Search</td>
+<td><code>Substation</code> returned only the matching record</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Country filter</td>
+<td>UAE returned only the DEWA fixture</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Default inbox</td>
+<td>High/Medium default returned 2 expected rows</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Low-rating funnel override</td>
+<td>Low rule returned the single Low fixture</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Multi-rating</td>
+<td>High + Low returned both expected rows</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Logical OR</td>
+<td>Low OR source=DEWA returned both exact branches</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Logical AND</td>
+<td>sector=Power &amp; Water AND rating=High returned one exact row</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Cross-field OR</td>
+<td>title contains Substation OR sector=Oil &amp; Gas returned two exact
+rows</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Search + filter</td>
+<td>Valve Maintenance with include-low returned one exact row</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Decision and undo</td>
+<td>Pending → Watch → Undo restored Pending</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Multi-select</td>
+<td>Two inbox rows selected and bulk sheet showed
+<code>Dismiss 2 items</code></td>
+<td>PASS; mutation canceled</td>
+</tr>
+<tr>
+<td>Emulator density</td>
+<td>KPI strip, search, buckets, country chips, and cards visible without
+overlap</td>
+<td>PASS</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Funnel AND/OR rules and multi-select values return the exact
+union/intersection</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Admin decisions enforce canonical state transitions and optimistic
+concurrency</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Non-admin users see no Tender Triage affordance and direct API
+access returns 404</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Search, country, bucket, sort, and advanced filters combine without
+hidden predicates</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Undo restores the prior item even after the row leaves the active
+bucket</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Screen is dense, readable, and identifies the module and record</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Programme</td>
+<td>Every static web destination has a native equivalent</td>
+<td>OPEN — 93/347 (26.8%) currently covered</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scoped quality gate: PASS. Deployment gate: HELD. Overall
+native-web parity programme: OPEN.</strong></p>
+<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile implementation</td>
+<td><code>233d78d0dee882ac2edcfc00c89b5c31227e6171</code></td>
+</tr>
+<tr>
+<td>Backend implementation</td>
+<td><code>d797b637f</code></td>
+</tr>
+<tr>
+<td>Mobile files</td>
+<td>Triage route/screen/query, native routing, shared list header
+action, contracts, parity audit</td>
+</tr>
+<tr>
+<td>Backend files</td>
+<td>Tender Triage REST controller, routes, contract tests</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>Deliberately unchanged until the consolidated final release</td>
+</tr>
+<tr>
+<td>Push / PR / deploy</td>
+<td>Not performed</td>
+</tr>
+<tr>
+<td>Production data</td>
+<td>Not touched</td>
+</tr>
+<tr>
+<td>Local QA fixtures</td>
+<td>Six uniquely tagged tender/triage fixtures removed after
+testing</td>
+</tr>
+<tr>
+<td>Rollback</td>
+<td>Revert the two local feature commits before any future merge</td>
+</tr>
+</tbody>
+</table>
+<h2 id="emulator-evidence-and-notes">5. Emulator Evidence and Notes</h2>
+<ul>
+<li>Emulator: <code>emulator-5554</code>, AVD
+<code>prizm-test</code>.</li>
+<li>Dense list evidence:
+<code>C:\Users\osama\AppData\Local\Temp\triage3.png</code> (earlier
+header) plus the final hot-reloaded hierarchy showing a one-row KPI
+strip.</li>
+<li>Detail evidence:
+<code>C:\Users\osama\AppData\Local\Temp\detail.png</code>.</li>
+<li>The emulator froze once at the rendering/input layer; a clean cold
+reboot restored it and the complete workflow was rerun.</li>
+<li>Temporary local API, token, and admin QA hooks were removed.
+<code>lib/auth.ts</code>, <code>lib/environment.ts</code>, and
+<code>lib/impersonation.ts</code> match the branch baseline.</li>
+<li>The user-owned untracked <code>artifacts/</code> directory was
+preserved.</li>
+<li>The previously shipped Payment Request App Link, JWT/CSRF
+separation, biometric contracts, task-card layout, and report-image
+resolver were not regressed by this slice.</li>
+</ul>
+<h2 id="sign-off">6. Sign-off</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA automation</td>
+<td>Codex</td>
+<td>Scoped PASS; deployment held; parity debt quantified</td>
+<td>2026-08-02</td>
+</tr>
+<tr>
+<td>Product reviewer</td>
+<td>Osama Hassan</td>
+<td>Final acceptance pending consolidated release</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<p>Generated under Prizm QA/QC Policy. Classification: Internal.</p>
+</body>
+</html>

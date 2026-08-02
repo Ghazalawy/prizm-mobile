@@ -19,6 +19,7 @@ type NavigateOptions = ResolveOptions & {
 
 const EXTERNAL_SCHEME_RE = /^(mailto|tel|sms|geo):/i;
 const HTTP_RE = /^https?:\/\//i;
+const PRIZM_APP_SCHEME_RE = /^prizmcrm:/i;
 
 const MODULE_DETAIL_ROUTES: Record<string, (id: string) => string> = {
   tasks: (id) => `/(tabs)/tasks/${id}`,
@@ -49,6 +50,7 @@ const MODULE_DETAIL_ROUTES: Record<string, (id: string) => string> = {
   otp_sources: (id) => `/(tabs)/erp/otp_sources/${id}`,
   automation: (id) => `/(tabs)/erp/automation/${id}`,
   custom_statuses: (id) => `/(tabs)/erp/custom_statuses/${id}`,
+  gatepass_requests: (id) => `/(tabs)/erp/gatepass_requests/${id}`,
   gatepass_vehicles: (id) => `/(tabs)/erp/gatepass_vehicles/${id}`,
   recruitment_candidates: (id) => `/(tabs)/erp/recruitment_candidates/${id}`,
   recruitment_positions: (id) => `/(tabs)/erp/recruitment_positions/${id}`,
@@ -63,6 +65,7 @@ const MODULE_DETAIL_ROUTES: Record<string, (id: string) => string> = {
   purchase_orders: (id) => `/(tabs)/approvals/purchase_order/${id}`,
   purchase_payment_requests: (id) => `/(tabs)/approvals/payment_request/${id}`,
   purchase_expense_requests: (id) => `/(tabs)/approvals/expense_request/${id}`,
+  purchase_supplier_invoices: (id) => `/(tabs)/erp/purchase_supplier_invoices/${id}`,
 };
 
 const MODULE_LIST_ROUTES: Record<string, string> = {
@@ -94,6 +97,7 @@ const MODULE_LIST_ROUTES: Record<string, string> = {
   otp_sources: "/(tabs)/erp/otp_sources",
   automation: "/(tabs)/erp/automation",
   custom_statuses: "/(tabs)/erp/custom_statuses",
+  gatepass_requests: "/(tabs)/erp/gatepass_requests",
   gatepass_vehicles: "/(tabs)/erp/gatepass_vehicles",
   recruitment_candidates: "/(tabs)/erp/recruitment_candidates",
   recruitment_positions: "/(tabs)/erp/recruitment_positions",
@@ -104,6 +108,7 @@ const MODULE_LIST_ROUTES: Record<string, string> = {
   reports: "/(tabs)/reports",
   knowledge: "/(tabs)/knowledge",
   knowledge_base: "/(tabs)/knowledge",
+  calendar: "/(tabs)/calendar",
   timesheets: "/(tabs)/timesheets/entries",
   approvals: "/(tabs)/approvals",
 };
@@ -149,6 +154,7 @@ const CONTROLLER_TO_MODULE: Record<string, string> = {
   automation_api: "automation",
   si_custom_status: "custom_statuses",
   gatepass: "gatepass",
+  requestmanager: "gatepass_requests",
   prizmbudget: "budget_items",
   budget: "budget_items",
   goals: "goals",
@@ -159,6 +165,8 @@ const CONTROLLER_TO_MODULE: Record<string, string> = {
   purchase_order: "purchase_orders",
   payment_request: "purchase_payment_requests",
   expense_request: "purchase_expense_requests",
+  supplierinvoice: "purchase_supplier_invoices",
+  supplier_invoice: "purchase_supplier_invoices",
   received_vouchers: "purchase_received_vouchers",
   delivery_notes: "purchase_delivery_notes",
   quotations: "purchase_quotations",
@@ -169,6 +177,25 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^#taskid=(\d+)/i, to: (m) => routeForModuleRecord("tasks", m[1])! },
   { re: /^#leadid=(\d+)/i, to: (m) => routeForModuleRecord("leads", m[1])! },
   { re: /^#eventid=(\d+)/i, to: (m) => `/(tabs)/calendar/${m[1]}` },
+  { re: /^clients\/groups\/?$/i, to: () => routeForModuleList("setup_customer_groups")! },
+  { re: /^tickets\/priorities\/?$/i, to: () => routeForModuleList("setup_ticket_priorities")! },
+  { re: /^tickets\/predefined_replies\/?$/i, to: () => routeForModuleList("setup_ticket_replies")! },
+  { re: /^tickets\/statuses\/?$/i, to: () => routeForModuleList("setup_ticket_statuses")! },
+  { re: /^tickets\/services\/?$/i, to: () => routeForModuleList("setup_ticket_services")! },
+  { re: /^leads\/sources\/?$/i, to: () => routeForModuleList("setup_lead_sources")! },
+  { re: /^leads\/statuses\/?$/i, to: () => routeForModuleList("setup_lead_statuses")! },
+  { re: /^taxes\/?$/i, to: () => routeForModuleList("setup_taxes")! },
+  { re: /^currencies\/?$/i, to: () => routeForModuleList("setup_currencies")! },
+  { re: /^paymentmodes\/?$/i, to: () => routeForModuleList("setup_payment_modes")! },
+  { re: /^expenses\/categories\/?$/i, to: () => routeForModuleList("setup_expense_categories")! },
+  { re: /^contracts\/types\/?$/i, to: () => routeForModuleList("setup_contract_types")! },
+  { re: /^departments\/?$/i, to: () => routeForModuleList("setup_departments")! },
+  { re: /^emails\/email_template\/(\d+)/i, to: (m) => routeForModuleRecord("setup_email_templates", m[1])! },
+  { re: /^emails\/?$/i, to: () => routeForModuleList("setup_email_templates")! },
+  { re: /^roles\/role\/(\d+)/i, to: (m) => routeForModuleRecord("setup_roles", m[1])! },
+  { re: /^roles\/?$/i, to: () => routeForModuleList("setup_roles")! },
+  { re: /^custom_fields\/field\/(\d+)/i, to: (m) => routeForModuleRecord("setup_custom_fields", m[1])! },
+  { re: /^custom_fields\/?$/i, to: () => routeForModuleList("setup_custom_fields")! },
   { re: /^tasks\/view\/(\d+)/i, to: (m) => routeForModuleRecord("tasks", m[1])! },
   { re: /^projects\/view\/(\d+)/i, to: (m) => routeForModuleRecord("projects", m[1])! },
   { re: /^invoices\/(?:list_invoices|invoice)\/(\d+)/i, to: (m) => routeForModuleRecord("invoices", m[1])! },
@@ -188,6 +215,10 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^credit_notes\/(?:list_credit_notes|credit_note)\/(\d+)/i, to: (m) => routeForModuleRecord("credit_notes", m[1])! },
   { re: /^contacts\/contact\/(\d+)/i, to: (m) => routeForModuleRecord("contacts", m[1])! },
   { re: /^staff\/member\/(\d+)/i, to: (m) => routeForModuleRecord("staff", m[1])! },
+  { re: /^invoice_items\/?$/i, to: () => routeForModuleList("items")! },
+  { re: /^utilities\/calendar\/?$/i, to: () => routeForModuleList("calendar")! },
+  { re: /^utilities\/activity_log\/?$/i, to: () => "/(tabs)/activity" },
+  { re: /^staff\/timesheets\/?$/i, to: () => routeForModuleList("timesheets")! },
   { re: /^payments\/payment\/(\d+)/i, to: (m) => routeForModuleRecord("payments", m[1])! },
   { re: /^subscriptions\/(?:edit|view)\/(\d+)/i, to: (m) => routeForModuleRecord("subscriptions", m[1])! },
   { re: /^announcements\/(?:announcement|view)\/(\d+)/i, to: (m) => routeForModuleRecord("announcements", m[1])! },
@@ -203,6 +234,12 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^otpmanager\/settings(?:\?group=sources)?/i, to: () => routeForModuleList("otp_sources")! },
   { re: /^automation_manager\/(?:edit\/)?(\d+)(?:\/|$)/i, to: (m) => routeForModuleRecord("automation", m[1])! },
   { re: /^automation_manager(?:\/|$)/i, to: () => routeForModuleList("automation")! },
+  { re: /^costcenters(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("cost_centers")! },
+  { re: /^gatepass\/requestmanager\/(?:view|request)\/(\d+)/i, to: (m) => routeForModuleRecord("gatepass_requests", m[1])! },
+  { re: /^gatepass\/requestmanager(?:\/|$)/i, to: () => routeForModuleList("gatepass_requests")! },
+  { re: /^requestmanager\/(?:view|request)\/(\d+)/i, to: (m) => routeForModuleRecord("gatepass_requests", m[1])! },
+  { re: /^requestmanager(?:\/|$)/i, to: () => routeForModuleList("gatepass_requests")! },
+  { re: /^gatepass\/gatepass(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("gatepass")! },
   { re: /^si_custom_status\/statuses\/(?:projects|tasks)(?:\/|$)/i, to: () => routeForModuleList("custom_statuses")! },
   { re: /^gatepass\/vehicles\/manage\/(\d+)/i, to: (m) => routeForModuleRecord("gatepass_vehicles", m[1])! },
   { re: /^gatepass\/vehicles(?:\/|$)/i, to: () => routeForModuleList("gatepass_vehicles")! },
@@ -217,11 +254,14 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^(?:utilities\/view_event|calendar\/event)\/(\d+)/i, to: (m) => `/(tabs)/calendar/${m[1]}` },
   { re: /^(?:tenders|tenders_api)\/view\/(\d+)/i, to: (m) => routeForModuleRecord("tenders", m[1])! },
   { re: /^(?:opportunities|opportunities_api)\/view\/(\d+)/i, to: (m) => routeForModuleRecord("opportunities", m[1])! },
+  { re: /^opportunities\/(?:dashboard|opportunities)\/?$/i, to: () => routeForModuleList("opportunities")! },
   { re: /^reports\/view\/(\d+)/i, to: (m) => routeForModuleRecord("reports", m[1])! },
+  { re: /^prizm_reports\/?$/i, to: () => routeForModuleList("reports")! },
   { re: /^technicalinquiries\/boq_management\/boq_tree_(?:view|edit)\/(\d+)/i, to: (m) => routeForModuleRecord("cost_calculations", m[1])! },
   { re: /^technicalinquiries\/boq_management\/boq_tree_builder(?:\/|$)/i, to: () => "/(tabs)/erp/cost_calculations/new" },
   { re: /^technicalinquiries\/boq_management\/boq_tree(?:\/|$)/i, to: () => routeForModuleList("cost_calculations")! },
   { re: /^materials\/material_categories(?:\/|$)/i, to: () => routeForModuleList("material_categories")! },
+  { re: /^materials\/(?:materials|items)\/?$/i, to: () => routeForModuleList("materials")! },
   { re: /^materials\/itemclassification\/manage_commodity\/(\d+)/i, to: (m) => routeForModuleRecord("unspsc_commodities", m[1])! },
   { re: /^materials\/itemclassification(?:\/|$)/i, to: () => routeForModuleList("unspsc_commodities")! },
   { re: /^materials\/kits\/items\/(\d+)/i, to: (m) => routeForModuleRecord("material_kits", m[1])! },
@@ -259,22 +299,50 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^purchase_api\/requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_requests", m[1])! },
   { re: /^purchase_api\/orders\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^purchase_api\/payment_requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_payment_requests", m[1])! },
+  { re: /^purchase_api\/supplier_invoices\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_supplier_invoices", m[1])! },
+  { re: /^gatepass_api\/requests\/(\d+)/i, to: (m) => routeForModuleRecord("gatepass_requests", m[1])! },
   { re: /^purchase_api\/expense_requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_expense_requests", m[1])! },
   { re: /^purchase_api\/received_vouchers\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
   { re: /^purchase_api\/delivery_notes\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },
   { re: /^purchase_api\/quotations\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_quotations", m[1])! },
   { re: /^purchase_api\/completion_certificates\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_completion_certificates", m[1])! },
   { re: /^przpurchase\/ag_view_purchase_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_requests", m[1])! },
+  { re: /^przpurchase\/przpurchase(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_requests")! },
+  { re: /^przpurchase\/purorder(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_orders")! },
+  { re: /^przpurchase\/expense_request(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_expense_requests")! },
+  { re: /^przpurchase\/payment_request(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_payment_requests")! },
+  { re: /^przpurchase\/supplierinvoice(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_supplier_invoices")! },
+  { re: /^przpurchase\/received_vouchers(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_received_vouchers")! },
+  { re: /^przpurchase\/delivery_notes(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_delivery_notes")! },
+  { re: /^przpurchase\/quotations(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_quotations")! },
+  { re: /^przpurchase\/suppliers(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_vendors")! },
   { re: /^przpurchase\/purchase_requests?\/view[^/]*\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_requests", m[1])! },
   { re: /^(?:przpurchase\/)?purorder\/(?:ag_)?view_purchase_order\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^(?:przpurchase\/)?purchase_order\/(?:ag_)?view_purchase_order\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^(?:przpurchase\/)?payment_request\/(?:ag_)?view_payment_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_payment_requests", m[1])! },
+  { re: /^(?:przpurchase\/)?supplierinvoice\/(?:view_supplier_invoice|view|add_edit)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_supplier_invoices", m[1])! },
   { re: /^(?:przpurchase\/)?expense_request\/view_expense_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_expense_requests", m[1])! },
   { re: /^received_vouchers\/(?:ag_)?view_voucher\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
   { re: /^delivery_notes\/view_delivery_note\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },
   { re: /^quotations\/(?:quotation|ag_quotation|view_quotation)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_quotations", m[1])! },
   { re: /^completion_certificate\/(?:view|edit)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_completion_certificates", m[1])! },
   { re: /^hr_payroll\/(?:view_payslip_detail|view_payslip_detail_v2|view_staff_payslip_modal)\/(\d+)/i, to: (m) => `/(tabs)/payslip-detail?id=${m[1]}` },
+  { re: /^hr_payroll\/payslip_manage\/?$/i, to: () => routeForModuleList("hr_payslips")! },
+  { re: /^hr_payroll\/payslip_templates_manage\/?$/i, to: () => routeForModuleList("hr_payroll_templates")! },
+  { re: /^hr_payroll\/manage_commissions\/?$/i, to: () => routeForModuleList("hr_payroll_commissions")! },
+  { re: /^hr_profile\/contracts\/?$/i, to: () => routeForModuleList("hr_contracts")! },
+  { re: /^hr_profile\/job_positions\/?$/i, to: () => routeForModuleList("hr_job_positions")! },
+  { re: /^hr_profile\/dependent_persons\/?$/i, to: () => routeForModuleList("hr_dependents")! },
+  { re: /^hr_profile\/resignation_procedures\/?$/i, to: () => routeForModuleList("hr_resignations")! },
+  { re: /^hr_profile\/training\?group=training_program/i, to: () => routeForModuleList("hr_training_programs")! },
+  { re: /^rfq2\/rfq\/?$/i, to: () => routeForModuleList("rfq2")! },
+  { re: /^technicalinquiries(?:\/technicalinquiries)?\/?$/i, to: () => routeForModuleList("technical_inquiries")! },
+  { re: /^tenders\/triage\/?$/i, to: () => "/(tabs)/tenders/triage" },
+  { re: /^tenders\/tender\/?$/i, to: () => routeForModuleList("tenders")! },
+  { re: /^prizmbudget\/manage_budget\/?$/i, to: () => routeForModuleList("budget_items")! },
+  { re: /^prizmbusinesspartners\/prizmbusinesspartners\/?$/i, to: () => routeForModuleList("business_partners")! },
+  { re: /^surveys\/?$/i, to: () => routeForModuleList("surveys")! },
+  { re: /^timesheets\/requisition_manage\/?$/i, to: () => "/(tabs)/leave" },
   { re: /^timesheets\/requisition_detail\/(\d+)/i, to: (m) => `/(tabs)/approvals/leave/${m[1]}` },
 ];
 
@@ -306,8 +374,11 @@ export function routeForModuleEdit(
 }
 
 export function resolveNativeRoute(rawLink: string | null | undefined, opts: ResolveOptions = {}): string | null {
-  const raw = cleanLink(rawLink);
-  if (!raw) return null;
+  const incoming = cleanLink(rawLink);
+  if (!incoming) return null;
+  const bridged = unwrapPrizmAppLink(incoming);
+  if (PRIZM_APP_SCHEME_RE.test(incoming) && !bridged) return null;
+  const raw = bridged || incoming;
   if (raw.startsWith("/(tabs)/") || raw.startsWith("/settings")) return raw;
 
   const normalized = normalizeInternalPath(raw);
@@ -337,6 +408,7 @@ export function resolveNativeRoute(rawLink: string | null | undefined, opts: Res
 export function isCompanyInternalLink(rawLink: string | null | undefined): boolean {
   const raw = cleanLink(rawLink);
   if (!raw) return false;
+  if (PRIZM_APP_SCHEME_RE.test(raw)) return unwrapPrizmAppLink(raw) !== null;
   if (raw.startsWith("/(tabs)/")) return true;
   if (raw.startsWith("#")) return true;
   if (EXTERNAL_SCHEME_RE.test(raw)) return false;
@@ -351,6 +423,7 @@ export function isCompanyInternalLink(rawLink: string | null | undefined): boole
 export function resolveIncomingAppLink(rawLink: string): string {
   const route = resolveNativeRoute(rawLink);
   if (route) return route;
+  if (PRIZM_APP_SCHEME_RE.test(cleanLink(rawLink))) return "/(tabs)/erp";
   if (isCompanyInternalLink(rawLink)) return "/(tabs)/erp";
   return rawLink;
 }
@@ -477,6 +550,36 @@ function cleanLink(rawLink: string | null | undefined): string {
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .trim();
+}
+
+/**
+ * Unwrap the explicit browser bridge used when an OEM/browser bypasses
+ * Android's verified HTTPS App Link resolver. Only production/internal ERP
+ * targets are accepted so a crafted custom-scheme URL cannot become an open
+ * redirect into an external site.
+ */
+function unwrapPrizmAppLink(raw: string): string | null {
+  if (!PRIZM_APP_SCHEME_RE.test(raw)) return null;
+
+  try {
+    const parsed = new URL(raw);
+    const encodedTarget = parsed.searchParams.get("url");
+    if (encodedTarget) {
+      const target = cleanLink(encodedTarget);
+      const targetUrl = tryParseUrl(target);
+      return targetUrl && isInternalHost(targetUrl.hostname) ? target : null;
+    }
+
+    if (parsed.hostname && parsed.hostname.toLowerCase() !== "open") {
+      if (!isInternalHost(parsed.hostname)) return null;
+      return `https://${parsed.hostname}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    const path = parsed.pathname || "";
+    return normalizeInternalPath(path) ? path : null;
+  } catch {
+    return null;
+  }
 }
 
 function ensureExternalUrl(raw: string): string | null {

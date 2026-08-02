@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createEntity, getEntity, updateEntity } from "@/lib/api";
 import {
@@ -25,6 +25,12 @@ import {
 import { usePermissions } from "@/lib/permission-context";
 import { FieldInput } from "./FieldInput";
 import { DateInput } from "./DateInput";
+import { DepartmentImapTools } from "./DepartmentImapTools";
+import { RolePermissionsEditor } from "./RolePermissionsEditor";
+import { CustomFieldDefinitionEditor } from "./CustomFieldDefinitionEditor";
+import { EmailTemplateEditor } from "./EmailTemplateEditor";
+import { SupplierInvoiceEditor } from "./SupplierInvoiceEditor";
+import { GatepassRequestEditor } from "./GatepassRequestEditor";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -38,6 +44,8 @@ type CrudFormScreenProps = {
   basePath?: string;
 };
 
+const EMPTY_CUSTOM_FIELDS: CustomFieldRow[] = [];
+
 export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps) {
   const module = getModule(moduleKey);
   const params = useLocalSearchParams<Record<string, string | string[]>>();
@@ -46,6 +54,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   const useRouteRecord = isEdit && firstParam(params._use_route_record) === "1";
   const [values, setValues] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
+  const initializedFormKeyRef = useRef<string | null>(null);
   const permissions = usePermissions();
 
   // Permission gate: block access if user lacks create/edit permission
@@ -68,17 +77,19 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
   const row = useMemo(() => unwrapRow(detail.data, module), [detail.data, module]);
   const fields = useMemo(() => (module ? editableFields(module, isEdit) : []), [module, isEdit]);
-  const sections = useMemo(() => groupFields(fields.filter((field) => !field.hidden)), [fields]);
+  const sections = useMemo(() => groupFields(fields.filter((field) => !field.hidden && !field.customEditor)), [fields]);
 
   // Custom fields: fetched for create (no id, blank values) or edit (id given,
   // values populated). Tracked in their own values map keyed by custom_field_id.
   const customFieldsQuery = useCustomFields(module?.customFieldsType, isEdit ? id : undefined);
-  const customFields = customFieldsQuery.data || [];
+  const customFields = customFieldsQuery.data ?? EMPTY_CUSTOM_FIELDS;
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!customFields.length) {
-      setCustomValues({});
+      setCustomValues((current) =>
+        Object.keys(current).length > 0 ? {} : current,
+      );
       return;
     }
     const next: Record<string, string> = {};
@@ -91,6 +102,18 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   useEffect(() => {
     if (!module) return;
     if (isEdit && !row && !useRouteRecord) return;
+    const routeFieldValues = fields.map((field) => [
+      field.key,
+      firstParam(params[field.key]) ?? null,
+    ]);
+    const initializationKey = JSON.stringify([
+      module.key,
+      id ?? "new",
+      useRouteRecord,
+      routeFieldValues,
+    ]);
+    if (initializedFormKeyRef.current === initializationKey) return;
+
     const next: Record<string, string> = {};
     fields.forEach((field) => {
       const paramValue = firstParam(params[field.key]);
@@ -103,6 +126,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
         next[field.key] = String(value ?? "");
       }
     });
+    initializedFormKeyRef.current = initializationKey;
     setValues(next);
     setTouched(false);
   }, [fields, isEdit, module, params, row, useRouteRecord]);
@@ -292,6 +316,71 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
               </View>
             </View>
           ) : null}
+
+          {module.key === "setup_departments" ? (
+            <DepartmentImapTools
+              id={id}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "setup_roles" ? (
+            <RolePermissionsEditor
+              id={id}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "setup_custom_fields" ? (
+            <CustomFieldDefinitionEditor
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "setup_email_templates" ? (
+            <EmailTemplateEditor
+              row={row}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "purchase_supplier_invoices" ? (
+            <SupplierInvoiceEditor
+              row={row}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "gatepass_requests" ? (
+            <GatepassRequestEditor
+              row={row}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -425,7 +514,7 @@ function editableFields(module: ModuleDefinition, isEdit: boolean): ModuleField[
   return module.fields.filter((field) => {
     if (field.readOnly) return false;
     if (isEdit && field.createOnly) return false;
-    if (isEdit && field.key === "password") return false;
+    if (isEdit && field.key === "password" && !field.editableSecret) return false;
     return true;
   });
 }
@@ -462,6 +551,7 @@ function buildPayload(
   fields.forEach((field) => {
     const raw = values[field.key] ?? "";
     const value = raw.trim();
+    if (isEdit && field.editableSecret && value === "") return;
     if (!isEdit && !field.required && value === "") return;
 
     if (field.submitAsArray) {

@@ -45,6 +45,7 @@ function loadTypeScriptModule(relativePath, imports = {}) {
 }
 
 const { isInvalidTokenResponse } = loadTypeScriptModule("lib/auth-response.ts");
+const { safePostAuthRoute } = loadTypeScriptModule("lib/post-auth-route.ts");
 const { taskRelationSummary, taskRelationTypeLabel } = loadTypeScriptModule("lib/task-display.ts");
 const { serializeDirectFilterGroup, serializeModuleFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
 const authEvents = loadTypeScriptModule("lib/auth-events.ts");
@@ -241,6 +242,40 @@ assert.equal(
   "a Payment Request web link must be rewritten to its native approval screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink(
+    `prizmcrm://open?url=${encodeURIComponent("https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211")}`,
+  ),
+  "/(tabs)/approvals/payment_request/1211",
+  "the browser custom-scheme fallback must preserve and resolve the complete ERP URL",
+);
+assert.equal(
+  routing.resolveIncomingAppLink(
+    "prizmcrm://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211",
+  ),
+  "/(tabs)/approvals/payment_request/1211",
+  "the legacy-compatible browser bridge must preserve the ERP host and record path",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("prizmcrm://open?url=https%3A%2F%2Fexample.com%2Fphish"),
+  "/(tabs)/erp",
+  "the browser custom-scheme fallback must reject non-Prizm targets",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/roles/role/24"),
+  "/(tabs)/erp/setup_roles/24",
+  "a web Role detail link must open the native Role detail screen",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/custom_fields/field/17"),
+  "/(tabs)/erp/setup_custom_fields/17",
+  "a web Custom Field detail link must open the native Custom Field detail screen",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/emails/email_template/12"),
+  "/(tabs)/erp/setup_email_templates/12",
+  "a web Email Template detail link must open the native Email Template detail screen",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
   "/(tabs)/erp",
   "an unmatched ERP URL must stay inside the app on the native ERP hub",
@@ -269,8 +304,22 @@ assert.ok(
   appLinkFilter.data.some(
     (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
   ),
-  "the verified intent filter must capture every production ERP link",
+  "the verified intent filter must capture every ERP route under /MS",
 );
+assert.ok(
+  appLinkFilter.data.some(
+    (item) => item.scheme === "http" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
+  ),
+  "plain HTTP links must enter the app before the web server redirects to HTTPS",
+);
+assert.equal(
+  safePostAuthRoute("/approvals/payment_request/1211"),
+  "/approvals/payment_request/1211",
+  "a Payment Request App Link must survive password or biometric sign-in",
+);
+assert.equal(safePostAuthRoute(["/projects/42"]), "/projects/42");
+assert.equal(safePostAuthRoute("https://example.com/phish"), "/(tabs)");
+assert.equal(safePostAuthRoute("//example.com/phish"), "/(tabs)");
 const assetLinks = JSON.parse(
   fs.readFileSync(path.join(workspace, "public/.well-known/assetlinks.json"), "utf8"),
 );
@@ -434,6 +483,59 @@ assert.equal(
   routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/fixed_equipment/settings?tab=models"),
   "/(tabs)/erp/fixed_equipment_models",
 );
+for (const [webPath, nativePath] of [
+  ["invoice_items", "/(tabs)/erp/items"],
+  ["utilities/calendar", "/(tabs)/calendar"],
+  ["utilities/activity_log", "/(tabs)/activity"],
+  ["staff/timesheets?view=all", "/(tabs)/timesheets/entries"],
+  ["costcenters/ag_index", "/(tabs)/erp/cost_centers"],
+  ["gatepass/Gatepass/ag_index", "/(tabs)/erp/gatepass"],
+  ["materials/Materials", "/(tabs)/erp/materials"],
+  ["opportunities/dashboard", "/(tabs)/opportunities"],
+  ["prizm_reports", "/(tabs)/reports"],
+  ["przpurchase/przpurchase/ag_index", "/(tabs)/erp/purchase_requests"],
+  ["przpurchase/PurOrder/ag_index", "/(tabs)/erp/purchase_orders"],
+  ["przpurchase/Expense_Request", "/(tabs)/erp/purchase_expense_requests"],
+  ["przpurchase/Payment_Request/ag_index", "/(tabs)/erp/purchase_payment_requests"],
+  ["przpurchase/SupplierInvoice/ag_index", "/(tabs)/erp/purchase_supplier_invoices"],
+  ["przpurchase/Received_Vouchers/ag_index", "/(tabs)/erp/purchase_received_vouchers"],
+  ["przpurchase/Delivery_Notes", "/(tabs)/erp/purchase_delivery_notes"],
+  ["przpurchase/Quotations/ag_index", "/(tabs)/erp/purchase_quotations"],
+  ["przpurchase/suppliers/ag_index", "/(tabs)/erp/purchase_vendors"],
+  ["hr_payroll/payslip_manage", "/(tabs)/erp/hr_payslips"],
+  ["hr_profile/contracts", "/(tabs)/erp/hr_contracts"],
+  ["hr_profile/job_positions", "/(tabs)/erp/hr_job_positions"],
+  ["rfq2/rfq", "/(tabs)/erp/rfq2"],
+  ["technicalinquiries/Technicalinquiries", "/(tabs)/erp/technical_inquiries"],
+  ["tenders/triage", "/(tabs)/tenders/triage"],
+  ["tenders/tender", "/(tabs)/tenders"],
+  ["prizmbudget/manage_budget", "/(tabs)/erp/budget_items"],
+  ["prizmbusinesspartners/prizmbusinesspartners", "/(tabs)/erp/business_partners"],
+  ["surveys", "/(tabs)/erp/surveys"],
+  ["timesheets/requisition_manage", "/(tabs)/leave"],
+  ["clients/groups", "/(tabs)/erp/setup_customer_groups"],
+  ["tickets/priorities", "/(tabs)/erp/setup_ticket_priorities"],
+  ["tickets/predefined_replies", "/(tabs)/erp/setup_ticket_replies"],
+  ["tickets/statuses", "/(tabs)/erp/setup_ticket_statuses"],
+  ["tickets/services", "/(tabs)/erp/setup_ticket_services"],
+  ["leads/sources", "/(tabs)/erp/setup_lead_sources"],
+  ["leads/statuses", "/(tabs)/erp/setup_lead_statuses"],
+  ["taxes", "/(tabs)/erp/setup_taxes"],
+  ["currencies", "/(tabs)/erp/setup_currencies"],
+  ["paymentmodes", "/(tabs)/erp/setup_payment_modes"],
+  ["expenses/categories", "/(tabs)/erp/setup_expense_categories"],
+  ["contracts/types", "/(tabs)/erp/setup_contract_types"],
+  ["departments", "/(tabs)/erp/setup_departments"],
+  ["emails", "/(tabs)/erp/setup_email_templates"],
+  ["roles", "/(tabs)/erp/setup_roles"],
+  ["custom_fields", "/(tabs)/erp/setup_custom_fields"],
+]) {
+  assert.equal(
+    routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
+    nativePath,
+    `${webPath} must open its existing native screen instead of the ERP hub`,
+  );
+}
 
 const registryKeys = moduleRegistryKeys();
 assert.equal(new Set(registryKeys).size, registryKeys.length, "Module registry keys must be unique");
@@ -511,13 +613,13 @@ assert.match(otpBlock, /relation: "otp_source"/);
 assert.match(otpBlock, /otpmanager\/\{id\}\/reveal/);
 assert.match(otpBlock, /resultFields:/);
 assert.doesNotMatch(otpBlock, /identifier|expires_at/);
-const otpSourcesBlock = registrySource.match(/key: "otp_sources",[\s\S]*?(?=\n  \},\n\];)/)?.[0] ?? "";
+const otpSourcesBlock = registrySource.match(/key: "otp_sources",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
 assert.match(otpSourcesBlock, /manage_sources/);
 assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
 
 const backendWorkspace = path.resolve(
-  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-admin-parity"),
+  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
 );
 assert.ok(
   fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
@@ -532,6 +634,102 @@ assert.match(mobileAppLinkBridge, /S\.browser_fallback_url=/);
 assert.match(mobileAppLinkBridge, /prizm_web/);
 assert.match(mobileAppLinkBridge, /\^\/MS\(\?:\/\|\$\)/);
 assert.match(mobileAppLinkBridge, /api\|uploads\?\|download\|media\|assets\?/);
+const setupApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Setup_api.php"), "utf8");
+const crudFormSource = fs.readFileSync(path.join(workspace, "components/crud/CrudFormScreen.tsx"), "utf8");
+const crudDetailDeleteSource = fs.readFileSync(path.join(workspace, "components/crud/CrudDetailScreen.tsx"), "utf8");
+assert.match(crudFormSource, /initializedFormKeyRef/);
+assert.match(crudFormSource, /if \(initializedFormKeyRef\.current === initializationKey\) return/);
+assert.match(crudFormSource, /const EMPTY_CUSTOM_FIELDS: CustomFieldRow\[\] = \[\]/);
+assert.match(crudDetailDeleteSource, /router\.replace\(path as any\)/);
+assert.match(crudDetailDeleteSource, /Alert\.alert\("Delete failed"/);
+const activityQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/activity.ts"), "utf8");
+assert.match(activityQuerySource, /my\/activity/);
+assert.doesNotMatch(activityQuerySource, /core_crm_api/);
+for (const key of [
+  "setup_customer_groups", "setup_ticket_priorities", "setup_ticket_replies", "setup_ticket_statuses",
+  "setup_ticket_services", "setup_lead_sources", "setup_lead_statuses", "setup_taxes", "setup_currencies",
+  "setup_payment_modes", "setup_expense_categories", "setup_contract_types",
+  "setup_departments",
+]) {
+  assert.ok(registryKeys.includes(key), `${key} must be registered as a native admin module`);
+  const block = registrySource.match(new RegExp(`key: "${key}",[\\s\\S]*?(?=\\n  \\{\\n    key: "|\\n\\];)`))?.[0] ?? "";
+  assert.match(block, /adminOnlyAccess: true/);
+  assert.match(block, /adminOnlyMutations: true/);
+  assert.match(block, /supportsAdvancedFilters: true/);
+  assert.match(block, /endpoint: "setup_api\//);
+}
+for (const resource of [
+  "customer_groups", "ticket_priorities", "ticket_replies", "ticket_statuses", "ticket_services",
+  "lead_sources", "lead_statuses", "taxes", "currencies", "payment_modes", "expense_categories", "contract_types",
+  "departments",
+]) {
+  assert.match(setupApiSource, new RegExp(`'${resource}'`), `${resource} must have a backend definition`);
+}
+assert.match(setupApiSource, /api_apply_advanced_filters/);
+assert.match(setupApiSource, /HTTP_NOT_FOUND/);
+assert.match(setupApiSource, /make_base_currency/);
+assert.match(setupApiSource, /delete_ticket_status/);
+assert.match(setupApiSource, /delete_status/);
+assert.match(setupApiSource, /getSelectableFolders/);
+assert.match(setupApiSource, /getMailbox/);
+assert.match(setupApiSource, /encryption->decrypt/);
+const departmentsBlock = registrySource.match(/key: "setup_departments",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(departmentsBlock, /editableSecret: true/);
+assert.match(departmentsBlock, /delete_after_import/);
+assert.doesNotMatch(departmentsBlock.match(/titleFields:[\s\S]*?fields:/)?.[0] ?? "", /password/);
+const departmentToolsSource = fs.readFileSync(path.join(workspace, "components/crud/DepartmentImapTools.tsx"), "utf8");
+assert.match(departmentToolsSource, /setup_api\/departments\/\$\{id \|\| 0\}\/\$\{action\}/);
+assert.match(departmentToolsSource, /Retrieve folders/);
+assert.match(departmentToolsSource, /Test connection/);
+assert.doesNotMatch(departmentToolsSource, /console\.(?:log|warn|error)/);
+assert.ok(registryKeys.includes("setup_roles"), "Roles must be registered as a native module");
+const rolesBlock = registrySource.match(/key: "setup_roles",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(rolesBlock, /permissionFeature: "roles"/);
+assert.match(rolesBlock, /supportsAdvancedFilters: true/);
+assert.match(rolesBlock, /permissions_summary/);
+assert.doesNotMatch(rolesBlock, /adminOnlyAccess/);
+const rolesApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Roles_api.php"), "utf8");
+assert.match(rolesApiSource, /get_available_staff_permissions/);
+assert.match(rolesApiSource, /update_staff_permissions/);
+assert.match(rolesApiSource, /cannot grant View and View Own together/);
+const roleEditorSource = fs.readFileSync(path.join(workspace, "components/crud/RolePermissionsEditor.tsx"), "utf8");
+assert.match(roleEditorSource, /roles_api\/permissions/);
+assert.match(roleEditorSource, /View and View Own are mutually exclusive/);
+assert.match(roleEditorSource, /Update assigned staff/);
+assert.doesNotMatch(roleEditorSource, /Alert\.alert/);
+assert.ok(registryKeys.includes("setup_custom_fields"), "Custom Fields must be registered as a native module");
+const customFieldsBlock = registrySource.match(/key: "setup_custom_fields",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(customFieldsBlock, /endpoint: "custom_fields_admin_api"/);
+assert.match(customFieldsBlock, /supportsAdvancedFilters: true/);
+assert.match(customFieldsBlock, /adminOnlyAccess: true/);
+assert.match(customFieldsBlock, /disalow_client_to_edit/);
+const customFieldsApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Custom_fields_admin_api.php"), "utf8");
+assert.match(customFieldsApiSource, /after_custom_fields_select_options/);
+assert.match(customFieldsApiSource, /api_apply_advanced_filters/);
+assert.match(customFieldsApiSource, /cannot change after values have been saved/);
+assert.match(customFieldsApiSource, /cant_change_option_custom_field/);
+const customFieldEditorSource = fs.readFileSync(path.join(workspace, "components/crud/CustomFieldDefinitionEditor.tsx"), "utf8");
+assert.match(customFieldEditorSource, /custom_fields_admin_api\/config/);
+assert.match(customFieldEditorSource, /Schema locked/);
+assert.match(customFieldEditorSource, /Options already saved on records cannot be removed/);
+assert.doesNotMatch(customFieldEditorSource, /console\.(?:log|warn|error)/);
+assert.ok(registryKeys.includes("setup_email_templates"), "Email Templates must be registered as a native module");
+const emailTemplatesBlock = registrySource.match(/key: "setup_email_templates",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(emailTemplatesBlock, /endpoint: "email_templates_api"/);
+assert.match(emailTemplatesBlock, /permissionFeature: "email_templates"/);
+assert.match(emailTemplatesBlock, /supportsAdvancedFilters: true/);
+assert.match(emailTemplatesBlock, /canCreate: false/);
+assert.match(emailTemplatesBlock, /canDelete: false/);
+assert.match(emailTemplatesBlock, /variants/);
+const emailTemplatesApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Email_templates_api.php"), "utf8");
+assert.match(emailTemplatesApiSource, /emails_model->update\(\$payload\)/);
+assert.match(emailTemplatesApiSource, /app_merge_fields->all\(\)/);
+assert.match(emailTemplatesApiSource, /api_apply_advanced_filters/);
+const emailTemplateEditorSource = fs.readFileSync(path.join(workspace, "components/crud/EmailTemplateEditor.tsx"), "utf8");
+assert.match(emailTemplateEditorSource, /Tap a token to insert it at the cursor/);
+assert.match(emailTemplateEditorSource, /Language content/);
+assert.match(emailTemplateEditorSource, /useWindowDimensions/);
+assert.doesNotMatch(emailTemplateEditorSource, /console\.(?:log|warn|error)/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
@@ -602,6 +800,23 @@ const tendersApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/ap
 assert.doesNotMatch(tendersApiSource, /\['tender_status' => '(?:Won|Lost)'\]/, "Tender actions must not write the non-existent tender_status column");
 assert.match(tendersApiSource, /Won is not a valid tender status/);
 assert.match(tendersApiSource, /convert_to_opportunity/);
+const tenderTriageScreenSource = fs.readFileSync(path.join(workspace, "components/tenders/TenderTriageScreen.tsx"), "utf8");
+const tenderTriageQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/tender-triage.ts"), "utf8");
+const tenderTriageApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Tender_triage_api.php"), "utf8");
+assert.match(tenderTriageScreenSource, /TENDER OPERATIONS/);
+assert.match(tenderTriageScreenSource, /matchType=\{filter\.matchType\}/, "Tender Triage must expose logical AND\/OR filters");
+assert.match(tenderTriageScreenSource, /useTenderTriageBulkDismiss/);
+assert.match(tenderTriageScreenSource, /useTenderTriageMute/);
+assert.match(tenderTriageScreenSource, /previous: notice\.previous/, "Tender Triage must preserve the server undo snapshot");
+for (const endpoint of ["overview", "items", "action", "bulk_dismiss", "mutes", "mute", "unmute"]) {
+  assert.match(tenderTriageQuerySource, new RegExp(`tender_triage/${endpoint}`));
+}
+for (const method of ["items_get", "overview_get", "action_post", "bulk_dismiss_post", "mutes_get", "mute_post", "unmute_post"]) {
+  assert.match(tenderTriageApiSource, new RegExp(`function ${method}\\s*\\(`));
+}
+assert.match(tenderTriageApiSource, /api_apply_advanced_filters/);
+assert.match(tenderTriageApiSource, /\$allowedFrom/);
+assert.match(tenderTriageApiSource, /where\('triage_status', \$current\)/);
 const opportunityBoqBlock = registrySource.match(/key: "opportunity_boq",[\s\S]*?(?=\r?\n  \{\r?\n    key: "opportunity_notes")/)?.[0] ?? "";
 assert.match(opportunityBoqBlock, /key: "boq_id"/);
 assert.match(opportunityBoqBlock, /key: "item_name"/);
@@ -706,6 +921,8 @@ assert.match(taskApiSource, /timer_tracking\([^;]*false, \$staffid\)/s);
 assert.match(taskApiSource, /\$adminStop, \$staffid\)/);
 const nativeRoutingSource = fs.readFileSync(path.join(workspace, "lib/native-routing.ts"), "utf8");
 assert.match(nativeRoutingSource, /timesheets: "\/\(tabs\)\/timesheets\/entries"/);
+const filterPanelSource = fs.readFileSync(path.join(workspace, "components/crud/FilterPanel.tsx"), "utf8");
+assert.match(filterPanelSource, /<SafeAreaView edges=\{\["top"\]\}/, "Advanced Filters controls must stay below the Android status bar");
 assert.equal(fs.existsSync(path.join(workspace, "lib/queries/advance-leads.ts")), false, "Unsupported legacy Advance Leads mutations must stay removed");
 assert.equal(fs.existsSync(path.join(workspace, "lib/queries/rfq.ts")), false, "Superseded RFQ client must stay removed in favor of RFQ2");
 const customStatusesBlock = registrySource.match(/key: "custom_statuses",[\s\S]*?(?=\n  \{\n    key: "automation")/)?.[0] ?? "";
@@ -727,6 +944,9 @@ assert.match(customStatusesApiSource, /\['projects', 'tasks'\]/);
 assert.match(customStatusesApiSource, /six-digit hex value/);
 const otpApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Otpmanager.php"), "utf8");
 const apiRoutesSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/config/routes.php"), "utf8");
+for (const route of ["items", "overview", "action", "bulk_dismiss", "mutes", "mute", "unmute"]) {
+  assert.match(apiRoutesSource, new RegExp(`api/tender_triage/${route}`));
+}
 for (const staleCall of ["projects_model", "delete_milestone", "update_milestone", "verify_otp"]) {
   assert.doesNotMatch(otpApiSource, new RegExp(staleCall), `OTP API must not contain stale ${staleCall} calls`);
 }
@@ -983,6 +1203,53 @@ for (const token of ["_purchase_requests_list", "_purchase_orders_list", "delive
 }
 assert.match(purchaseApiSource, /function vendor_contact_get/);
 assert.match(purchaseApiSource, /advanced_filters_applied/);
+assert.match(purchaseApiSource, /function supplier_invoices_get/);
+assert.match(purchaseApiSource, /function supplier_invoice_options_get/);
+assert.match(purchaseApiSource, /function supplier_invoices_po_items_get/);
+assert.match(purchaseApiSource, /function supplier_invoice_item_matches_get/);
+assert.equal(
+  routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/przpurchase/SupplierInvoice/view/1211"),
+  "/(tabs)/erp/purchase_supplier_invoices/1211",
+);
+const supplierInvoiceBlock = registrySource.match(/key: "purchase_supplier_invoices",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
+assert.match(supplierInvoiceBlock, /supportsAdvancedFilters: true/);
+assert.match(supplierInvoiceBlock, /detailRootKey: "invoice"/);
+assert.match(supplierInvoiceBlock, /status: \{ ruleType: "MultiSelectRule" \}/);
+assert.match(supplierInvoiceBlock, /payment_status: \{ ruleType: "MultiSelectRule" \}/);
+for (const action of ["submit", "approve", "reject", "cancel", "reopen", "mark_paid", "undo_paid"]) {
+  assert.match(supplierInvoiceBlock, new RegExp(`key: "${action}"`));
+}
+const supplierInvoiceEditorSource = fs.readFileSync(path.join(workspace, "components/crud/SupplierInvoiceEditor.tsx"), "utf8");
+assert.match(supplierInvoiceEditorSource, /supplier_invoice_options/);
+assert.match(supplierInvoiceEditorSource, /Import PO/);
+assert.match(supplierInvoiceEditorSource, /supplier_invoice_item_matches/);
+assert.match(supplierInvoiceEditorSource, /Supplier Invoice Workspace/);
+const supplierInvoiceSummarySource = fs.readFileSync(path.join(workspace, "components/crud/SupplierInvoiceSummary.tsx"), "utf8");
+for (const section of ["Supplier Invoice", "Commercial snapshot", "Invoice lines", "Approval route", "Activity"]) {
+  assert.match(supplierInvoiceSummarySource, new RegExp(section));
+}
+for (const [link, expected] of [
+  ["https://ms.prizm-energy.com/MS/admin/gatepass/RequestManager", "/(tabs)/erp/gatepass_requests"],
+  ["https://ms.prizm-energy.com/MS/admin/gatepass/RequestManager/view/1211", "/(tabs)/erp/gatepass_requests/1211"],
+  ["https://ms.prizm-energy.com/MS/api/gatepass_api/requests/1211", "/(tabs)/erp/gatepass_requests/1211"],
+]) {
+  assert.equal(routing.resolveNativeRoute(link), expected);
+}
+const gatepassRequestBlock = registrySource.match(/key: "gatepass_requests",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
+assert.match(gatepassRequestBlock, /permissionFeature: "gatepass_RequestManager"/);
+assert.match(gatepassRequestBlock, /request_classification: \{ ruleType: "MultiSelectRule" \}/);
+assert.match(gatepassRequestBlock, /key: "convert"/);
+for (const field of ["request_classification", "rel_type", "rel_id", "duration", "duration_from", "duration_to", "staff_id", "vehicle_id"]) {
+  assert.match(gatepassRequestBlock, new RegExp(`key: "${field}"`));
+}
+const gatepassRequestEditorSource = fs.readFileSync(path.join(workspace, "components/crud/GatepassRequestEditor.tsx"), "utf8");
+for (const token of ["Gate Pass Request Workspace", "gatepass_api/requests/options", "Work authorization", "People & vehicles"]) {
+  assert.match(gatepassRequestEditorSource, new RegExp(token));
+}
+const gatepassRequestSummarySource = fs.readFileSync(path.join(workspace, "components/crud/GatepassRequestSummary.tsx"), "utf8");
+for (const section of ["Gate Pass Request", "Access window", "Work authorization", "Access roster", "Workflow owners"]) {
+  assert.match(gatepassRequestSummarySource, new RegExp(section));
+}
 assert.ok(apiRoutesSource.indexOf("api/purchase_api/vendor_contact/(:num)") >= 0, "Vendor contact detail route must exist separately from the vendor child list");
 const purchaseContactsBlock = registrySource.match(/key: "purchase_vendor_contacts",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
 assert.match(purchaseContactsBlock, /detailEndpoint: "purchase_api\/vendor_contact"/);

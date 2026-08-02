@@ -9,6 +9,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { memo, useCallback, useEffect, useMemo, useState } from "react";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SafeAreaView } from "react-native-safe-area-context";
 import type {
   ModuleDefinition,
   ModuleField,
@@ -347,13 +348,13 @@ export const FilterPanel = memo(function FilterPanel({
 
   return (
     <Modal visible={visible} animationType="slide" onRequestClose={onClose}>
-      <View className="flex-1 bg-surface">
+      <SafeAreaView edges={["top"]} className="flex-1 bg-surface">
         {/* Header */}
         <View className="bg-white px-4 py-3 flex-row items-center border-b border-gray-100">
           <TouchableOpacity onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={24} color="#0F172A" />
           </TouchableOpacity>
-          <Text className="ml-3 text-lg font-semibold flex-1">Perfix Filters</Text>
+          <Text className="ml-3 text-lg font-semibold flex-1">Advanced Filters</Text>
           {draftCount > 0 ? (
             <TouchableOpacity onPress={clearAll} hitSlop={8}>
               <Text className="text-primary font-medium text-sm">Clear all</Text>
@@ -551,7 +552,7 @@ export const FilterPanel = memo(function FilterPanel({
             </Text>
           </TouchableOpacity>
         </View>
-      </View>
+      </SafeAreaView>
     </Modal>
   );
 });

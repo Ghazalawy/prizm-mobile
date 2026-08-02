@@ -1,0 +1,526 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm Energy QC Report 26025</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">@page { size: A4; margin: 15mm 14mm 16mm; }
+:root { --ink: #0f172a; --muted: #64748b; --line: #dbe3ec; --soft: #f6f8fb; --accent: #ef5b00; --blue: #087ea4; }
+* { box-sizing: border-box; }
+body { color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.45; max-width: 1000px; margin: 0 auto; padding: 22px 26px; }
+h1 { color: var(--ink); font-size: 23pt; line-height: 1.12; margin: 0 0 18px; padding: 0 0 12px; border-bottom: 4px solid var(--accent); }
+h2 { color: var(--blue); font-size: 15pt; margin: 24px 0 9px; page-break-after: avoid; }
+p { margin: 0 0 9px; }
+strong { color: var(--ink); }
+code { background: #eef2f6; border-radius: 4px; color: #334155; font-family: Consolas, monospace; font-size: 8.7pt; padding: 1px 4px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 17px; font-size: 8.7pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { background: #172033; color: #fff; font-weight: 650; text-align: left; padding: 7px 8px; border: 1px solid #172033; }
+td { vertical-align: top; padding: 6px 8px; border: 1px solid var(--line); }
+tbody tr:nth-child(even) td { background: var(--soft); }
+ul { margin: 6px 0 14px; padding-left: 22px; }
+li { margin: 3px 0; }
+blockquote { margin: 12px 0; padding: 9px 13px; border-left: 4px solid var(--accent); background: #fff7ed; }
+@media print { body { max-width: none; padding: 0; } h2 { break-after: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm Energy QC Report 26025</h1>
+</header>
+<h1 id="qc-report-supplier-invoice-native-parity-and-production-app-handoff">QC
+Report — Supplier Invoice Native Parity and Production App Handoff</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td>PE-QAQC-QC-RPT-26025-R01</td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td>supplier-invoice-app-handoff-20260802</td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td>2026-08-02 17:40 +04:00</td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td>Codex / GPT-5</td>
+</tr>
+<tr>
+<td>Backend parity workspace</td>
+<td>C:/wamp64/www/prizm331-wt-mobile-parity-next</td>
+</tr>
+<tr>
+<td>Backend hotfix workspace</td>
+<td>C:/wamp64/www/prizm331-wt-app-link-hotfix</td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td>C:/wamp64/www/prizm-mobile-app-link-fix</td>
+</tr>
+<tr>
+<td>Backend parity branch</td>
+<td>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</td>
+</tr>
+<tr>
+<td>Backend hotfix branch</td>
+<td>fix/mobile-app-link-handoff-DESKTOP-9GO5QC0</td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td>codex/full-native-parity-audit</td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Continuous parity task chain</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>Supplier Invoices now have a native, dense purchasing workspace
+backed by the canonical Perfex web model. The scope includes
+permission-aware list/detail reads, server search and sorting, direct
+additive filters, Perfex advanced AND/OR filters, create/update/delete,
+PO-line import, supplier-item mappings, attachments, approval stages,
+and exact workflow actions. The purpose-built editor was inspected on
+the Android emulator and the real HTTP runtime suite exercised atomic
+persistence, multi-status selection, three-rule AND/OR logic, update,
+submit, detail, delete, and cleanup.</p>
+<p>The reported Payment Request URL was then reproduced through Android
+and Chrome. Android domain verification, the installed signing
+certificate, and the exact native route were healthy. The remaining
+defect was the browser fallback: Chrome blocks unattended external-app
+launches, and the bridge immediately followed its web fallback before
+the user could act. Production now retains a clear one-tap handoff and
+uses a package-targeted, legacy-compatible
+<code>prizmcrm://ms.prizm-energy.com/MS/...</code> route understood by
+the current public APK. A live Chrome tap opened native Payment Request
+#1211 successfully.</p>
+<p>The final parity audit also caught and corrected a Supplier Invoice
+funnel contract mismatch: <code>sequence_number</code> is now a numeric
+rule on both mobile and API. All list and CRUD audits pass. The backend
+app-link hotfix is deployed; no Android build was started, preserving
+the requested single final APK build. The overall native parity
+programme remains open.</p>
+<h2 id="supplier-invoice-test-results">2. Supplier Invoice Test
+Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Canonical MVC</td>
+<td>SupplierInvoice web model, controller and views</td>
+<td>REVIEWED before API design</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>Purchase API and SupplierInvoice model lint</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>API contract</td>
+<td><code>supplier_invoices_api_contract_test.php</code></td>
+<td>PASS — 11/11</td>
+</tr>
+<tr>
+<td>Runtime create</td>
+<td>Real HTTP, two lines and approval stages</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Supplier invoice number</td>
+<td>PASS — exact fixture</td>
+</tr>
+<tr>
+<td>Direct multi-status</td>
+<td>Draft + Cancelled</td>
+<td>PASS — additive</td>
+</tr>
+<tr>
+<td>Three-rule AND</td>
+<td>supplier number + status + amount</td>
+<td>PASS — exact result</td>
+</tr>
+<tr>
+<td>Three-rule OR</td>
+<td>mutually independent rules</td>
+<td>PASS — exact result</td>
+</tr>
+<tr>
+<td>Runtime update</td>
+<td>Header and line persistence</td>
+<td>PASS — atomic</td>
+</tr>
+<tr>
+<td>Workflow</td>
+<td>Submit and Draft + Submitted multi-status</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Dense detail</td>
+<td>Header, lines, files, history, stages, actions</td>
+<td>PASS — HTTP 200</td>
+</tr>
+<tr>
+<td>Delete and cleanup</td>
+<td>Record absent after delete</td>
+<td>PASS; zero temporary tables</td>
+</tr>
+<tr>
+<td>Emulator editor</td>
+<td>Hero, two-column fields, totals, line card, notes</td>
+<td>PASS — visually inspected</td>
+</tr>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>node scripts/test-mobile-contracts.mjs</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td><code>npm run verify:release</code></td>
+<td>PASS — v1.17.0/code35</td>
+</tr>
+<tr>
+<td>Expo dependencies</td>
+<td><code>npx expo install --check</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>List audit</td>
+<td>Search/filter/sort API contracts</td>
+<td>PASS — 122 server + 2 client searchable; 124 filterable; 77
+sortable; 0 skipped</td>
+</tr>
+<tr>
+<td>CRUD audit</td>
+<td>Advertised mutations versus backend methods</td>
+<td>PASS — 357; 0 skipped</td>
+</tr>
+<tr>
+<td>Web-menu parity</td>
+<td>Native static destinations</td>
+<td>110/347 covered; 237 missing; 4 dynamic unresolved</td>
+</tr>
+</tbody>
+</table>
+<h2 id="production-app-handoff-test-results">3. Production App-Handoff
+Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Production association</td>
+<td><code>/.well-known/assetlinks.json</code></td>
+<td>HTTP 200; package/fingerprint match</td>
+</tr>
+<tr>
+<td>Android domain state</td>
+<td><code>pm get-app-links com.prizmenergy.mobile</code></td>
+<td><code>ms.prizm-energy.com: verified</code>; handling enabled</td>
+</tr>
+<tr>
+<td>Exact HTTPS intent</td>
+<td>Payment Request 1211 URL</td>
+<td>PASS — Prizm MainActivity and native record</td>
+</tr>
+<tr>
+<td>Production browser bridge before fix</td>
+<td>Real Chrome document navigation</td>
+<td>FAIL reproduced — timer fell through to web login</td>
+</tr>
+<tr>
+<td>Corrected bridge contract</td>
+<td>PHP suite</td>
+<td>PASS — 11/11</td>
+</tr>
+<tr>
+<td>Background/API/upload safety</td>
+<td>Predicate matrix</td>
+<td>PASS — never intercepted</td>
+</tr>
+<tr>
+<td>Legacy public-APK compatibility</td>
+<td>Host/path custom scheme</td>
+<td>PASS — route resolves to Payment Request 1211</td>
+</tr>
+<tr>
+<td>Real production Chrome handoff</td>
+<td>Orange <code>Open Prizm CRM</code> action</td>
+<td>PASS — native Payment Request #1211</td>
+</tr>
+<tr>
+<td>Native record identity</td>
+<td>Emulator UI dump</td>
+<td><code>MT-26080002</code>, Fully approved</td>
+</tr>
+<tr>
+<td>Live bridge response</td>
+<td>Android document request</td>
+<td>HTTP 200; one-tap copy and <code>prizmcrm</code> scheme present;
+blocked timer absent</td>
+</tr>
+<tr>
+<td>Fork CI</td>
+<td>Ghazalawy/prizm331 PR #320</td>
+<td>PASS — PHP 8.3 contracts</td>
+</tr>
+<tr>
+<td>Upstream integration</td>
+<td>PrizmIT/prizm331 PR #1199</td>
+<td>MERGED</td>
+</tr>
+<tr>
+<td>Production deploy</td>
+<td>Workflow 30750340830</td>
+<td>PASS — HEAD <code>df0dcfa973</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">4. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Supplier Invoice reads and mutations mirror canonical web
+behavior</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Direct multi-value and custom AND/OR filters are additive</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Exact Payment Request browser handoff reaches the installed app</td>
+<td>100% PASS in production emulator test</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>API, uploads and background fetches are not intercepted</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Supplier Invoice editor is dense, identified and
+mobile-responsive</td>
+<td>100% PASS for tested editor states</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Current public APK understands the production bridge</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Release</td>
+<td>Avoid another paid Android build before final parity</td>
+<td>PASS — no Android build triggered</td>
+</tr>
+</tbody>
+</table>
+<p>Scoped quality gate: PASS. Production app-handoff gate: PASS. Overall
+parity programme: OPEN.</p>
+<h2 id="code-changes">5. Code Changes</h2>
+<h3 id="backend-parity-branch">Backend parity branch</h3>
+<ul>
+<li><code>modules/api/controllers/Purchase_api.php</code></li>
+<li><code>modules/api/config/routes.php</code></li>
+<li><code>modules/przpurchase/models/SupplierInvoice_model.php</code></li>
+<li><code>modules/api/tests/supplier_invoices_api_contract_test.php</code></li>
+<li><code>modules/api/tests/supplier_invoices_runtime_test.php</code></li>
+<li>Commits <code>f7b847e4e</code> and <code>ab6fcd90c</code></li>
+</ul>
+<h3 id="backend-production-hotfix">Backend production hotfix</h3>
+<ul>
+<li><code>modules/api/helpers/mobile_app_link_helper.php</code></li>
+<li><code>modules/api/tests/mobile_app_link_bridge_contract_test.php</code></li>
+<li>Hotfix commit <code>f9e10f8e9</code>; fork merge
+<code>f423d7eba</code>; production merge/deploy
+<code>df0dcfa973</code></li>
+</ul>
+<h3 id="mobile-candidate">Mobile candidate</h3>
+<ul>
+<li><code>components/crud/SupplierInvoiceEditor.tsx</code></li>
+<li><code>components/crud/SupplierInvoiceSummary.tsx</code></li>
+<li><code>components/crud/CrudForm.tsx</code></li>
+<li><code>components/crud/CrudDetail.tsx</code></li>
+<li><code>lib/module-registry.ts</code></li>
+<li><code>lib/native-routing.ts</code></li>
+<li><code>scripts/test-mobile-contracts.mjs</code></li>
+<li>Commits <code>2c08131</code>, <code>cb99eb1</code>, and
+<code>66641d1</code></li>
+</ul>
+<p>The frontend-polish skill influenced the dense Supplier Invoice
+hierarchy, responsive field grouping, totals, and line-card
+presentation. The documents skill was used only for the mandatory report
+render/inspection workflow.</p>
+<h2 id="deployment-status">6. Deployment Status</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Target</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Browser-to-app backend hotfix</td>
+<td>DEPLOYED — production HEAD <code>df0dcfa973</code></td>
+</tr>
+<tr>
+<td>Hotfix PRs</td>
+<td>Ghazalawy #320 and PrizmIT #1199 merged</td>
+</tr>
+<tr>
+<td>Hotfix workflow</td>
+<td><code>30750340830</code> passed</td>
+</tr>
+<tr>
+<td>Supplier Invoice backend parity</td>
+<td>CHECKPOINTED, not deployed with the isolated hotfix</td>
+</tr>
+<tr>
+<td>Mobile parity branch</td>
+<td>LOCAL CHECKPOINTS, not pushed in this slice</td>
+</tr>
+<tr>
+<td>Android APK</td>
+<td>NOT BUILT — single final build preserved</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>v1.17.0 / versionCode 35 unchanged</td>
+</tr>
+</tbody>
+</table>
+<h2 id="evidence-and-residual-risk">7. Evidence and Residual Risk</h2>
+<ul>
+<li>Native Payment Request evidence:
+<code>C:/wamp64/tmp/payment-request-1211-app-link.png</code>.</li>
+<li>Supplier Invoice editor evidence:
+<code>C:/wamp64/tmp/supplier-invoice-editor-emulator.png</code>,
+<code>supplier-invoice-editor-lines-emulator.png</code>, and
+<code>supplier-invoice-editor-line-card-emulator.png</code>.</li>
+<li>Supplier Invoice detail was verified through real HTTP data, type
+checks, contracts, and source review; a live fixture detail screenshot
+was not retained because the isolated local server cold start did not
+finish within the visual attempt.</li>
+<li>Chrome security requires a user gesture once a URL is already inside
+Chrome. External verified App Link taps remain automatic; browser-origin
+navigation now presents a deterministic one-tap handoff instead of
+silently returning to web login.</li>
+<li>Static parity remains 110/347; 237 static destinations plus 4
+dynamic expressions remain for future native work.</li>
+<li>User-owned <code>artifacts/</code> remains untouched.</li>
+</ul>
+<h2 id="sign-off">8. Sign-Off</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engineering / Codex</td>
+<td>Scoped implementation, production hotfix and verification
+complete</td>
+</tr>
+<tr>
+<td>QA/QC</td>
+<td>PASS for Supplier Invoice candidate and production app handoff</td>
+</tr>
+<tr>
+<td>Product owner</td>
+<td>Physical-device confirmation requested; overall parity acceptance
+remains open</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

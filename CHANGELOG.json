@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.18.0",
+      "date": "2026-08-02",
+      "title": "Native administration and purchasing parity",
+      "highlights": [
+        "Setup administration now covers roles, departments, custom fields, email templates, and activity securely.",
+        "Supplier Invoices and Gate Pass Requests now provide dense native CRUD, workflows, and linked records.",
+        "Tender Triage adds native decision queues, reversible actions, search, sorting, and combined filters.",
+        "ERP links now hand off reliably through Android and Chrome, including Payment Request detail links.",
+        "Local signed releases now avoid hosted build minutes while preserving certificate and App Link checks."
+      ]
+    },
+    {
       "version": "1.17.0",
       "date": "2026-08-02",
       "title": "Complete native workflows and dependable filters",

@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm Energy QC Report 26021</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">@page { size: A4; margin: 15mm 14mm 16mm; }
+:root { --ink: #0f172a; --muted: #64748b; --line: #dbe3ec; --soft: #f6f8fb; --accent: #ef5b00; --blue: #087ea4; }
+* { box-sizing: border-box; }
+body { color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.45; max-width: 1000px; margin: 0 auto; padding: 22px 26px; }
+h1 { color: var(--ink); font-size: 23pt; line-height: 1.12; margin: 0 0 18px; padding: 0 0 12px; border-bottom: 4px solid var(--accent); }
+h2 { color: var(--blue); font-size: 15pt; margin: 24px 0 9px; page-break-after: avoid; }
+p { margin: 0 0 9px; }
+strong { color: var(--ink); }
+code { background: #eef2f6; border-radius: 4px; color: #334155; font-family: Consolas, monospace; font-size: 8.7pt; padding: 1px 4px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 17px; font-size: 8.7pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { background: #172033; color: #fff; font-weight: 650; text-align: left; padding: 7px 8px; border: 1px solid #172033; }
+td { vertical-align: top; padding: 6px 8px; border: 1px solid var(--line); }
+tbody tr:nth-child(even) td { background: var(--soft); }
+ul { margin: 6px 0 14px; padding-left: 22px; }
+li { margin: 3px 0; }
+blockquote { margin: 12px 0; padding: 9px 13px; border-left: 4px solid var(--accent); background: #fff7ed; }
+@media print { body { max-width: none; padding: 0; } h2 { break-after: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm Energy QC Report 26021</h1>
+</header>
+<h1 id="qc-report-native-roles-combined-filters-and-app-link-verification">QC
+Report — Native Roles, Combined Filters, and App-Link Verification</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td><code>PE-QAQC-QC-RPT-26021-R01</code></td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td><code>native-roles-app-link-filters-20260802</code></td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td><code>2026-08-02 13:40 +04:00</code></td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td><code>Codex / GPT-5</code></td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td><code>C:\wamp64\www\prizm331-wt-mobile-parity-next</code></td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td><code>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</code></td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td><code>codex/full-native-parity-audit</code></td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Continuous parity task chain</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This scoped batch adds Setup → Roles as a fully native administrative
+workflow after reading Perfex’s canonical Roles controller, model,
+views, helper, and live permission registry. The mobile module now
+provides list, search, sorting, Perfex advanced filters, dense detail,
+create, edit, guarded delete, assigned-staff coverage, and a live
+permission-matrix editor.</p>
+<p>The permission editor preserves the web rules: View and View Own are
+mutually exclusive; hook-defined blocked capabilities cannot coexist;
+not-applicable capabilities remain disabled; unknown
+features/capabilities are rejected; and an administrator may explicitly
+propagate changed role permissions to staff assigned to the role. The
+API delegates writes to <code>Roles_model</code>, enforces the canonical
+<code>roles</code> capability for each action, and returns no-trace 404
+responses to callers without access.</p>
+<p>Emulator CRUD testing created one reversible role fixture, changed
+its grants, and removed it. The test exposed two regressions that were
+corrected before sign-off: Perfex’s cached
+<code>Roles_model::get()</code> could return a pre-edit object within
+the write request, and requesting a missing role could dereference a
+null model row and produce HTTP 500. Write responses now read through
+the database, and missing/deleted records reliably return HTTP 404.</p>
+<p>The rigorous funnel test used two custom logical rules against live
+Role data. AND returned no rows for mutually exclusive exact names;
+changing only the match type to OR returned exactly the two expected
+roles. The shared Advanced Filters screen was also moved into the
+Android top safe area after visual testing showed its header and Clear
+all action underneath the status bar.</p>
+<p>The reported Payment Request App Link was reproduced with the exact
+URL. The published rolling APK (<code>c06f94d</code>) predates the
+committed host-wide Android handoff hardening (<code>006bf61</code>),
+explaining the phone fallback to the browser. On the hardened emulator
+build, Android verified <code>ms.prizm-energy.com</code>, resolved the
+exact URL to <code>com.prizmenergy.mobile/.MainActivity</code>, and
+routed record 1211 to the native Payment Request screen. The production
+<code>assetlinks.json</code> certificate fingerprint matches the
+installed application. Publishing remains held for the requested single
+consolidated Android build.</p>
+<p>The scoped quality gate passes. Static web-menu parity is now
+107/347, leaving 240 static destinations and 4 dynamic destinations
+open.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>npm run test:contracts</code> against current backend
+worktree</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata safety</td>
+<td><code>npm run verify:release</code></td>
+<td>PASS — unchanged v1.17.0/code35</td>
+</tr>
+<tr>
+<td>Web-menu parity audit</td>
+<td><code>npm run audit:web-parity</code></td>
+<td>PASS — 107/347 covered; 240 missing; 4 dynamic</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP 8.3.14 lint: controller, routes, contract test</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Roles backend contract</td>
+<td><code>roles_api_contract_test.php</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Diff hygiene</td>
+<td><code>git diff --check</code> in both worktrees</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Roles list</td>
+<td>Authenticated administrator list</td>
+<td>HTTP 200; 21 baseline roles</td>
+</tr>
+<tr>
+<td>Roles App Link</td>
+<td><code>/MS/admin/roles</code> into native module</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Role detail App Link</td>
+<td><code>/MS/admin/roles/role/24</code> into native record</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Permission schema</td>
+<td><code>GET /api/roles_api/permissions</code></td>
+<td>HTTP 200; live hook-extended registry</td>
+</tr>
+<tr>
+<td>Role create</td>
+<td>Numeric fixture <code>260901</code> with View Global + Create</td>
+<td>HTTP 201; list 21 → 22</td>
+</tr>
+<tr>
+<td>Role detail</td>
+<td>Fixture ID 24</td>
+<td>HTTP 200; two grants summarized</td>
+</tr>
+<tr>
+<td>Role update</td>
+<td>Rename <code>260902</code>, add Edit grant</td>
+<td>HTTP 200; three grants returned and persisted</td>
+</tr>
+<tr>
+<td>Role delete</td>
+<td>Fixture ID 24</td>
+<td>HTTP 200; list 22 → 21</td>
+</tr>
+<tr>
+<td>Post-delete detail</td>
+<td><code>GET /api/roles_api/24</code></td>
+<td>HTTP 404; native Record not found state</td>
+</tr>
+<tr>
+<td>Combined AND filter</td>
+<td>Admin Manager equals AND Field Engineer equals</td>
+<td>HTTP 200; zero rows; correct empty state</td>
+</tr>
+<tr>
+<td>Combined OR filter</td>
+<td>Same two exact rules, match type OR</td>
+<td>HTTP 200; exactly two expected rows</td>
+</tr>
+<tr>
+<td>Filter safe area</td>
+<td>Reloaded emulator screenshot + UI bounds</td>
+<td>PASS — header shifted below 128 px status inset</td>
+</tr>
+<tr>
+<td>Payment Request Android resolution</td>
+<td>Exact URL ending <code>/view_payment_request/1211</code></td>
+<td>PASS — app MainActivity selected</td>
+</tr>
+<tr>
+<td>Payment Request native rewrite</td>
+<td>Exact URL to
+<code>/(tabs)/approvals/payment_request/1211</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Website association</td>
+<td>Live <code>/.well-known/assetlinks.json</code></td>
+<td>HTTP 200; matching SHA-256 fingerprint</td>
+</tr>
+<tr>
+<td>Published APK provenance</td>
+<td>Rolling release SHA <code>c06f94d</code> vs hardening
+<code>006bf61</code></td>
+<td>Confirmed published APK predates fix</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Role permissions mirror the live Perfex registry and conflict
+rules</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Role writes honor capability gates and canonical model behavior</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Missing/deleted roles return 404, never 500</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>CRUD testing is reversible and leaves no QA role fixture</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Multi-rule AND/OR filters update the live result set correctly</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Advanced Filters controls are reachable below Android system UI</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Exact Payment Request URL is claimed and mapped by hardened
+build</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Web Role list/detail links resolve to native screens</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Programme</td>
+<td>Every static web destination has a native equivalent</td>
+<td>OPEN — 107/347 (30.8%) covered</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scoped quality gate: PASS. Deployment gate: HELD for one
+consolidated final build. Overall native-web parity programme:
+OPEN.</strong></p>
+<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend Roles implementation</td>
+<td><code>caecbf51f</code></td>
+</tr>
+<tr>
+<td>Mobile Roles/filter/link implementation</td>
+<td><code>adbf0c2</code></td>
+</tr>
+<tr>
+<td>Existing host-wide App Link hardening</td>
+<td><code>006bf61</code> — committed after current published APK</td>
+</tr>
+<tr>
+<td>Current published rolling APK</td>
+<td><code>c06f94d</code>; release asset digest
+<code>ef4c4b88…</code></td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>Deliberately unchanged until the consolidated final release</td>
+</tr>
+<tr>
+<td>Push / PR / deploy</td>
+<td>Not performed in this batch</td>
+</tr>
+<tr>
+<td>Production data</td>
+<td>Not touched</td>
+</tr>
+<tr>
+<td>Local QA fixture</td>
+<td>Role ID 24 deleted; baseline restored to 21 roles</td>
+</tr>
+<tr>
+<td>User files</td>
+<td>Untracked <code>artifacts/</code> preserved</td>
+</tr>
+<tr>
+<td>Rollback</td>
+<td>Revert the scoped mobile/backend commits before any future
+merge</td>
+</tr>
+</tbody>
+</table>
+<h2 id="emulator-and-http-evidence">5. Emulator and HTTP Evidence</h2>
+<ul>
+<li>Emulator: <code>emulator-5554</code>, Android development
+build.</li>
+<li>Role list/detail/form evidence:
+<code>artifacts/roles-list-current.png</code>,
+<code>artifacts/role-detail.xml</code>,
+<code>artifacts/role-edit-expanded.xml</code>,
+<code>artifacts/role-updated.xml</code>.</li>
+<li>CRUD completion: <code>artifacts/roles-after-delete.xml</code> shows
+21 total and no fixture.</li>
+<li>Logical filter evidence: <code>artifacts/roles-and-result.xml</code>
+shows no-result AND behavior; <code>artifacts/roles-or-result.xml</code>
+shows two total and both expected roles.</li>
+<li>Safe-area evidence:
+<code>artifacts/filter-safe-area-final.png</code> and XML place header
+controls at y=156..221 rather than y=28..93 under the status bar.</li>
+<li>App-link evidence: Android package query listed Prizm CRM and
+Chrome; domain state was verified; intent launch selected
+<code>com.prizmenergy.mobile/.MainActivity</code>.</li>
+<li>Exact Payment Request native evidence:
+<code>artifacts/payment-link.xml</code> was owned by the Prizm package
+and displayed the native Payment Request state for ID 1211 against the
+local test backend.</li>
+<li>Apache evidence recorded HTTP 200/201 for Role reads/writes, HTTP
+200 for both combined-filter queries, and corrected HTTP 404 after
+deletion.</li>
+<li>The temporary WAMP worktree URL override was removed before commit;
+<code>lib/environment.ts</code> matches the branch baseline.</li>
+</ul>
+<h2 id="sign-off">6. Sign-off</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA automation</td>
+<td>Codex</td>
+<td>Scoped PASS; deployment held; parity programme open</td>
+<td>2026-08-02</td>
+</tr>
+<tr>
+<td>Product reviewer</td>
+<td>Osama Hassan</td>
+<td>Final acceptance pending consolidated release</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<p>Generated under Prizm QA/QC Policy. Classification: Internal.</p>
+</body>
+</html>

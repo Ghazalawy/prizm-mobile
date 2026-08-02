@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm QC Report 26019</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      white-space: pre-wrap;
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm QC Report 26019</h1>
+</header>
+<h1
+id="qc-report-native-setup-administration-and-shared-crud-stability">QC
+Report — Native Setup Administration and Shared CRUD Stability</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td><code>PE-QAQC-QC-RPT-26019-R01</code></td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td><code>setup-native-admin-parity-20260802</code></td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td><code>2026-08-02 12:09 +04:00</code></td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td><code>Codex / GPT-5</code></td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td><code>C:\wamp64\www\prizm331-wt-mobile-parity-next</code></td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td><code>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</code></td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td><code>codex/full-native-parity-audit</code></td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This scoped batch adds twelve native, administrator-only Setup
+catalog pages: Customer Groups, Ticket Priorities, Predefined Replies,
+Ticket Statuses, Ticket Services, Lead Sources, Lead Statuses, Taxes,
+Currencies, Payment Modes, Expense Categories, and Contract Types. Each
+page supports native list, search, sorting, Perfex-compatible advanced
+filters, detail, create, edit, and guarded delete; Currencies also
+exposes the canonical Make Base action.</p>
+<p>The web MVC models and permission behavior were read before
+implementation. The API uses explicit resource and writable-field
+allowlists, canonical Perfex models, strict validation, HTML
+purification for predefined replies, protected default-record deletion,
+no-trace 404 responses for non-admin users, and authenticated headers
+through the shared mobile API layer.</p>
+<p>Emulator testing found and corrected two cross-cutting defects. Setup
+modules initially flattened logical filters into ordinary query
+parameters, so two visibly active rules were ignored by the API. They
+now send the full Perfex <code>filters</code> JSON group. Generic CRUD
+forms also reinitialized after every keystroke because route-parameter
+object identity changed; a stable initialization guard now preserves
+typed edits, and a stable empty custom-fields collection removes the
+associated maximum-update-depth loop.</p>
+<p>The scoped quality gate passes. Deployment remains held for the
+user’s requested single consolidated Android release. The broader
+web-parity programme improves from 93/347 to 105/347 static
+destinations; 242 static destinations and 4 dynamic destinations remain
+open.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td><code>npm run test:contracts</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata safety</td>
+<td><code>npm run verify:release</code></td>
+<td>PASS — unchanged v1.17.0/code35</td>
+</tr>
+<tr>
+<td>Web-menu parity audit</td>
+<td><code>npm run audit:web-parity</code></td>
+<td>PASS — 105/347 covered; 242 missing; 4 dynamic</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP 8.2 lint on routes, controller, and test</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Backend contract</td>
+<td><code>setup_api_contract_test.php</code></td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Diff hygiene</td>
+<td><code>git diff --check</code> in both worktrees</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Setup list matrix</td>
+<td>All 12 authenticated admin list endpoints</td>
+<td>HTTP 200</td>
+</tr>
+<tr>
+<td>No-trace permission</td>
+<td>Non-admin Setup request</td>
+<td>HTTP 404</td>
+</tr>
+<tr>
+<td>Unauthenticated request</td>
+<td>REST parent token guard</td>
+<td>HTTP 404, token missing</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Customer and catalog searches returned the exact match</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Unsupported filter</td>
+<td>Unknown advanced-filter field</td>
+<td>HTTP 400</td>
+</tr>
+<tr>
+<td>Logical OR API</td>
+<td>Two exact Ticket Service branches</td>
+<td>PASS — both rows only</td>
+</tr>
+<tr>
+<td>Logical AND API</td>
+<td>Two simultaneous supported rules</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Reversible CRUD API</td>
+<td>Create, update, detail, delete across all 12 resources</td>
+<td>PASS; fixtures removed</td>
+</tr>
+<tr>
+<td>Duplicate tax guard</td>
+<td>Duplicate name/rate</td>
+<td>HTTP 409</td>
+</tr>
+<tr>
+<td>Payment Mode validation</td>
+<td>invoices-only plus expenses-only</td>
+<td>HTTP 400</td>
+</tr>
+<tr>
+<td>Protected Ticket Status</td>
+<td>Default status deletion</td>
+<td>HTTP 409</td>
+</tr>
+<tr>
+<td>Base Currency action</td>
+<td>Make current base idempotently</td>
+<td>HTTP 200, <code>changed=false</code></td>
+</tr>
+<tr>
+<td>Emulator logical OR</td>
+<td>Customer Group ID=2 OR ID=3</td>
+<td>PASS — exactly 2 rows: OIL &amp; GAS and Infrastructure</td>
+</tr>
+<tr>
+<td>Emulator logical AND</td>
+<td>Customer Group ID=2 AND ID=3</td>
+<td>PASS — empty result state</td>
+</tr>
+<tr>
+<td>Emulator form typing</td>
+<td>Generic create form retains <code>260802</code> after rerender</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Emulator CRUD</td>
+<td>Create <code>260802</code>, edit to <code>260803</code>, detail
+verify, delete</td>
+<td>PASS; list restored to 3</td>
+</tr>
+<tr>
+<td>Render-loop regression</td>
+<td>List/detail after CRUD and Fast Refresh</td>
+<td>PASS — no developer warning</td>
+</tr>
+<tr>
+<td>Rich detail density</td>
+<td>Payment Modes list and Bank detail</td>
+<td>PASS — module identity and scope fields visible</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Multiple advanced rules preserve AND/OR semantics through the mobile
+transport</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Generic create/edit fields retain user input and do not reset on
+rerender</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Setup mutations are admin-only, allowlisted, validated, and
+no-trace</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Reversible CRUD leaves no QA fixtures</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Setup list/detail pages identify the module and render densely
+without overlap</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Protected defaults and base-currency rules mirror canonical web
+behavior</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Programme</td>
+<td>Every static web destination has a native equivalent</td>
+<td>OPEN — 105/347 (30.3%) covered</td>
+</tr>
+</tbody>
+</table>
+<p><strong>Scoped quality gate: PASS. Deployment gate: HELD. Overall
+native-web parity programme: OPEN.</strong></p>
+<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Item</th>
+<th>Evidence</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Mobile implementation</td>
+<td><code>ddf454e</code></td>
+</tr>
+<tr>
+<td>Backend implementation</td>
+<td><code>5bcc4caeb</code></td>
+</tr>
+<tr>
+<td>Mobile files</td>
+<td>Shared CRUD form/filter fixes, 12 registry definitions, native
+aliases, contracts</td>
+</tr>
+<tr>
+<td>Backend files</td>
+<td>Setup REST controller, three explicit routes, static contract
+test</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>Deliberately unchanged until the consolidated final release</td>
+</tr>
+<tr>
+<td>Push / PR / deploy</td>
+<td>Not performed</td>
+</tr>
+<tr>
+<td>Production data</td>
+<td>Not touched</td>
+</tr>
+<tr>
+<td>Local QA fixtures</td>
+<td>Customer Group <code>260802/260803</code> and API matrix fixtures
+removed</td>
+</tr>
+<tr>
+<td>User files</td>
+<td>Untracked <code>artifacts/</code> preserved</td>
+</tr>
+<tr>
+<td>Rollback</td>
+<td>Revert the two scoped commits before any future merge</td>
+</tr>
+</tbody>
+</table>
+<h2 id="emulator-evidence-and-notes">5. Emulator Evidence and Notes</h2>
+<ul>
+<li>Emulator: <code>emulator-5554</code>, Android development
+build.</li>
+<li>Correct OR result hierarchy:
+<code>C:\Users\osama\AppData\Local\Temp\prizm-result-fixed.xml</code>.</li>
+<li>Correct AND empty state:
+<code>C:\Users\osama\AppData\Local\Temp\prizm-result-and.xml</code>.</li>
+<li>Reversible form/CRUD evidence: <code>prizm-form-fixed.xml</code>,
+<code>prizm-edit-result.xml</code>, and
+<code>prizm-delete-result.xml</code> in the same temporary
+directory.</li>
+<li>Rich Setup detail evidence:
+<code>C:\Users\osama\AppData\Local\Temp\prizm-payment-mode-detail.xml</code>.</li>
+<li>The temporary WAMP worktree URL override was removed before commit;
+<code>lib/environment.ts</code> matches the branch baseline.</li>
+<li>An <code>adb input text</code> development-client shortcut could
+reload the bundle when rapid text contained <code>r</code>; numeric UI
+values avoided that emulator-only shortcut. The application filter and
+CRUD results were verified after the bundle stabilized.</li>
+</ul>
+<h2 id="sign-off">6. Sign-off</h2>
+<table>
+<colgroup>
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+<col style="width: 25%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Name</th>
+<th>Status</th>
+<th>Date</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>QA automation</td>
+<td>Codex</td>
+<td>Scoped PASS; deployment held; parity programme open</td>
+<td>2026-08-02</td>
+</tr>
+<tr>
+<td>Product reviewer</td>
+<td>Osama Hassan</td>
+<td>Final acceptance pending consolidated release</td>
+<td>Pending</td>
+</tr>
+</tbody>
+</table>
+<p>Generated under Prizm QA/QC Policy. Classification: Internal.</p>
+</body>
+</html>

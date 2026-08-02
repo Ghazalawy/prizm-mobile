@@ -1,4 +1,4 @@
-import { Tabs, Redirect } from "expo-router";
+import { Tabs, Redirect, usePathname } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
 import { View, ActivityIndicator, TouchableOpacity, Text } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -138,6 +138,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 export default function TabLayout() {
   const { isAuthenticated, isLoading } = useAuth();
   const pinnedKeys = usePinnedTabs();
+  const pathname = usePathname();
 
   const renderTabBar = useCallback(
     (props: BottomTabBarProps) => <CustomTabBar {...props} />,
@@ -153,7 +154,14 @@ export default function TabLayout() {
   }
 
   if (!isAuthenticated) {
-    return <Redirect href="/login" />;
+    return (
+      <Redirect
+        href={{
+          pathname: "/login",
+          params: { returnTo: pathname },
+        }}
+      />
+    );
   }
 
   return (

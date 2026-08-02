@@ -11,6 +11,7 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
 import { memo, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { ReactNode } from "react";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { listEntities, normalizeList, type ListParams } from "@/lib/api";
 import { serializeModuleFilterGroup } from "@/lib/filters";
@@ -38,11 +39,12 @@ type CrudListScreenProps = {
   basePath?: string;
   titleOverride?: string;
   initialSearch?: string;
+  headerAction?: ReactNode;
 };
 
 const PAGE_SIZE = 25;
 
-export function CrudListScreen({ moduleKey, basePath, titleOverride, initialSearch }: CrudListScreenProps) {
+export function CrudListScreen({ moduleKey, basePath, titleOverride, initialSearch, headerAction }: CrudListScreenProps) {
   const module = getModule(moduleKey);
   const routeParams = useLocalSearchParams<{ q?: string | string[] }>();
   const routeSearch = Array.isArray(routeParams.q) ? routeParams.q[0] : routeParams.q;
@@ -196,10 +198,11 @@ export function CrudListScreen({ moduleKey, basePath, titleOverride, initialSear
               {hasServerTotal ? `${totalCount} total` : `${rows.length} record${rows.length === 1 ? "" : "s"}`}
             </Text>
           </View>
+          {headerAction}
           {isCrudEnabled(module, "create") && canCreateModule(module, permissions) ? (
             <TouchableOpacity
               onPress={() => router.push(`${path}/new` as any)}
-              className="w-10 h-10 rounded-xl bg-primary items-center justify-center"
+              className="w-10 h-10 rounded-xl bg-primary items-center justify-center ml-2"
               activeOpacity={0.75}
             >
               <Ionicons name="add" size={24} color="#FFFFFF" />

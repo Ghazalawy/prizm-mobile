@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>Prizm Energy QC Report 26023</title>
+  <style>
+
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+
+ul.task-list[class]{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+font-size: inherit;
+width: 0.8em;
+margin: 0 0.8em 0.2em -1.6em;
+vertical-align: middle;
+}
+.display.math{display: block; text-align: center; margin: 0.5rem auto;}
+</style>
+  <style type="text/css">@page { size: A4; margin: 15mm 14mm 16mm; }
+:root { --ink: #0f172a; --muted: #64748b; --line: #dbe3ec; --soft: #f6f8fb; --accent: #ef5b00; --blue: #087ea4; }
+* { box-sizing: border-box; }
+body { color: var(--ink); font-family: "Segoe UI", Arial, sans-serif; font-size: 10.2pt; line-height: 1.45; max-width: 1000px; margin: 0 auto; padding: 22px 26px; }
+h1 { color: var(--ink); font-size: 23pt; line-height: 1.12; margin: 0 0 18px; padding: 0 0 12px; border-bottom: 4px solid var(--accent); }
+h2 { color: var(--blue); font-size: 15pt; margin: 24px 0 9px; page-break-after: avoid; }
+p { margin: 0 0 9px; }
+strong { color: var(--ink); }
+code { background: #eef2f6; border-radius: 4px; color: #334155; font-family: Consolas, monospace; font-size: 8.7pt; padding: 1px 4px; }
+table { border-collapse: collapse; width: 100%; margin: 8px 0 17px; font-size: 8.7pt; break-inside: auto; }
+thead { display: table-header-group; }
+tr { break-inside: avoid; }
+th { background: #172033; color: #fff; font-weight: 650; text-align: left; padding: 7px 8px; border: 1px solid #172033; }
+td { vertical-align: top; padding: 6px 8px; border: 1px solid var(--line); }
+tbody tr:nth-child(even) td { background: var(--soft); }
+ul { margin: 6px 0 14px; padding-left: 22px; }
+li { margin: 3px 0; }
+blockquote { margin: 12px 0; padding: 9px 13px; border-left: 4px solid var(--accent); background: #fff7ed; }
+@media print { body { max-width: none; padding: 0; } h2 { break-after: avoid; } a { color: inherit; text-decoration: none; } }
+</style>
+</head>
+<body>
+<header id="title-block-header">
+<h1 class="title">Prizm Energy QC Report 26023</h1>
+</header>
+<h1 id="qc-report-native-email-templates-and-logical-filter-regression">QC
+Report — Native Email Templates and Logical Filter Regression</h1>
+<h2 id="report-header">Report Header</h2>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Report Code</td>
+<td>PE-QAQC-QC-RPT-26023-R01</td>
+</tr>
+<tr>
+<td>Session ID</td>
+<td>native-email-templates-parity-20260802</td>
+</tr>
+<tr>
+<td>Date / Time</td>
+<td>2026-08-02 15:57 +04:00</td>
+</tr>
+<tr>
+<td>Agent / Model</td>
+<td>Codex / GPT-5</td>
+</tr>
+<tr>
+<td>Backend workspace</td>
+<td>C:/wamp64/www/prizm331-wt-mobile-parity-next</td>
+</tr>
+<tr>
+<td>Mobile workspace</td>
+<td>C:/wamp64/www/prizm-mobile-app-link-fix</td>
+</tr>
+<tr>
+<td>Backend branch</td>
+<td>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</td>
+</tr>
+<tr>
+<td>Mobile branch</td>
+<td>codex/full-native-parity-audit</td>
+</tr>
+<tr>
+<td>Turns</td>
+<td>Continuous parity task chain</td>
+</tr>
+<tr>
+<td>Classification</td>
+<td>Internal</td>
+</tr>
+</tbody>
+</table>
+<h2 id="executive-summary">1. Executive Summary</h2>
+<p>This scoped batch adds Setup → Email Templates as a complete native
+administration workflow after reading Perfex’s canonical Emails
+controller, Emails_model, template list, editor view, permission checks,
+merge-field registry, and slug-wide enable/disable behavior.</p>
+<p>The mobile app now provides a searchable, sortable, filterable
+101-template list; clear module identity; dense purpose-built summary;
+responsive multilingual editor; sender and delivery controls; language
+coverage; cursor-aware merge-field insertion; and native routing for
+both the list and individual templates. Templates are fixed system
+records, so create and delete are intentionally unavailable.</p>
+<p>The API exposes an English-canonical list while editing every
+language variant that shares the selected slug. It delegates updates to
+Perfex’s Emails_model, filters merge fields by template type and slug,
+protects the two-factor authentication template from being disabled, and
+applies status changes slug-wide exactly like the web UI.</p>
+<p>Emulator testing caught a real regression before commit: the native
+quick chips submitted active as a MultiSelectRule while the endpoint
+declared it as a BooleanRule. Enabled + Disabled therefore returned zero
+records. The endpoint and mobile contract now agree on MultiSelectRule.
+Enabled alone returned 14 records; adding Disabled retained both
+selections and returned all 101.</p>
+<p>The same funnel retained an independent Template contains Invoice
+rule. Enabled AND Invoice returned 0 records; changing only match_type
+to OR returned 21. This proves multi-rule state, status arrays, logical
+grouping, serialization, API query construction, and live list refresh
+all work together.</p>
+<p>The scoped gate passes. Static web-menu parity is now 109/347,
+leaving 238 static destinations and 4 dynamic destinations open.
+Deployment remains held for the requested single consolidated Android
+release.</p>
+<h2 id="test-results">2. Test Results</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Check</th>
+<th>Evidence</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>TypeScript</td>
+<td>npx tsc –noEmit -p tsconfig.json</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Mobile contracts</td>
+<td>node scripts/test-mobile-contracts.mjs</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Release metadata safety</td>
+<td>npm run verify:release</td>
+<td>PASS — unchanged v1.17.0/code35</td>
+</tr>
+<tr>
+<td>List capability audit</td>
+<td>audit-list-contracts.mjs</td>
+<td>PASS — 121 server + 2 client searchable; 123 filterable; 76
+sortable; 0 skipped</td>
+</tr>
+<tr>
+<td>CRUD capability audit</td>
+<td>audit-crud-contracts.mjs</td>
+<td>PASS — 354 mutations; 0 skipped</td>
+</tr>
+<tr>
+<td>Backend syntax</td>
+<td>PHP 8.3.14 lint</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Email Templates contract</td>
+<td>email_templates_api_contract_test.php</td>
+<td>PASS — 7/7</td>
+</tr>
+<tr>
+<td>Shared logical filters</td>
+<td>advanced_filters_contract_test.php</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Daleela regression suite</td>
+<td>mcp_api_defects_daleela_contract_test.php</td>
+<td>PASS — 96/96</td>
+</tr>
+<tr>
+<td>Web MVC parity source</td>
+<td>Emails controller/model/list/editor/merge fields</td>
+<td>REVIEWED</td>
+</tr>
+<tr>
+<td>Authenticated list</td>
+<td>GET /api/email_templates_api</td>
+<td>HTTP 200; 101 templates</td>
+</tr>
+<tr>
+<td>Search</td>
+<td>Invoice</td>
+<td>HTTP 200; 8/8 API and SQL</td>
+</tr>
+<tr>
+<td>Direct combined AND</td>
+<td>Type = client AND Active = disabled</td>
+<td>HTTP 200; 9/9 API and SQL</td>
+</tr>
+<tr>
+<td>Direct combined OR</td>
+<td>Type = client OR Active = enabled</td>
+<td>HTTP 200; 23/23 API and SQL</td>
+</tr>
+<tr>
+<td>Detail</td>
+<td>Template ID 1</td>
+<td>HTTP 200; 27 variants and 27 merge fields</td>
+</tr>
+<tr>
+<td>Reversible update</td>
+<td>Append QA marker, verify, restore original</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Activity rollback</td>
+<td>QA activity rows after restore</td>
+<td>0 remaining</td>
+</tr>
+<tr>
+<td>Emulator single status</td>
+<td>Enabled</td>
+<td>14 records</td>
+</tr>
+<tr>
+<td>Emulator multi-status</td>
+<td>Enabled + Disabled</td>
+<td>101 records; both chips selected</td>
+</tr>
+<tr>
+<td>Emulator mixed AND</td>
+<td>Enabled AND Template contains Invoice</td>
+<td>0 records</td>
+</tr>
+<tr>
+<td>Emulator mixed OR</td>
+<td>Enabled OR Template contains Invoice</td>
+<td>21 records</td>
+</tr>
+<tr>
+<td>Native list visual QA</td>
+<td>Emulator screenshot</td>
+<td>PASS — dense rows; no duplicate status text</td>
+</tr>
+<tr>
+<td>Native detail visual QA</td>
+<td>Emulator screenshot</td>
+<td>PASS — readable hero, structured preview, 27-language coverage</td>
+</tr>
+<tr>
+<td>Native editor visual QA</td>
+<td>Emulator screenshot</td>
+<td>PASS — responsive proportions, proper switches, no overlap</td>
+</tr>
+<tr>
+<td>Language and merge fields</td>
+<td>Bulgarian selection and merge-field panel</td>
+<td>PASS — 27 safe tokens</td>
+</tr>
+<tr>
+<td>Runtime log</td>
+<td>Android logcat</td>
+<td>PASS — no React/app runtime errors</td>
+</tr>
+<tr>
+<td>Cleanup</td>
+<td>Local API override/router/port</td>
+<td>PASS — override reverted; PID stopped; port 8092 closed</td>
+</tr>
+</tbody>
+</table>
+<h2 id="acceptance-criteria">3. Acceptance Criteria</h2>
+<table>
+<colgroup>
+<col style="width: 33%" />
+<col style="width: 33%" />
+<col style="width: 33%" />
+</colgroup>
+<thead>
+<tr>
+<th>Severity</th>
+<th>Criterion</th>
+<th>Result</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>S1</td>
+<td>Updates preserve canonical Perfex email-template behavior</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>QA edit is exactly restored with no residual activity rows</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S1</td>
+<td>Two-factor template cannot be disabled</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Search and multi-status chips update live results</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Multiple custom rules remain additive under AND and OR</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S2</td>
+<td>Every language variant can be edited in one native workflow</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>S3</td>
+<td>Module identity, content, delivery, and coverage are dense and
+readable</td>
+<td>100% PASS</td>
+</tr>
+<tr>
+<td>Programme</td>
+<td>Every static web destination has a native equivalent</td>
+<td>OPEN — 109/347 (31.4%) covered</td>
+</tr>
+</tbody>
+</table>
+<p>Scoped quality gate: PASS. Deployment gate: HELD for one consolidated
+APK. Overall parity programme: OPEN.</p>
+<h2 id="code-changes">4. Code Changes</h2>
+<h3 id="backend">Backend</h3>
+<ul>
+<li>modules/api/controllers/Email_templates_api.php</li>
+<li>modules/api/config/routes.php</li>
+<li>modules/api/tests/email_templates_api_contract_test.php</li>
+<li>Commit 3973fecf9 — feat(api): add native email template parity</li>
+</ul>
+<h3 id="mobile">Mobile</h3>
+<ul>
+<li>components/crud/EmailTemplateEditor.tsx</li>
+<li>components/crud/EmailTemplateSummary.tsx</li>
+<li>components/crud/CrudFormScreen.tsx</li>
+<li>components/crud/CrudDetailScreen.tsx</li>
+<li>lib/module-registry.ts</li>
+<li>lib/native-routing.ts</li>
+<li>scripts/test-mobile-contracts.mjs</li>
+<li>Commit e11b5c7 — feat: add native email template administration</li>
+</ul>
+<p>The frontend-polish skill directly influenced this batch: the Prizm
+visual language was preserved, expected field lengths determined
+responsive proportions, dark-surface contrast was corrected from
+emulator evidence, fragile utility dimensions were replaced for
+switches, and list/detail/editor screens were visually rechecked after
+every correction.</p>
+<h2 id="deployment-status">5. Deployment Status</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Target</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Backend production</td>
+<td>NOT DEPLOYED — checkpoint committed locally</td>
+</tr>
+<tr>
+<td>Mobile GitHub/main</td>
+<td>NOT PUSHED</td>
+</tr>
+<tr>
+<td>Android APK</td>
+<td>NOT BUILT — preserving the requested single final build</td>
+</tr>
+<tr>
+<td>Release metadata</td>
+<td>v1.17.0 / versionCode 35 unchanged</td>
+</tr>
+<tr>
+<td>Existing phone App Link behavior</td>
+<td>Remains tied to the currently installed APK until final consolidated
+release</td>
+</tr>
+</tbody>
+</table>
+<h2 id="evidence-and-residual-risk">6. Evidence and Residual Risk</h2>
+<ul>
+<li>List evidence: C:/wamp64/tmp/codex-both-status.png.</li>
+<li>Detail evidence: C:/wamp64/tmp/codex-email-detail-final.png.</li>
+<li>Editor evidence: C:/wamp64/tmp/codex-email-editor-final.png.</li>
+<li>Merge-field evidence:
+C:/wamp64/tmp/codex-email-editor-merge.png.</li>
+<li>Temporary local API routing was removed and port 8092 was confirmed
+closed.</li>
+<li>User-owned artifacts/ remains untouched.</li>
+<li>The current installed APK still predates the consolidated candidate,
+so final phone verification remains mandatory after the one requested
+release.</li>
+<li>The aggregate parity audit still reports 238 missing static
+destinations and 4 dynamic paths; this scoped report does not represent
+programme completion.</li>
+</ul>
+<h2 id="sign-off">7. Sign-Off</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th>Role</th>
+<th>Status</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Engineering / Codex</td>
+<td>Scoped implementation and verification complete</td>
+</tr>
+<tr>
+<td>QA/QC</td>
+<td>PASS for native Email Templates and multi-rule filter
+regression</td>
+</tr>
+<tr>
+<td>Product owner</td>
+<td>Final acceptance pending consolidated release</td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

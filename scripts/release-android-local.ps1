@@ -162,8 +162,19 @@ $($flagsMatch.Value)
     if (-not (Test-Path -LiteralPath $keystore)) {
         throw "Expo prebuild did not produce the expected stable signing keystore."
     }
-    $keytoolOutput = & keytool -list -v -keystore $keystore -storepass android -alias androiddebugkey 2>&1
-    if ($LASTEXITCODE -ne 0) { throw "keytool could not inspect the generated signing certificate." }
+    $keytoolErrorPreference = $ErrorActionPreference
+    try {
+        # keytool writes valid certificate warnings to stderr on Windows. Capture
+        # them for fingerprint parsing without promoting a successful exit to an
+        # ErrorRecord that aborts the guarded release.
+        $ErrorActionPreference = "Continue"
+        $keytoolOutput = & keytool -list -v -keystore $keystore -storepass android -alias androiddebugkey 2>&1
+        $keytoolExitCode = $LASTEXITCODE
+    }
+    finally {
+        $ErrorActionPreference = $keytoolErrorPreference
+    }
+    if ($keytoolExitCode -ne 0) { throw "keytool could not inspect the generated signing certificate." }
     $keytoolMatch = [regex]::Match(($keytoolOutput -join "`n"), "SHA256:\s*([0-9A-F:]{95})")
     if (-not $keytoolMatch.Success -or $keytoolMatch.Groups[1].Value -ne $expectedFingerprint) {
         throw "Generated keystore fingerprint does not match production assetlinks.json. Build aborted."

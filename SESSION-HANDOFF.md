@@ -1255,3 +1255,17 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 105/347 native destinations, with 242 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `ddf454e`; backend `5bcc4caeb`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26019-R01__setup-native-admin-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 16.0 2026-08-02 — Native Departments and authenticated Activity hardening
+
+- Added the full administrator-only Departments workflow natively: list, search, sorting, advanced filters, dense detail, create, edit, guarded delete, IMAP folder retrieval, and connection testing.
+- Mirrored the canonical web controller/model semantics for checkbox fields, unique non-empty email, encryption choices, saved-password retention, referenced-ticket deletion, and mailbox validation.
+- Department passwords are excluded from every API read. Existing encrypted credentials are decrypted only in server memory for folder/test actions, and error messages redact the submitted secret.
+- Corrected generic CRUD deletion so success immediately replaces the deleted detail route with its owning list and failures are no longer silent.
+- Replaced Dashboard/My Activity generic entity reads with authenticated `GET /api/my/activity`, scoped to the effective staff identity and compatible with View-As.
+- Emulator testing passed the exact Departments HTTPS App Link, 11-row list, safe HTTP 422 mailbox feedback, create/edit/detail/delete, checkbox persistence, secure replacement input, immediate list return, and fixture cleanup.
+- Static web-menu parity is now 106/347 native destinations, with 241 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `b2827b7` plus activity `acd1f2f`; backend `8ef3ab497` plus activity `aa6485e55`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26020-R01__departments-activity-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

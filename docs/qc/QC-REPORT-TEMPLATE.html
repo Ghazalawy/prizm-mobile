@@ -4,7 +4,7 @@
   <meta charset="utf-8" />
   <meta name="generator" content="pandoc" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-  <title>Prizm Energy QC Report 26021</title>
+  <title>Prizm Energy QC Report 26022</title>
   <style>
 
 span.smallcaps{font-variant: small-caps;}
@@ -44,10 +44,10 @@ blockquote { margin: 12px 0; padding: 9px 13px; border-left: 4px solid var(--acc
 </head>
 <body>
 <header id="title-block-header">
-<h1 class="title">Prizm Energy QC Report 26021</h1>
+<h1 class="title">Prizm Energy QC Report 26022</h1>
 </header>
-<h1 id="qc-report-native-roles-combined-filters-and-app-link-verification">QC
-Report — Native Roles, Combined Filters, and App-Link Verification</h1>
+<h1 id="qc-report-native-custom-fields-and-ms-app-link-gate">QC Report —
+Native Custom Fields and /MS App-Link Gate</h1>
 <h2 id="report-header">Report Header</h2>
 <table>
 <thead>
@@ -59,35 +59,35 @@ Report — Native Roles, Combined Filters, and App-Link Verification</h1>
 <tbody>
 <tr>
 <td>Report Code</td>
-<td><code>PE-QAQC-QC-RPT-26021-R01</code></td>
+<td>PE-QAQC-QC-RPT-26022-R01</td>
 </tr>
 <tr>
 <td>Session ID</td>
-<td><code>native-roles-app-link-filters-20260802</code></td>
+<td>native-custom-fields-app-link-20260802</td>
 </tr>
 <tr>
 <td>Date / Time</td>
-<td><code>2026-08-02 13:40 +04:00</code></td>
+<td>2026-08-02 14:29 +04:00</td>
 </tr>
 <tr>
 <td>Agent / Model</td>
-<td><code>Codex / GPT-5</code></td>
+<td>Codex / GPT-5</td>
 </tr>
 <tr>
 <td>Backend workspace</td>
-<td><code>C:\wamp64\www\prizm331-wt-mobile-parity-next</code></td>
+<td>C:/wamp64/www/prizm331-wt-mobile-parity-next</td>
 </tr>
 <tr>
 <td>Mobile workspace</td>
-<td><code>C:\wamp64\www\prizm-mobile-app-link-fix</code></td>
+<td>C:/wamp64/www/prizm-mobile-app-link-fix</td>
 </tr>
 <tr>
 <td>Backend branch</td>
-<td><code>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</code></td>
+<td>feat/mobile-native-parity-next-DESKTOP-9GO5QC0</td>
 </tr>
 <tr>
 <td>Mobile branch</td>
-<td><code>codex/full-native-parity-audit</code></td>
+<td>codex/full-native-parity-audit</td>
 </tr>
 <tr>
 <td>Turns</td>
@@ -100,46 +100,40 @@ Report — Native Roles, Combined Filters, and App-Link Verification</h1>
 </tbody>
 </table>
 <h2 id="executive-summary">1. Executive Summary</h2>
-<p>This scoped batch adds Setup → Roles as a fully native administrative
-workflow after reading Perfex’s canonical Roles controller, model,
-views, helper, and live permission registry. The mobile module now
-provides list, search, sorting, Perfex advanced filters, dense detail,
-create, edit, guarded delete, assigned-staff coverage, and a live
-permission-matrix editor.</p>
-<p>The permission editor preserves the web rules: View and View Own are
-mutually exclusive; hook-defined blocked capabilities cannot coexist;
-not-applicable capabilities remain disabled; unknown
-features/capabilities are rejected; and an administrator may explicitly
-propagate changed role permissions to staff assigned to the role. The
-API delegates writes to <code>Roles_model</code>, enforces the canonical
-<code>roles</code> capability for each action, and returns no-trace 404
-responses to callers without access.</p>
-<p>Emulator CRUD testing created one reversible role fixture, changed
-its grants, and removed it. The test exposed two regressions that were
-corrected before sign-off: Perfex’s cached
-<code>Roles_model::get()</code> could return a pre-edit object within
-the write request, and requesting a missing role could dereference a
-null model row and produce HTTP 500. Write responses now read through
-the database, and missing/deleted records reliably return HTTP 404.</p>
-<p>The rigorous funnel test used two custom logical rules against live
-Role data. AND returned no rows for mutually exclusive exact names;
-changing only the match type to OR returned exactly the two expected
-roles. The shared Advanced Filters screen was also moved into the
-Android top safe area after visual testing showed its header and Clear
-all action underneath the status bar.</p>
-<p>The reported Payment Request App Link was reproduced with the exact
-URL. The published rolling APK (<code>c06f94d</code>) predates the
-committed host-wide Android handoff hardening (<code>006bf61</code>),
-explaining the phone fallback to the browser. On the hardened emulator
-build, Android verified <code>ms.prizm-energy.com</code>, resolved the
-exact URL to <code>com.prizmenergy.mobile/.MainActivity</code>, and
-routed record 1211 to the native Payment Request screen. The production
-<code>assetlinks.json</code> certificate fingerprint matches the
-installed application. Publishing remains held for the requested single
-consolidated Android build.</p>
+<p>This scoped batch adds Setup → Custom Fields as a native
+administrator workflow after reading Perfex’s canonical Custom Fields
+controller, model, list table, editor view, and hook-provided target
+extensions. The mobile module now provides list, server search, sorting,
+full Perfex logical filters, dense detail, create, edit, and guarded
+delete through a purpose-built compact editor.</p>
+<p>The API preserves the web behavior instead of approximating it:
+administrator-only/no-trace access, dynamic module targets, all ten
+field types, required option lists for Select/Multi Select/Checkbox,
+type-specific default validation, the historical disalow_client_to_edit
+field, module-specific visibility rules, and schema locking once values
+exist. Writes delegate to Perfex’s Custom_fields_model, including
+preservation of options already used by saved records.</p>
+<p>A reversible emulator fixture was created as Codex CF 260802
+(Projects / Select / Alpha,Beta,Gamma / default Beta), found with server
+search, renamed to Codex CF 260802 Edited, verified directly in MySQL,
+and deleted through the native confirmation flow. The database returned
+from 18 rows to its original 17, with zero Codex fixtures remaining.</p>
+<p>The rigorous funnel test retained two independent rules and sent the
+complete Perfex group. fieldto = projects AND type = select returned
+exactly 3 rows. Changing only match_type to OR returned exactly 8 rows.
+Both counts matched direct database queries, proving that multi-rule
+state, serialization, API grouping, and list refresh all work
+together.</p>
+<p>The Android App Link release gate initially failed because app.json
+claimed the host without the enforced /MS prefix. Both HTTP and HTTPS
+declarations now include pathPrefix: /MS, and the admin parity contract
+passes for the exact Payment Request URL family. The installed rolling
+APK still predates this candidate change, so phone behavior will not
+change until the requested single consolidated APK is built and
+published.</p>
 <p>The scoped quality gate passes. Static web-menu parity is now
-107/347, leaving 240 static destinations and 4 dynamic destinations
-open.</p>
+108/347, leaving 239 static destinations and 4 dynamic destinations
+open. Deployment remains held for the single final release.</p>
 <h2 id="test-results">2. Test Results</h2>
 <table>
 <colgroup>
@@ -157,121 +151,130 @@ open.</p>
 <tbody>
 <tr>
 <td>TypeScript</td>
-<td><code>npx tsc --noEmit -p tsconfig.json</code></td>
+<td>npx tsc –noEmit -p tsconfig.json</td>
 <td>PASS</td>
 </tr>
 <tr>
 <td>Mobile contracts</td>
-<td><code>npm run test:contracts</code> against current backend
-worktree</td>
+<td>npm run test:contracts</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Admin/App-Link contracts</td>
+<td>npm run test:admin-parity against current backend worktree</td>
 <td>PASS</td>
 </tr>
 <tr>
 <td>Release metadata safety</td>
-<td><code>npm run verify:release</code></td>
+<td>npm run verify:release</td>
 <td>PASS — unchanged v1.17.0/code35</td>
 </tr>
 <tr>
 <td>Web-menu parity audit</td>
-<td><code>npm run audit:web-parity</code></td>
-<td>PASS — 107/347 covered; 240 missing; 4 dynamic</td>
+<td>npm run audit:web-parity</td>
+<td>PASS — 108/347 covered; 239 missing; 4 dynamic</td>
+</tr>
+<tr>
+<td>CRUD contract audit</td>
+<td>npm run test:crud-contracts</td>
+<td>PASS — 308 advertised mutations</td>
 </tr>
 <tr>
 <td>Backend syntax</td>
-<td>PHP 8.3.14 lint: controller, routes, contract test</td>
+<td>PHP 8.3.14 lint of Custom Fields controller</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Roles backend contract</td>
-<td><code>roles_api_contract_test.php</code></td>
+<td>Custom Fields backend contract</td>
+<td>custom_fields_admin_api_contract_test.php</td>
+<td>PASS</td>
+</tr>
+<tr>
+<td>Roles regression contract</td>
+<td>roles_api_contract_test.php</td>
 <td>PASS</td>
 </tr>
 <tr>
 <td>Diff hygiene</td>
-<td><code>git diff --check</code> in both worktrees</td>
+<td>git diff –check in both worktrees</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Roles list</td>
-<td>Authenticated administrator list</td>
-<td>HTTP 200; 21 baseline roles</td>
+<td>Web MVC parity source</td>
+<td>Controller, model, manage/editor/list views, helper, module
+hooks</td>
+<td>REVIEWED</td>
 </tr>
 <tr>
-<td>Roles App Link</td>
-<td><code>/MS/admin/roles</code> into native module</td>
-<td>PASS</td>
+<td>Custom Fields list</td>
+<td>Native authenticated administrator list</td>
+<td>HTTP 200; 17 baseline rows</td>
 </tr>
 <tr>
-<td>Role detail App Link</td>
-<td><code>/MS/admin/roles/role/24</code> into native record</td>
-<td>PASS</td>
+<td>Configuration</td>
+<td>GET /api/custom_fields_admin_api/config</td>
+<td>HTTP 200; core and installed hook targets</td>
 </tr>
 <tr>
-<td>Permission schema</td>
-<td><code>GET /api/roles_api/permissions</code></td>
-<td>HTTP 200; live hook-extended registry</td>
+<td>Create</td>
+<td>Projects / Select fixture with three options and Beta default</td>
+<td>HTTP 201; list 17 → 18</td>
 </tr>
 <tr>
-<td>Role create</td>
-<td>Numeric fixture <code>260901</code> with View Global + Create</td>
-<td>HTTP 201; list 21 → 22</td>
+<td>Search</td>
+<td>Search Codex</td>
+<td>HTTP 200; exactly 1 result</td>
 </tr>
 <tr>
-<td>Role detail</td>
-<td>Fixture ID 24</td>
-<td>HTTP 200; two grants summarized</td>
+<td>Detail</td>
+<td>Fixture ID 19</td>
+<td>HTTP 200; all definition, layout, behavior, and visibility
+values</td>
 </tr>
 <tr>
-<td>Role update</td>
-<td>Rename <code>260902</code>, add Edit grant</td>
-<td>HTTP 200; three grants returned and persisted</td>
-</tr>
-<tr>
-<td>Role delete</td>
-<td>Fixture ID 24</td>
-<td>HTTP 200; list 22 → 21</td>
-</tr>
-<tr>
-<td>Post-delete detail</td>
-<td><code>GET /api/roles_api/24</code></td>
-<td>HTTP 404; native Record not found state</td>
+<td>Update</td>
+<td>Append Edited to field name</td>
+<td>HTTP 200; MySQL persistence verified</td>
 </tr>
 <tr>
 <td>Combined AND filter</td>
-<td>Admin Manager equals AND Field Engineer equals</td>
-<td>HTTP 200; zero rows; correct empty state</td>
+<td>Belongs To = projects AND Type = select</td>
+<td>HTTP 200; exactly 3 rows, matching SQL</td>
 </tr>
 <tr>
 <td>Combined OR filter</td>
-<td>Same two exact rules, match type OR</td>
-<td>HTTP 200; exactly two expected rows</td>
+<td>Same two rules with match type OR</td>
+<td>HTTP 200; exactly 8 rows, matching SQL</td>
 </tr>
 <tr>
-<td>Filter safe area</td>
-<td>Reloaded emulator screenshot + UI bounds</td>
-<td>PASS — header shifted below 128 px status inset</td>
+<td>Delete</td>
+<td>Native confirmation for fixture ID 19</td>
+<td>HTTP 200; list 18 → 17</td>
 </tr>
 <tr>
-<td>Payment Request Android resolution</td>
-<td>Exact URL ending <code>/view_payment_request/1211</code></td>
-<td>PASS — app MainActivity selected</td>
+<td>Fixture rollback</td>
+<td>COUNT(*) and name LIKE Codex CF%</td>
+<td>17 total; 0 QA rows</td>
 </tr>
 <tr>
-<td>Payment Request native rewrite</td>
-<td>Exact URL to
-<code>/(tabs)/approvals/payment_request/1211</code></td>
+<td>Dense editor visual review</td>
+<td>Emulator list/editor screenshots</td>
+<td>PASS — compact sections, readable chips, no overlap</td>
+</tr>
+<tr>
+<td>/MS intent prefix</td>
+<td>HTTP + HTTPS pathPrefix contract</td>
 <td>PASS</td>
 </tr>
 <tr>
-<td>Website association</td>
-<td>Live <code>/.well-known/assetlinks.json</code></td>
-<td>HTTP 200; matching SHA-256 fingerprint</td>
+<td>Payment Request native mapping</td>
+<td>view_payment_request/{id} route contract</td>
+<td>PASS</td>
 </tr>
 <tr>
-<td>Published APK provenance</td>
-<td>Rolling release SHA <code>c06f94d</code> vs hardening
-<code>006bf61</code></td>
-<td>Confirmed published APK predates fix</td>
+<td>Published APK behavior</td>
+<td>Existing rolling APK</td>
+<td>EXPECTED OLD BEHAVIOR — candidate not yet published</td>
 </tr>
 </tbody>
 </table>
@@ -292,57 +295,73 @@ worktree</td>
 <tbody>
 <tr>
 <td>S1</td>
-<td>Role permissions mirror the live Perfex registry and conflict
-rules</td>
+<td>Custom Field CRUD uses canonical Perfex model semantics</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Role writes honor capability gates and canonical model behavior</td>
+<td>Test data is fully reversible and leaves no fixture</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S1</td>
-<td>Missing/deleted roles return 404, never 500</td>
-<td>100% PASS</td>
-</tr>
-<tr>
-<td>S1</td>
-<td>CRUD testing is reversible and leaves no QA role fixture</td>
+<td>Administrator-only access and protected schema rules are
+enforced</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Multi-rule AND/OR filters update the live result set correctly</td>
+<td>Search and both AND/OR multi-rule filters update live results</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Advanced Filters controls are reachable below Android system UI</td>
+<td>Type, option, default, layout, and visibility rules mirror web</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>S2</td>
-<td>Exact Payment Request URL is claimed and mapped by hardened
-build</td>
-<td>100% PASS</td>
+<td>Exact ERP App Link family is declared under verified /MS prefix</td>
+<td>100% PASS (candidate)</td>
 </tr>
 <tr>
-<td>S2</td>
-<td>Web Role list/detail links resolve to native screens</td>
+<td>S3</td>
+<td>Native editor uses compact, visually coherent mobile layout</td>
 <td>100% PASS</td>
 </tr>
 <tr>
 <td>Programme</td>
 <td>Every static web destination has a native equivalent</td>
-<td>OPEN — 107/347 (30.8%) covered</td>
+<td>OPEN — 108/347 (31.1%) covered</td>
 </tr>
 </tbody>
 </table>
-<p><strong>Scoped quality gate: PASS. Deployment gate: HELD for one
-consolidated final build. Overall native-web parity programme:
-OPEN.</strong></p>
-<h2 id="code-git-and-deployment">4. Code, Git, and Deployment</h2>
+<p>Scoped quality gate: PASS. Deployment gate: HELD for one consolidated
+APK. Overall parity programme: OPEN.</p>
+<h2 id="code-changes">4. Code Changes</h2>
+<h3 id="backend">Backend</h3>
+<ul>
+<li>modules/api/controllers/Custom_fields_admin_api.php</li>
+<li>modules/api/config/routes.php</li>
+<li>modules/api/tests/custom_fields_admin_api_contract_test.php</li>
+<li>Commit fdc7beebd — feat(api): add native custom field
+administration</li>
+</ul>
+<h3 id="mobile">Mobile</h3>
+<ul>
+<li>components/crud/CustomFieldDefinitionEditor.tsx</li>
+<li>components/crud/CrudFormScreen.tsx</li>
+<li>lib/module-registry.ts</li>
+<li>lib/native-routing.ts</li>
+<li>scripts/test-mobile-contracts.mjs</li>
+<li>app.json</li>
+<li>Commit 46a2c9e — feat: add native custom field administration</li>
+</ul>
+<p>The frontend-polish guidance influenced the dedicated editor:
+existing Prizm visual language was preserved, controls were grouped by
+expected value length and behavior, and the result was verified visually
+on the Android emulator.</p>
+<h2 id="deployment-status">5. Deployment Status</h2>
 <table>
 <colgroup>
 <col style="width: 50%" />
@@ -350,116 +369,76 @@ OPEN.</strong></p>
 </colgroup>
 <thead>
 <tr>
-<th>Item</th>
-<th>Evidence</th>
+<th>Target</th>
+<th>Status</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>Backend Roles implementation</td>
-<td><code>caecbf51f</code></td>
+<td>Backend production</td>
+<td>NOT DEPLOYED — checkpoint committed locally</td>
 </tr>
 <tr>
-<td>Mobile Roles/filter/link implementation</td>
-<td><code>adbf0c2</code></td>
+<td>Mobile GitHub/main</td>
+<td>NOT PUSHED</td>
 </tr>
 <tr>
-<td>Existing host-wide App Link hardening</td>
-<td><code>006bf61</code> — committed after current published APK</td>
-</tr>
-<tr>
-<td>Current published rolling APK</td>
-<td><code>c06f94d</code>; release asset digest
-<code>ef4c4b88…</code></td>
+<td>Android APK</td>
+<td>NOT BUILT — preserving the requested single final build</td>
 </tr>
 <tr>
 <td>Release metadata</td>
-<td>Deliberately unchanged until the consolidated final release</td>
+<td>v1.17.0 / versionCode 35 unchanged</td>
 </tr>
 <tr>
-<td>Push / PR / deploy</td>
-<td>Not performed in this batch</td>
-</tr>
-<tr>
-<td>Production data</td>
-<td>Not touched</td>
-</tr>
-<tr>
-<td>Local QA fixture</td>
-<td>Role ID 24 deleted; baseline restored to 21 roles</td>
-</tr>
-<tr>
-<td>User files</td>
-<td>Untracked <code>artifacts/</code> preserved</td>
-</tr>
-<tr>
-<td>Rollback</td>
-<td>Revert the scoped mobile/backend commits before any future
-merge</td>
+<td>Phone App Link fix</td>
+<td>PENDING the consolidated APK</td>
 </tr>
 </tbody>
 </table>
-<h2 id="emulator-and-http-evidence">5. Emulator and HTTP Evidence</h2>
+<h2 id="evidence-and-residual-risk">6. Evidence and Residual Risk</h2>
 <ul>
-<li>Emulator: <code>emulator-5554</code>, Android development
-build.</li>
-<li>Role list/detail/form evidence:
-<code>artifacts/roles-list-current.png</code>,
-<code>artifacts/role-detail.xml</code>,
-<code>artifacts/role-edit-expanded.xml</code>,
-<code>artifacts/role-updated.xml</code>.</li>
-<li>CRUD completion: <code>artifacts/roles-after-delete.xml</code> shows
-21 total and no fixture.</li>
-<li>Logical filter evidence: <code>artifacts/roles-and-result.xml</code>
-shows no-result AND behavior; <code>artifacts/roles-or-result.xml</code>
-shows two total and both expected roles.</li>
-<li>Safe-area evidence:
-<code>artifacts/filter-safe-area-final.png</code> and XML place header
-controls at y=156..221 rather than y=28..93 under the status bar.</li>
-<li>App-link evidence: Android package query listed Prizm CRM and
-Chrome; domain state was verified; intent launch selected
-<code>com.prizmenergy.mobile/.MainActivity</code>.</li>
-<li>Exact Payment Request native evidence:
-<code>artifacts/payment-link.xml</code> was owned by the Prizm package
-and displayed the native Payment Request state for ID 1211 against the
-local test backend.</li>
-<li>Apache evidence recorded HTTP 200/201 for Role reads/writes, HTTP
-200 for both combined-filter queries, and corrected HTTP 404 after
-deletion.</li>
-<li>The temporary WAMP worktree URL override was removed before commit;
-<code>lib/environment.ts</code> matches the branch baseline.</li>
+<li>Emulator screenshots: C:/wamp64/tmp/codex-custom-fields-list.png and
+C:/wamp64/tmp/codex-custom-field-editor.png.</li>
+<li>Live MySQL counts proved AND = 3 and OR = 8 for the exact two-rule
+group.</li>
+<li>The temporary worktree PHP server and mobile endpoint overrides were
+removed after testing.</li>
+<li>User-owned artifacts/ remains untouched.</li>
+<li>The aggregate parity audit still reports 239 missing static web
+destinations; this scoped report does not represent full programme
+completion.</li>
+<li>The current installed APK cannot prove the newly tightened /MS
+declaration because native intent filters are compiled at build time.
+Final device verification is required after the consolidated APK is
+published.</li>
 </ul>
-<h2 id="sign-off">6. Sign-off</h2>
+<h2 id="sign-off">7. Sign-Off</h2>
 <table>
 <colgroup>
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
-<col style="width: 25%" />
+<col style="width: 50%" />
+<col style="width: 50%" />
 </colgroup>
 <thead>
 <tr>
 <th>Role</th>
-<th>Name</th>
 <th>Status</th>
-<th>Date</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>QA automation</td>
-<td>Codex</td>
-<td>Scoped PASS; deployment held; parity programme open</td>
-<td>2026-08-02</td>
+<td>Engineering / Codex</td>
+<td>Scoped implementation and verification complete</td>
 </tr>
 <tr>
-<td>Product reviewer</td>
-<td>Osama Hassan</td>
-<td>Final acceptance pending consolidated release</td>
-<td>Pending</td>
+<td>QA/QC</td>
+<td>PASS for Custom Fields and candidate App-Link declaration</td>
+</tr>
+<tr>
+<td>Product owner</td>
+<td>Final device acceptance pending consolidated release</td>
 </tr>
 </tbody>
 </table>
-<p>Generated under Prizm QA/QC Policy. Classification: Internal.</p>
 </body>
 </html>

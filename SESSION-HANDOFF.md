@@ -1284,3 +1284,16 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 107/347 native destinations, with 240 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `adbf0c2`; backend `caecbf51f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26021-R01__native-roles-app-link-filters-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 18.0 2026-08-02 — Native Custom Fields and /MS App-Link release gate
+
+- Added the administrator-only Custom Fields workflow natively with list/search/sort/advanced filters, dense detail, a compact purpose-built editor, create/edit/delete, hook-provided targets, type-specific defaults, visibility rules, and schema locks once saved values exist.
+- Backend writes delegate to Perfex's canonical `Custom_fields_model`, including the historical `disalow_client_to_edit` field and preservation of options already used on records.
+- Emulator CRUD created ID 19, found it through search, renamed it, verified persistence in MySQL, and deleted it; the database returned from 18 to its original 17 rows with zero QA fixtures.
+- Exact combined funnel tests passed end to end: Projects AND Select returned 3 rows, while the identical two rules under OR returned 8; both matched direct SQL counts.
+- Tightened the Android App Link declaration to the enforced `/MS` prefix for HTTP and HTTPS after the release contract caught the missing prefix. The installed APK still predates this candidate and requires the consolidated final build.
+- Static web-menu parity is now 108/347 native destinations, with 239 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `46a2c9e`; backend `fdc7beebd`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26022-R01__native-custom-fields-app-link-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

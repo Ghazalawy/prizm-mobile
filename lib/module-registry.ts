@@ -217,6 +217,8 @@ export type ModuleField = {
   hidden?: boolean;
   /** Editable when creating, then immutable in the generic edit form. */
   createOnly?: boolean;
+  /** Secret may be replaced on edit; a blank value is omitted to retain the saved secret. */
+  editableSecret?: boolean;
   section?: string;
   placeholder?: string;
   defaultValue?: string | number | boolean;
@@ -5840,6 +5842,44 @@ export const MODULES: ModuleDefinition[] = [
     adminOnlyAccess: true,
     adminOnlyMutations: true,
     fields: [{ key: "name", label: "Contract Type", section: "Type", required: true }],
+  },
+  {
+    key: "setup_departments",
+    title: "Department",
+    plural: "Departments",
+    group: "Admin",
+    endpoint: "setup_api/departments",
+    supportsAdvancedFilters: true,
+    idKey: "departmentid",
+    icon: "business-outline",
+    color: "#0F766E",
+    titleFields: ["name"],
+    subtitleFields: ["email", "calendar_id", "host"],
+    searchFields: ["name", "email", "calendar_id"],
+    filterableFields: [
+      "departmentid", "name", "email", "calendar_id", "hidefromclient",
+      "imap_username", "host", "encryption", "folder", "delete_after_import",
+    ],
+    sortableFields: ["departmentid", "name", "email", "calendar_id"],
+    defaultSort: { field: "name", direction: "asc" },
+    adminOnlyAccess: true,
+    adminOnlyMutations: true,
+    fields: [
+      { key: "name", label: "Department Name", section: "Department", required: true },
+      { key: "calendar_id", label: "Google Calendar ID", section: "Department", placeholder: "Optional calendar ID" },
+      { key: "hidefromclient", label: "Hide from customers", section: "Department", type: "boolean" },
+      { key: "email", label: "Department Email", section: "Incoming Email", type: "email" },
+      { key: "imap_username", label: "IMAP Username", section: "Incoming Email", placeholder: "Defaults to department email" },
+      { key: "host", label: "IMAP Host", section: "Incoming Email", placeholder: "imap.example.com" },
+      { key: "password", label: "IMAP Password", section: "Incoming Email", type: "password", editableSecret: true, placeholder: "Leave blank to keep the saved password" },
+      { key: "encryption", label: "Encryption", section: "Incoming Email", type: "select", defaultValue: "", options: [
+        { label: "None", value: "" },
+        { label: "TLS", value: "tls" },
+        { label: "SSL", value: "ssl" },
+      ] },
+      { key: "folder", label: "Folder", section: "Incoming Email", placeholder: "INBOX when blank" },
+      { key: "delete_after_import", label: "Delete mail after import", section: "Incoming Email", type: "boolean" },
+    ],
   },
 ];
 

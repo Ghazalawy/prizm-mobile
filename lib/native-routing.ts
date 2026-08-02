@@ -182,6 +182,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^paymentmodes\/?$/i, to: () => routeForModuleList("setup_payment_modes")! },
   { re: /^expenses\/categories\/?$/i, to: () => routeForModuleList("setup_expense_categories")! },
   { re: /^contracts\/types\/?$/i, to: () => routeForModuleList("setup_contract_types")! },
+  { re: /^departments\/?$/i, to: () => routeForModuleList("setup_departments")! },
   { re: /^tasks\/view\/(\d+)/i, to: (m) => routeForModuleRecord("tasks", m[1])! },
   { re: /^projects\/view\/(\d+)/i, to: (m) => routeForModuleRecord("projects", m[1])! },
   { re: /^invoices\/(?:list_invoices|invoice)\/(\d+)/i, to: (m) => routeForModuleRecord("invoices", m[1])! },

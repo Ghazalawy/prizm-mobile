@@ -108,9 +108,12 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
       if (!module) throw new Error("Module not found");
       return deleteEntity(module.endpoint, id, module.deleteEndpoint);
     },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ["crud", moduleKey] });
-      router.back();
+    onSuccess: () => {
+      router.replace(path as any);
+      void queryClient.invalidateQueries({ queryKey: ["crud", moduleKey] });
+    },
+    onError: (error: any) => {
+      Alert.alert("Delete failed", error?.message || "Could not delete this record.");
     },
   });
 

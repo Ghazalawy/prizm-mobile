@@ -25,6 +25,7 @@ import {
 import { usePermissions } from "@/lib/permission-context";
 import { FieldInput } from "./FieldInput";
 import { DateInput } from "./DateInput";
+import { DepartmentImapTools } from "./DepartmentImapTools";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -310,6 +311,17 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
               </View>
             </View>
           ) : null}
+
+          {module.key === "setup_departments" ? (
+            <DepartmentImapTools
+              id={id}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -443,7 +455,7 @@ function editableFields(module: ModuleDefinition, isEdit: boolean): ModuleField[
   return module.fields.filter((field) => {
     if (field.readOnly) return false;
     if (isEdit && field.createOnly) return false;
-    if (isEdit && field.key === "password") return false;
+    if (isEdit && field.key === "password" && !field.editableSecret) return false;
     return true;
   });
 }
@@ -480,6 +492,7 @@ function buildPayload(
   fields.forEach((field) => {
     const raw = values[field.key] ?? "";
     const value = raw.trim();
+    if (isEdit && field.editableSecret && value === "") return;
     if (!isEdit && !field.required && value === "") return;
 
     if (field.submitAsArray) {

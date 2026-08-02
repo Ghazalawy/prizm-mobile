@@ -490,6 +490,7 @@ for (const [webPath, nativePath] of [
   ["paymentmodes", "/(tabs)/erp/setup_payment_modes"],
   ["expenses/categories", "/(tabs)/erp/setup_expense_categories"],
   ["contracts/types", "/(tabs)/erp/setup_contract_types"],
+  ["departments", "/(tabs)/erp/setup_departments"],
 ]) {
   assert.equal(
     routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
@@ -597,9 +598,12 @@ assert.match(mobileAppLinkBridge, /\^\/MS\(\?:\/\|\$\)/);
 assert.match(mobileAppLinkBridge, /api\|uploads\?\|download\|media\|assets\?/);
 const setupApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Setup_api.php"), "utf8");
 const crudFormSource = fs.readFileSync(path.join(workspace, "components/crud/CrudFormScreen.tsx"), "utf8");
+const crudDetailDeleteSource = fs.readFileSync(path.join(workspace, "components/crud/CrudDetailScreen.tsx"), "utf8");
 assert.match(crudFormSource, /initializedFormKeyRef/);
 assert.match(crudFormSource, /if \(initializedFormKeyRef\.current === initializationKey\) return/);
 assert.match(crudFormSource, /const EMPTY_CUSTOM_FIELDS: CustomFieldRow\[\] = \[\]/);
+assert.match(crudDetailDeleteSource, /router\.replace\(path as any\)/);
+assert.match(crudDetailDeleteSource, /Alert\.alert\("Delete failed"/);
 const activityQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/activity.ts"), "utf8");
 assert.match(activityQuerySource, /my\/activity/);
 assert.doesNotMatch(activityQuerySource, /core_crm_api/);
@@ -607,6 +611,7 @@ for (const key of [
   "setup_customer_groups", "setup_ticket_priorities", "setup_ticket_replies", "setup_ticket_statuses",
   "setup_ticket_services", "setup_lead_sources", "setup_lead_statuses", "setup_taxes", "setup_currencies",
   "setup_payment_modes", "setup_expense_categories", "setup_contract_types",
+  "setup_departments",
 ]) {
   assert.ok(registryKeys.includes(key), `${key} must be registered as a native admin module`);
   const block = registrySource.match(new RegExp(`key: "${key}",[\\s\\S]*?(?=\\n  \\{\\n    key: "|\\n\\];)`))?.[0] ?? "";
@@ -618,6 +623,7 @@ for (const key of [
 for (const resource of [
   "customer_groups", "ticket_priorities", "ticket_replies", "ticket_statuses", "ticket_services",
   "lead_sources", "lead_statuses", "taxes", "currencies", "payment_modes", "expense_categories", "contract_types",
+  "departments",
 ]) {
   assert.match(setupApiSource, new RegExp(`'${resource}'`), `${resource} must have a backend definition`);
 }
@@ -626,6 +632,18 @@ assert.match(setupApiSource, /HTTP_NOT_FOUND/);
 assert.match(setupApiSource, /make_base_currency/);
 assert.match(setupApiSource, /delete_ticket_status/);
 assert.match(setupApiSource, /delete_status/);
+assert.match(setupApiSource, /getSelectableFolders/);
+assert.match(setupApiSource, /getMailbox/);
+assert.match(setupApiSource, /encryption->decrypt/);
+const departmentsBlock = registrySource.match(/key: "setup_departments",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(departmentsBlock, /editableSecret: true/);
+assert.match(departmentsBlock, /delete_after_import/);
+assert.doesNotMatch(departmentsBlock.match(/titleFields:[\s\S]*?fields:/)?.[0] ?? "", /password/);
+const departmentToolsSource = fs.readFileSync(path.join(workspace, "components/crud/DepartmentImapTools.tsx"), "utf8");
+assert.match(departmentToolsSource, /setup_api\/departments\/\$\{id \|\| 0\}\/\$\{action\}/);
+assert.match(departmentToolsSource, /Retrieve folders/);
+assert.match(departmentToolsSource, /Test connection/);
+assert.doesNotMatch(departmentToolsSource, /console\.(?:log|warn|error)/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);

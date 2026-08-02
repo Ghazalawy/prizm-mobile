@@ -50,12 +50,33 @@ const modules = declaration.initializer.elements.flatMap((element) => {
 
 const routesSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/config/routes.php"), "utf8");
 const exactRoutes = new Map();
-for (const match of routesSource.matchAll(/\$route\['api\/([^'(:]+(?:\/[^'(:]+)*)'\]\s*=\s*'([^']+)'/g)) {
-  exactRoutes.set(match[1].replace(/\/$/, ""), match[2]);
+const dynamicRoutes = [];
+for (const match of routesSource.matchAll(/\$route\['api\/([^']+)'\]\s*=\s*'([^']+)'/g)) {
+  const route = match[1].replace(/\/$/, "");
+  if (!route.includes("(:")) {
+    exactRoutes.set(route, match[2]);
+    continue;
+  }
+  const pattern = route
+    .split("/")
+    .map((segment) => {
+      if (segment === "(:any)") return "([^/]+)";
+      if (segment === "(:num)") return "(\\d+)";
+      return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    })
+    .join("/");
+  dynamicRoutes.push({ regex: new RegExp(`^${pattern}$`), target: match[2] });
 }
-const detailRoutes = new Map();
-for (const match of routesSource.matchAll(/\$route\['api\/([^']+)\/\(:num\)'\]\s*=\s*'([^']+)'/g)) {
-  if (!match[1].includes("(:")) detailRoutes.set(match[1].replace(/\/$/, ""), match[2]);
+
+function resolveRoute(endpoint) {
+  const exact = exactRoutes.get(endpoint);
+  if (exact) return exact;
+  for (const route of dynamicRoutes) {
+    const match = route.regex.exec(endpoint);
+    if (!match) continue;
+    return route.target.replace(/\$(\d+)/g, (_, index) => match[Number(index)] ?? "");
+  }
+  return null;
 }
 
 const controllersDir = path.join(backendWorkspace, "modules/api/controllers");
@@ -72,7 +93,7 @@ let checked = 0;
 for (const module of modules) {
   if (!module.create && !module.update && !module.delete) continue;
   const endpoint = module.endpoint.replace(/^\/+|\/+$/g, "");
-  const explicitTarget = exactRoutes.get(endpoint);
+  const explicitTarget = resolveRoute(endpoint);
   let controller;
   let action;
   if (explicitTarget) {
@@ -91,8 +112,9 @@ for (const module of modules) {
     if (!module[capability]) continue;
     let capabilityController = controller;
     let capabilityAction = action;
-    if (capability !== "create" && detailRoutes.has(endpoint)) {
-      [capabilityController, capabilityAction = "data"] = detailRoutes.get(endpoint).split("/");
+    if (capability !== "create") {
+      const detailTarget = resolveRoute(`${endpoint}/0`);
+      if (detailTarget) [capabilityController, capabilityAction = "data"] = detailTarget.split("/");
     }
     const controllerFile = controllerFiles.get(capabilityController.toLowerCase());
     if (!controllerFile) {

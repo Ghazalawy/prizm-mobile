@@ -85,8 +85,32 @@ const modules = [...registryModules, ...dedicatedConfigs];
 
 const routesSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/config/routes.php"), "utf8");
 const exactRoutes = new Map();
+const dynamicRoutes = [];
 for (const match of routesSource.matchAll(/\$route\['api\/([^']+)'\]\s*=\s*'([^']+)'/g)) {
-  if (!match[1].includes("(:")) exactRoutes.set(match[1].replace(/\/$/, ""), match[2]);
+  const route = match[1].replace(/\/$/, "");
+  if (!route.includes("(:")) {
+    exactRoutes.set(route, match[2]);
+    continue;
+  }
+  const captures = [];
+  let groupIndex = 0;
+  const pattern = route
+    .split("/")
+    .map((segment) => {
+      if (segment === "(:any)") {
+        groupIndex += 1;
+        captures.push(groupIndex);
+        return "([^/]+)";
+      }
+      if (segment === "(:num)") {
+        groupIndex += 1;
+        captures.push(groupIndex);
+        return "(\\d+)";
+      }
+      return segment.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    })
+    .join("/");
+  dynamicRoutes.push({ regex: new RegExp(`^${pattern}$`), target: match[2], captures });
 }
 
 const controllersDir = path.join(backendWorkspace, "modules/api/controllers");
@@ -171,10 +195,105 @@ function expandMethodBody(source, method, seen = new Set(), depth = 0) {
   ].join("\n");
 }
 
+function splitTopLevelArguments(source) {
+  const args = [];
+  let start = 0;
+  let depth = 0;
+  let quote = "";
+  let escaped = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const char = source[index];
+    if (quote) {
+      if (escaped) escaped = false;
+      else if (char === "\\") escaped = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+    if (char === "[" || char === "(") depth += 1;
+    else if (char === "]" || char === ")") depth -= 1;
+    else if (char === "," && depth === 0) {
+      args.push(source.slice(start, index).trim());
+      start = index + 1;
+    }
+  }
+  args.push(source.slice(start).trim());
+  return args;
+}
+
+function setupResourceFilterTypes(source, resource) {
+  const definitions = extractMethod(source, "definitions");
+  const escaped = resource.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  const match = new RegExp(`['"]${escaped}['"]\\s*=>\\s*\\$this->definition\\s*\\(`).exec(definitions);
+  if (!match) return null;
+  const open = definitions.indexOf("(", match.index);
+  let depth = 0;
+  let quote = "";
+  let escapedQuote = false;
+  let close = -1;
+  for (let index = open; index < definitions.length; index += 1) {
+    const char = definitions[index];
+    if (quote) {
+      if (escapedQuote) escapedQuote = false;
+      else if (char === "\\") escapedQuote = true;
+      else if (char === quote) quote = "";
+      continue;
+    }
+    if (char === "'" || char === '"') {
+      quote = char;
+      continue;
+    }
+    if (char === "(") depth += 1;
+    else if (char === ")") {
+      depth -= 1;
+      if (depth === 0) {
+        close = index;
+        break;
+      }
+    }
+  }
+  if (close < 0) return null;
+  const args = splitTopLevelArguments(definitions.slice(open + 1, close));
+  if (args.length < 3) return null;
+  const unquote = (value) => value.trim().replace(/^['"]|['"]$/g, "");
+  const stringValues = (value) => [...value.matchAll(/['"]([^'"]+)['"]/g)].map((item) => item[1]);
+  const pk = unquote(args[1]);
+  const fields = stringValues(args[2]);
+  const extra = args[4] ?? "";
+  const listFor = (key) => {
+    const keyMatch = new RegExp(`['"]${key}['"]\\s*=>\\s*\\[([^\\]]*)\\]`, "s").exec(extra);
+    return new Set(keyMatch ? stringValues(keyMatch[1]) : []);
+  };
+  const number = listFor("number");
+  const boolean = listFor("boolean");
+  const enumsBlock = /['"]enums['"]\s*=>\s*\[([\s\S]*)\]\s*(?:,|$)/.exec(extra)?.[1] ?? "";
+  const enums = new Set([...enumsBlock.matchAll(/['"]([^'"]+)['"]\s*=>\s*\[/g)].map((item) => item[1]));
+  return new Map(fields.map((field) => [
+    field,
+    field === pk || number.has(field)
+      ? "NumberRule"
+      : boolean.has(field) || field === "isdefault"
+        ? "BooleanRule"
+        : enums.has(field)
+          ? "SelectRule"
+          : "TextRule",
+  ]));
+}
+
 function resolve(module) {
   const explicit = exactRoutes.get(module.endpoint);
   if (explicit) {
     const [controller, action = "data"] = explicit.split("/");
+    return { controller, action };
+  }
+  for (const route of dynamicRoutes) {
+    const match = route.regex.exec(module.endpoint);
+    if (!match) continue;
+    const resolved = route.target.replace(/\$(\d+)/g, (_, index) => match[Number(index)] ?? "");
+    const [controller, action = "data"] = resolved.split("/");
     return { controller, action };
   }
   if (!module.endpoint.includes("/")) return { controller: module.endpoint, action: "data" };
@@ -228,7 +347,10 @@ for (const module of modules) {
 
   if (module.filterableFields.length) {
     checkedFilters += 1;
-    const supported = new Map();
+    const setupResource = target.controller.toLowerCase() === "setup_api" && target.action === "data"
+      ? module.endpoint.split("/")[1]
+      : null;
+    const supported = setupResource ? setupResourceFilterTypes(source, setupResource) ?? new Map() : new Map();
     for (const match of body.matchAll(
       /['"]([^'"]+)['"]\s*=>\s*api_advanced_filter_definition\s*\([^,\n]+,\s*['"]([^'"]+Rule)['"]/g,
     )) {

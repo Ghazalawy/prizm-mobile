@@ -5604,7 +5604,10 @@ export const MODULES: ModuleDefinition[] = [
     defaultSort: { field: "name", direction: "asc" },
     adminOnlyAccess: true,
     adminOnlyMutations: true,
-    fields: [{ key: "name", label: "Priority Name", section: "Priority", required: true }],
+    fields: [
+      { key: "priorityid", label: "Priority ID", section: "Priority", type: "number", readOnly: true },
+      { key: "name", label: "Priority Name", section: "Priority", required: true },
+    ],
   },
   {
     key: "setup_ticket_replies",
@@ -5648,6 +5651,7 @@ export const MODULES: ModuleDefinition[] = [
     adminOnlyAccess: true,
     adminOnlyMutations: true,
     fields: [
+      { key: "ticketstatusid", label: "Status ID", section: "Status", type: "number", readOnly: true },
       { key: "name", label: "Status Name", section: "Status", required: true },
       { key: "statuscolor", label: "Color", section: "Status", placeholder: "#0F766E" },
       { key: "statusorder", label: "Order", section: "Status", type: "number" },
@@ -5671,7 +5675,10 @@ export const MODULES: ModuleDefinition[] = [
     defaultSort: { field: "name", direction: "asc" },
     adminOnlyAccess: true,
     adminOnlyMutations: true,
-    fields: [{ key: "name", label: "Service Name", section: "Service", required: true }],
+    fields: [
+      { key: "serviceid", label: "Service ID", section: "Service", type: "number", readOnly: true },
+      { key: "name", label: "Service Name", section: "Service", required: true },
+    ],
   },
   {
     key: "setup_lead_sources",
@@ -5867,6 +5874,7 @@ export const MODULES: ModuleDefinition[] = [
     adminOnlyAccess: true,
     adminOnlyMutations: true,
     fields: [
+      { key: "departmentid", label: "Department ID", section: "Department", type: "number", readOnly: true },
       { key: "name", label: "Department Name", section: "Department", required: true },
       { key: "calendar_id", label: "Google Calendar ID", section: "Department", placeholder: "Optional calendar ID" },
       { key: "hidefromclient", label: "Hide from customers", section: "Department", type: "boolean" },
@@ -5944,6 +5952,7 @@ export const MODULES: ModuleDefinition[] = [
     sortableFields: ["roleid", "name", "user_count"],
     defaultSort: { field: "name", direction: "asc" },
     fields: [
+      { key: "roleid", label: "Role ID", section: "Role", type: "number", readOnly: true },
       { key: "name", label: "Role Name", section: "Role", required: true },
       { key: "permissions", label: "Permissions", section: "Permissions", type: "json", hidden: true, defaultValue: "{}" },
       { key: "update_staff_permissions", label: "Update assigned staff", section: "Permissions", type: "boolean", hidden: true },

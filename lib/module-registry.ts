@@ -6,6 +6,7 @@ export type FieldType =
   | "date"
   | "datetime"
   | "email"
+  | "password"
   | "phone"
   | "url"
   | "boolean"
@@ -209,6 +210,8 @@ export type ModuleField = {
   /** Convert the comma-separated picker value to an array in the API payload. */
   submitAsArray?: boolean;
   required?: boolean;
+  /** Required only when creating and the named boolean field is not enabled. */
+  requiredOnCreateUnless?: string;
   readOnly?: boolean;
   /** Included in form state/payload but never rendered; used for parent-scoped child defaults. */
   hidden?: boolean;
@@ -706,16 +709,31 @@ export const MODULES: ModuleDefinition[] = [
       { key: "firstname", label: "First Name", section: "Contact", required: true },
       { key: "lastname", label: "Last Name", section: "Contact", required: true },
       { key: "email", label: "Email", section: "Contact", type: "email", required: true },
-      { key: "password", label: "Password", section: "Portal", required: true },
+      { key: "password", label: "Password", section: "Portal", type: "password", requiredOnCreateUnless: "send_set_password_email" },
+      { key: "send_set_password_email", label: "Email a secure password setup link", section: "Portal", type: "boolean" },
       { key: "title", label: "Title", section: "Contact" },
       { key: "phonenumber", label: "Phone", section: "Contact", type: "phone" },
       { key: "is_primary", label: "Primary", section: "Portal", type: "boolean" },
-      { key: "active", label: "Active", section: "Portal", type: "select", options: statusOptions },
+      { key: "active", label: "Active", section: "Portal", type: "select", options: statusOptions, readOnly: true },
       { key: "invoice_emails", label: "Invoice Emails", section: "Notifications", type: "boolean" },
       { key: "estimate_emails", label: "Estimate Emails", section: "Notifications", type: "boolean" },
+      { key: "credit_note_emails", label: "Credit Note Emails", section: "Notifications", type: "boolean" },
+      { key: "contract_emails", label: "Contract Emails", section: "Notifications", type: "boolean" },
       { key: "project_emails", label: "Project Emails", section: "Notifications", type: "boolean" },
       { key: "ticket_emails", label: "Ticket Emails", section: "Notifications", type: "boolean" },
       { key: "task_emails", label: "Task Emails", section: "Notifications", type: "boolean" },
+    ],
+    actions: [
+      {
+        key: "change_status",
+        title: "Change active status",
+        icon: "toggle-outline",
+        endpointTemplate: "contacts/{id}/status",
+        method: "PUT",
+        requiresConfirm: false,
+        fields: [{ key: "status", label: "Status", type: "select", required: true, options: statusOptions }],
+        successMessage: "Contact status updated.",
+      },
     ],
   },
   {
@@ -867,6 +885,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "closingdate", label: "Closing Date", section: "Dates", type: "datetime" },
       { key: "scrapedat", label: "Scraped At", section: "Dates", type: "datetime" },
     ],
+    canCreate: false,
     canUpdate: false,
     canDelete: false,
   },
@@ -976,7 +995,9 @@ export const MODULES: ModuleDefinition[] = [
     icon: "checkbox-outline",
     color: "#F59E0B",
     titleFields: ["name"],
-    subtitleFields: ["rel_type", "duedate"],
+    // A task's raw rel_type can be an internal implementation bucket such as
+    // `erp_dev`. Prefer the human record name and due date in list cards.
+    subtitleFields: ["rel_name", "duedate"],
     searchFields: ["name", "description"],
     filterableFields: ["status", "priority", "billable"],
     statusField: "status",
@@ -1617,7 +1638,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "middlename", label: "Middle Name", section: "Staff" },
       { key: "lastname", label: "Last Name", section: "Staff", required: true },
       { key: "email", label: "Email", section: "Staff", type: "email", required: true },
-      { key: "password", label: "Password", section: "Staff", createOnly: true, required: true },
+      { key: "password", label: "Password", section: "Staff", type: "password", createOnly: true, required: true },
       { key: "phonenumber", label: "Phone", section: "Staff", type: "phone" },
       { key: "role", label: "Role ID", section: "Staff", type: "number" },
       { key: "active", label: "Active", section: "Staff", type: "select", options: statusOptions },
@@ -1811,7 +1832,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "status", label: "Default Status", section: "Form", relation: "estimate_request_status", required: true },
       { key: "language", label: "Language", section: "Form", defaultValue: "english" },
       { key: "recaptcha", label: "Use reCAPTCHA", section: "Form", type: "boolean" },
-      { key: "form_data", label: "Form Fields (JSON)", section: "Fields", type: "json", placeholder: "Include a required field whose subtype is email" },
+      { key: "form_data", label: "Form Fields (JSON)", section: "Fields", type: "json", required: true, placeholder: "Include a required field whose subtype is email" },
       { key: "submit_btn_name", label: "Submit Button Text", section: "Branding", defaultValue: "Submit" },
       { key: "submit_btn_bg_color", label: "Button Background", section: "Branding", defaultValue: "#84c529" },
       { key: "submit_btn_text_color", label: "Button Text Color", section: "Branding", defaultValue: "#ffffff" },
@@ -1871,11 +1892,16 @@ export const MODULES: ModuleDefinition[] = [
     searchFields: ["description"],
     defaultSort: { field: "item_order", direction: "asc" },
     filterableFields: ["description", "date", "finished", "dateadded", "datefinished"],
+    supportsAdvancedFilters: true,
+    sortableFields: ["todoid", "item_order", "date", "finished", "dateadded", "datefinished"],
     statusField: "finished",
     statusOptions: [
       { label: "Open", value: "0", color: "#F59E0B" },
       { label: "Completed", value: "1", color: "#10B981" },
     ],
+    filterRules: {
+      finished: { ruleType: "MultiSelectRule" },
+    },
     fields: [
       { key: "description", label: "Description", section: "To-Do", type: "multiline", required: true },
       { key: "date", label: "Due Date", section: "To-Do", type: "date" },
@@ -2210,6 +2236,7 @@ export const MODULES: ModuleDefinition[] = [
     filterRules: { source_type: { ruleType: "MultiSelectRule" }, include_next_send: { ruleType: "SelectRule" } },
     canCreate: false,
     canUpdate: false,
+    canDelete: false,
     fields: [
       { key: "rfq_id", label: "RFQ ID", section: "RFQ", type: "number", readOnly: true },
       { key: "rfq_code", label: "RFQ Code", section: "RFQ", readOnly: true },
@@ -2274,11 +2301,6 @@ export const MODULES: ModuleDefinition[] = [
       { key: "reminder_count", label: "Reminders", section: "Activity", type: "number", readOnly: true },
       { key: "created_at", label: "Created", section: "Audit", type: "datetime", readOnly: true },
       { key: "updated_at", label: "Updated", section: "Audit", type: "datetime", readOnly: true },
-    ],
-    tabs: [
-      { key: "members", title: "Members", moduleKey: "cost_center_members", endpointTemplate: "cost_centers_api/members/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
-      { key: "supervisors", title: "Supervisors", moduleKey: "cost_center_supervisors", endpointTemplate: "cost_centers_api/supervisors/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
-      { key: "activity", title: "Activity", moduleKey: "cost_center_activity", endpointTemplate: "cost_centers_api/activity/{id}", canCreate: false, unpaginated: true },
     ],
   },
   {
@@ -2656,7 +2678,7 @@ export const MODULES: ModuleDefinition[] = [
       ...addressFields,
     ],
     tabs: [
-      { key: "contacts", title: "Contacts", moduleKey: "purchase_vendor_contacts", endpointTemplate: "purchase_api/vendor_contacts/{id}", createDefaults: { vendor_id: "{id}" } },
+      { key: "contacts", title: "Contacts", moduleKey: "purchase_vendor_contacts", endpointTemplate: "purchase_api/vendor_contacts/{id}", createDefaults: { supplier_id: "{id}" } },
     ],
   },
   {
@@ -2666,6 +2688,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "Purchase",
     endpoint: "purchase_api/vendor_contacts",
     detailEndpoint: "purchase_api/vendor_contact",
+    permissionFeature: "przsuppliers",
     idKey: "id",
     icon: "person-outline",
     color: "#CA8A04",
@@ -2673,6 +2696,8 @@ export const MODULES: ModuleDefinition[] = [
     subtitleFields: ["supplier_id", "phone", "designation", "active"],
     searchFields: ["firstname", "lastname", "email", "phone", "designation"],
     filterableFields: ["supplier_id", "firstname", "lastname", "email", "phone", "designation", "Department", "primary_contact", "active"],
+    supportsAdvancedFilters: true,
+    sortableFields: ["id", "supplier_id", "firstname", "lastname", "email", "primary_contact", "active"],
     fields: [
       { key: "supplier_id", label: "Vendor ID", type: "number", required: true },
       { key: "firstname", label: "First Name", required: true },
@@ -3090,7 +3115,7 @@ export const MODULES: ModuleDefinition[] = [
     color: "#0F766E",
     titleFields: ["item_name", "item_code"],
     subtitleFields: ["category", "partner", "partner_item_code", "converted"],
-    searchFields: ["item_code", "item_name", "item_description", "remarks", "partner", "partner_item_code", "partner_item_name", "category"],
+    searchFields: ["item_code", "item_name", "remarks", "partner", "partner_item_code", "partner_item_name", "category"],
     defaultSort: { field: "item_name", direction: "asc" },
     sortableFields: ["item_name", "item_code", "partner", "purchase_price", "sell_price", "datecreated", "id"],
     statusField: "converted",
@@ -3099,7 +3124,6 @@ export const MODULES: ModuleDefinition[] = [
     fields: [
       { key: "item_code", label: "Item Code", section: "Material", required: true },
       { key: "item_name", label: "Item Name", section: "Material", required: true },
-      { key: "item_description", label: "Description", section: "Material", type: "multiline" },
       { key: "category_id", label: "Categories", section: "Classification", type: "number", relation: "material_category", multiple: true, submitAsArray: true },
       { key: "category", label: "Category Names", section: "Classification", readOnly: true },
       { key: "remarks", label: "Reference / Remarks", section: "Source", type: "multiline" },
@@ -3386,6 +3410,8 @@ export const MODULES: ModuleDefinition[] = [
     titleFields: ["subject"],
     subtitleFields: ["goal_type_name", "progress_percent", "end_date"],
     searchFields: ["subject", "description"],
+    supportsAdvancedFilters: true,
+    sortableFields: ["id", "subject", "start_date", "end_date", "goal_type", "achievement", "staff_id"],
     defaultSort: { field: "id", direction: "desc" },
     filterableFields: ["subject", "description", "start_date", "end_date", "goal_type", "contract_type", "achievement", "staff_id", "notify_when_fail", "notify_when_achieve"],
     statusField: "status",
@@ -3406,6 +3432,12 @@ export const MODULES: ModuleDefinition[] = [
       { key: "notify_when_achieve", label: "Notify When Achieved", section: "Notifications", type: "boolean" },
       { key: "notify_when_fail", label: "Notify When Failed", section: "Notifications", type: "boolean" },
     ],
+    actions: [{
+      key: "notify_staff", availabilityKey: "notify_staff", title: "Notify Staff of Result", icon: "notifications-outline",
+      endpointTemplate: "goals_api/{id}/notify", method: "PUT",
+      confirm: "Notify the applicable staff members of this goal result?",
+      successMessage: "Goal result notification sent",
+    }],
   },
   {
     key: "business_partners",
@@ -3463,6 +3495,11 @@ export const MODULES: ModuleDefinition[] = [
       { key: "created_at", label: "Created", section: "Audit", type: "datetime", readOnly: true },
       { key: "updated_at", label: "Updated", section: "Audit", type: "datetime", readOnly: true },
     ],
+    tabs: [
+      { key: "members", title: "Members", moduleKey: "cost_center_members", endpointTemplate: "cost_centers_api/members/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
+      { key: "supervisors", title: "Supervisors", moduleKey: "cost_center_supervisors", endpointTemplate: "cost_centers_api/supervisors/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
+      { key: "activity", title: "Activity", moduleKey: "cost_center_activity", endpointTemplate: "cost_centers_api/activity/{id}", canCreate: false, unpaginated: true },
+    ],
   },
   {
     key: "timesheets",
@@ -3470,22 +3507,39 @@ export const MODULES: ModuleDefinition[] = [
     plural: "Timesheets",
     group: "Work",
     endpoint: "timesheets_api",
-    permissionFeature: "attendance_management",
     idKey: "id",
     icon: "time-outline",
     color: "#2563EB",
-    titleFields: ["task_id", "staff_id"],
-    subtitleFields: ["start_time", "end_time"],
+    titleFields: ["task_name", "task_id"],
+    subtitleFields: ["staff_name", "project_name", "active", "start_time", "end_time"],
     searchFields: ["task_name", "staff_name", "note"],
     defaultSort: { field: "start_time", direction: "desc" },
-    sortableFields: ["start_time", "end_time", "staff_id", "task_id"],
+    sortableFields: ["start_time", "end_time", "staff_id", "task_id", "task_name", "project_name"],
     filterableFields: ["staff_id", "task_id", "start_time", "end_time", "note", "active"],
     fields: [
       { key: "task_id", label: "Task", section: "Timesheet", type: "number", relation: "task", required: true },
       { key: "staff_id", label: "Staff", section: "Timesheet", type: "number", relation: "staff", required: true },
       { key: "start_time", label: "Start Time", section: "Timesheet", type: "datetime", required: true },
-      { key: "end_time", label: "End Time", section: "Timesheet", type: "datetime" },
+      { key: "end_time", label: "End Time", section: "Timesheet", type: "datetime", required: true },
       { key: "note", label: "Note", section: "Timesheet", type: "multiline" },
+      { key: "task_name", label: "Task", section: "Context", readOnly: true },
+      { key: "project_name", label: "Project", section: "Context", readOnly: true },
+      { key: "staff_name", label: "Staff Member", section: "Context", readOnly: true },
+      { key: "duration_seconds", label: "Duration (seconds)", section: "Time", type: "number", readOnly: true },
+      { key: "active", label: "Timer", section: "Time", type: "select", readOnly: true, options: [
+        { label: "Finished", value: 0 },
+        { label: "Running", value: 1 },
+      ] },
+      { key: "task_status", label: "Task Status", section: "Context", type: "select", readOnly: true, options: [
+        { label: "Not Started", value: 1 },
+        { label: "Awaiting Feedback", value: 2 },
+        { label: "Testing", value: 3 },
+        { label: "In Progress", value: 4 },
+        { label: "Complete", value: 5 },
+      ] },
+      { key: "billable", label: "Billable", section: "Billing", type: "boolean", readOnly: true },
+      { key: "billed", label: "Billed", section: "Billing", type: "boolean", readOnly: true },
+      { key: "hourly_rate", label: "Hourly Rate", section: "Billing", type: "money", readOnly: true },
     ],
   },
   {
@@ -5850,6 +5904,7 @@ const API_FILTER_RULE_TYPE_OVERRIDES: Partial<
     staff_id: "MultiSelectRule",
     manager_id: "MultiSelectRule",
     section: "MultiSelectRule",
+    status: "MultiSelectRule",
   },
   timesheets: { staff_id: "SelectRule", task_id: "SelectRule" },
   recruitment_candidates: {
@@ -5906,6 +5961,12 @@ const API_FILTER_RULE_TYPE_OVERRIDES: Partial<
   knowledge: {
     articlegroup: "MultiSelectRule",
     staff_article: "MultiSelectRule",
+    active: "MultiSelectRule",
+  },
+  surveys: {
+    active: "MultiSelectRule",
+    onlyforloggedin: "MultiSelectRule",
+    iprestrict: "MultiSelectRule",
   },
   automation: { type: "MultiSelectRule" },
 };

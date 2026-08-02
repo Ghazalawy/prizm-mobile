@@ -77,11 +77,13 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
       activeOpacity={0.72}
       className="bg-white rounded-xl px-3 py-3 shadow-sm"
     >
-      <View className="flex-row items-center">
-        <View
-          className="w-1 h-10 rounded-full mr-3 shrink-0"
-          style={{ backgroundColor: priority.color }}
-        />
+      <View className="flex-row items-stretch">
+        <View className="w-3.5 mr-2.5 items-center shrink-0" accessibilityElementsHidden>
+          <View
+            className="w-1 flex-1 rounded-full"
+            style={{ minHeight: 42, backgroundColor: priority.color }}
+          />
+        </View>
         <View className="flex-1 min-w-0">
           <Text
             className="text-sm font-semibold text-foreground leading-5"
@@ -99,21 +101,21 @@ const TaskListRow = memo(function TaskListRow({ task }: { task: TaskListItem }) 
             </View>
           ) : null}
           <View className="flex-row flex-wrap mt-1.5 gap-1">
-          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: status.bg }}>
-            <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>{status.label}</Text>
+            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: status.bg }}>
+              <Text style={{ color: status.color, fontSize: 10, fontWeight: "600" }}>{status.label}</Text>
+            </View>
+            <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: priority.bg }}>
+              <Text style={{ color: priority.color, fontSize: 10, fontWeight: "700" }}>{priority.label}</Text>
+            </View>
           </View>
-          <View className="px-2 py-0.5 rounded-full" style={{ backgroundColor: priority.bg }}>
-            <Text style={{ color: priority.color, fontSize: 10, fontWeight: "700" }}>{priority.label}</Text>
-          </View>
-        </View>
         </View>
         <View className="items-end ml-3 shrink-0">
           {due ? (
             <>
-            <Ionicons name="calendar-outline" size={12} color={due.color} />
-            <Text className="text-[10px] font-semibold mt-0.5" style={{ color: due.color }}>
-              {due.label}
-            </Text>
+              <Ionicons name="calendar-outline" size={12} color={due.color} />
+              <Text className="text-[10px] font-semibold mt-0.5" style={{ color: due.color }}>
+                {due.label}
+              </Text>
             </>
           ) : null}
           <Ionicons name="chevron-forward" size={16} color="#94A3B8" style={{ marginTop: due ? 5 : 0 }} />

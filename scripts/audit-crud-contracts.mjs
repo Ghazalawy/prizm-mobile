@@ -114,3 +114,4 @@ if (missing.length) {
 }
 
 console.log(`CRUD contract audit passed: ${checked} advertised mutations have backend methods (${unresolved.length} complex subresource endpoints skipped).`);
+if (unresolved.length) console.log(`Skipped endpoints:\n- ${unresolved.join("\n- ")}`);

@@ -138,7 +138,7 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
   return (
     <View className="flex-1 bg-surface">
       <ScreenHeader
-        eyebrow={module.group}
+        eyebrow={`${module.group} / ${module.plural}`}
         title={module.title}
         subtitle={row ? `#${moduleId(module, row)} · ${moduleTitle(module, row)}` : "Loading record…"}
         icon={module.icon as keyof typeof Ionicons.glyphMap}

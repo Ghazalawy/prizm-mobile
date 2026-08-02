@@ -1269,3 +1269,18 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 106/347 native destinations, with 241 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `b2827b7` plus activity `acd1f2f`; backend `8ef3ab497` plus activity `aa6485e55`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26020-R01__departments-activity-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 17.0 2026-08-02 — Native Roles, combined filters, and App-Link release provenance
+
+- Added Setup → Roles natively with list/search/sort/advanced filters, dense detail, create/edit/delete, assigned-staff coverage, and a live permission editor sourced from Perfex's hook-extended registry.
+- Preserved web permission rules: View versus View Own exclusion, blocked capabilities, not-applicable grants, strict server validation, capability gates, and optional propagation to assigned staff.
+- Corrected cached post-write Role reads and Perfex's missing-row null dereference; a deleted Role detail now returns HTTP 404 and a native Record not found state instead of HTTP 500.
+- Emulator CRUD created ID 24 with two grants, renamed it and added a third grant, then deleted it; the baseline returned from 22 to 21 with no fixture remaining.
+- Rigorous funnel tests passed exact two-rule behavior: mutually exclusive names with AND returned zero rows, while the same rules with OR returned exactly Admin Manager and Field Engineer.
+- Moved the shared Advanced Filters modal below Android's status bar so header controls and Clear all remain tappable app-wide.
+- Reproduced the reported Payment Request 1211 URL. The published APK `c06f94d` predates host-wide hardening commit `006bf61`; the hardened emulator build is domain-verified, opens Prizm MainActivity, and rewrites the exact URL to the native Payment Request route.
+- Static web-menu parity is now 107/347 native destinations, with 240 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `adbf0c2`; backend `caecbf51f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26021-R01__native-roles-app-link-filters-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

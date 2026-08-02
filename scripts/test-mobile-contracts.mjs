@@ -242,6 +242,18 @@ assert.equal(
   "a Payment Request web link must be rewritten to its native approval screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink(
+    `prizmcrm://open?url=${encodeURIComponent("https://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211")}`,
+  ),
+  "/(tabs)/approvals/payment_request/1211",
+  "the browser custom-scheme fallback must preserve and resolve the complete ERP URL",
+);
+assert.equal(
+  routing.resolveIncomingAppLink("prizmcrm://open?url=https%3A%2F%2Fexample.com%2Fphish"),
+  "/(tabs)/erp",
+  "the browser custom-scheme fallback must reject non-Prizm targets",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/roles/role/24"),
   "/(tabs)/erp/setup_roles/24",
   "a web Role detail link must open the native Role detail screen",

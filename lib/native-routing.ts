@@ -19,6 +19,7 @@ type NavigateOptions = ResolveOptions & {
 
 const EXTERNAL_SCHEME_RE = /^(mailto|tel|sms|geo):/i;
 const HTTP_RE = /^https?:\/\//i;
+const PRIZM_APP_SCHEME_RE = /^prizmcrm:/i;
 
 const MODULE_DETAIL_ROUTES: Record<string, (id: string) => string> = {
   tasks: (id) => `/(tabs)/tasks/${id}`,
@@ -359,8 +360,11 @@ export function routeForModuleEdit(
 }
 
 export function resolveNativeRoute(rawLink: string | null | undefined, opts: ResolveOptions = {}): string | null {
-  const raw = cleanLink(rawLink);
-  if (!raw) return null;
+  const incoming = cleanLink(rawLink);
+  if (!incoming) return null;
+  const bridged = unwrapPrizmAppLink(incoming);
+  if (PRIZM_APP_SCHEME_RE.test(incoming) && !bridged) return null;
+  const raw = bridged || incoming;
   if (raw.startsWith("/(tabs)/") || raw.startsWith("/settings")) return raw;
 
   const normalized = normalizeInternalPath(raw);
@@ -390,6 +394,7 @@ export function resolveNativeRoute(rawLink: string | null | undefined, opts: Res
 export function isCompanyInternalLink(rawLink: string | null | undefined): boolean {
   const raw = cleanLink(rawLink);
   if (!raw) return false;
+  if (PRIZM_APP_SCHEME_RE.test(raw)) return unwrapPrizmAppLink(raw) !== null;
   if (raw.startsWith("/(tabs)/")) return true;
   if (raw.startsWith("#")) return true;
   if (EXTERNAL_SCHEME_RE.test(raw)) return false;
@@ -404,6 +409,7 @@ export function isCompanyInternalLink(rawLink: string | null | undefined): boole
 export function resolveIncomingAppLink(rawLink: string): string {
   const route = resolveNativeRoute(rawLink);
   if (route) return route;
+  if (PRIZM_APP_SCHEME_RE.test(cleanLink(rawLink))) return "/(tabs)/erp";
   if (isCompanyInternalLink(rawLink)) return "/(tabs)/erp";
   return rawLink;
 }
@@ -530,6 +536,36 @@ function cleanLink(rawLink: string | null | undefined): string {
     .replace(/&amp;/gi, "&")
     .replace(/&quot;/gi, '"')
     .trim();
+}
+
+/**
+ * Unwrap the explicit browser bridge used when an OEM/browser bypasses
+ * Android's verified HTTPS App Link resolver. Only production/internal ERP
+ * targets are accepted so a crafted custom-scheme URL cannot become an open
+ * redirect into an external site.
+ */
+function unwrapPrizmAppLink(raw: string): string | null {
+  if (!PRIZM_APP_SCHEME_RE.test(raw)) return null;
+
+  try {
+    const parsed = new URL(raw);
+    const encodedTarget = parsed.searchParams.get("url");
+    if (encodedTarget) {
+      const target = cleanLink(encodedTarget);
+      const targetUrl = tryParseUrl(target);
+      return targetUrl && isInternalHost(targetUrl.hostname) ? target : null;
+    }
+
+    if (parsed.hostname && parsed.hostname.toLowerCase() !== "open") {
+      if (!isInternalHost(parsed.hostname)) return null;
+      return `https://${parsed.hostname}${parsed.pathname}${parsed.search}${parsed.hash}`;
+    }
+
+    const path = parsed.pathname || "";
+    return normalizeInternalPath(path) ? path : null;
+  } catch {
+    return null;
+  }
 }
 
 function ensureExternalUrl(raw: string): string | null {

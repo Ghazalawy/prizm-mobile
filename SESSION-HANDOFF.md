@@ -1,5 +1,53 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-08-02 — Full Native Parity Release v1.17.0
+
+**Status:** Backend and mobile are deployed. Production backend is `f94a2528bd6071106e2eaa4428ad8f3c7daae507`; rolling Android release is v1.17.0/code35 from merge `a83f365647790301c252c23c809533cd384b4dd7`.
+
+### Completed and verified
+
+- Multi-status project chips are additive: On Hold = 4; adding Cancelled = 5. Adding the custom Perfex AND rule Billing Type = Fixed Rate returns the exact 4-record intersection.
+- Runtime matrices passed AND, OR, exclusions, date ranges, search, and multi-select across Projects, Customers, Tasks, Purchase Requests, and Payment Requests.
+- Task priority rails no longer touch text; internal `erp_dev` metadata is hidden in favor of meaningful linked-record information.
+- Detail pages identify their group/module and pack short fields into dense two-column layouts; emulator evidence covers Tasks, Payment Requests, and Projects.
+- Report uploads now write to `uploads/prizm_reports/{report}/images`; the mobile resolver keeps the legacy module-assets fallback.
+- TypeScript, Expo dependencies, release metadata, 107 filterable-list contracts, 308 CRUD contracts, 48 PHP lints, and Daleela 87/87 passed.
+- Backend PRs: `Ghazalawy/prizm331#315` and `PrizmIT/prizm331#1197`; deploy run `30731664609` passed.
+- Mobile PR `Ghazalawy/prizm-mobile#4`; release run `30731645014` passed. Published APK SHA-256: `d5592221603c034583dc3959ee9165f9d9732292e1c3c4795f82907d6f35b030`.
+- The published APK was installed on `emulator-5554`. The exact Payment Request 1211 URL cold-launched `com.prizmenergy.mobile/.MainActivity` in 1.33 seconds; forcing the URL through Chrome also returned to Prizm through the live bridge.
+- QC: `PE-QAQC-QC-RPT-26017-R01__full-native-parity-release-20260802.md` and PDF under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## Current Session — 2026-08-02 — Android Browser App-Link Recovery
+
+**Status:** Backend-only hotfix is deployed at production commit `29fa99482`. Mobile APK remains v1.16.0/code34; no intermediate APK was shipped.
+
+### Completed
+
+- Added an Android-only ERP bridge for Chrome and embedded WebViews that bypass verified App Link resolution.
+- Explicitly targets `com.prizmenergy.mobile` and preserves a loop-safe **Continue in browser** path.
+- Excludes API/AJAX/background fetches, mutations, uploads/downloads, documents/images, assets, and desktop traffic.
+
+### Verified
+
+- Exact Payment Request URL forced into Chrome on `emulator-5554` returned to `com.prizmenergy.mobile/.MainActivity` through the live production bridge.
+- Focused contract passed 10/10; fork CI runs `30728031700` and `30728343240` passed.
+- Live Android bridge returned HTTP 200; opt-out and desktop returned the normal HTTP 307 authentication flow; API remained JSON and upload paths were not intercepted.
+- Production checkout is at `29fa994822117f01e13fdc9af3a139e29dbb85ff`.
+
+### Evidence
+
+- Fork PRs `Ghazalawy/prizm331#313` and `#314`; upstream PRs `PrizmIT/prizm331#1195` and `#1196`.
+- Screenshot: `C:\wamp64\www\prizm-mobile-app-link-fix\artifacts\payment-request-browser-bridge-final.png`.
+- QC report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26016-R01__android-browser-app-link-bridge-20260802.md/.pdf`.
+
+### Remaining Programme Scope
+
+- Full native web/mobile parity remains open. Continue the clean Materials Catalog parity checkpoint and subsequent contract-discovered modules before the next consolidated APK.
+
+---
+
 ## Current Session — 2026-08-02 — Purchasing Android App Links
 
 **Status:** Release `1.15.1` (Android versionCode `32`) is deployed. `origin/main` shipped commit `ea292bb`; GitHub Actions run `30719192704` completed successfully and refreshed the rolling signed APK.

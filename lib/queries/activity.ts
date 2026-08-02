@@ -1,12 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { API_URL } from "../config";
-import { buildAuthHeaders, parseApiResponse } from "../api";
-import { getSessionGeneration } from "../auth-events";
+import { apiRequest, buildQS } from "../api";
 
 /**
- * Activity log feed. Backed by the universal /api/core_crm_api/entity
- * endpoint which lets us run a filtered `list` on tblactivity_log
- * (description, date, staffid, fullname).
+ * Activity log feed. Backed by the allowlisted /api/my/activity endpoint,
+ * which always scopes rows to the effective authenticated staff member.
  *
  * For "My Activity" we filter by staffid = current user. Optionally a
  * client-side filter narrows down to `[Mobile]`-prefixed rows so the user
@@ -28,28 +25,10 @@ async function fetchActivity(opts: {
   limit?: number;
   offset?: number;
 }): Promise<ActivityRow[]> {
-  const gen = getSessionGeneration();
-  const headers = await buildAuthHeaders();
-  const body: Record<string, unknown> = {
-    entity: "activity_log",
-    action: "list",
-    filters: {
-      limit: opts.limit ?? 100,
-      offset: opts.offset ?? 0,
-    },
-  };
-  if (opts.staffid) {
-    (body.filters as Record<string, unknown>).staffid = opts.staffid;
-  }
-  const res = await fetch(`${API_URL}/core_crm_api/entity`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(body),
-  });
-  const token = headers["authtoken"];
-  const { body: j, invalidToken } = await parseApiResponse(res, !!token, gen);
-  if (invalidToken) throw new Error("Session expired");
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const j = await apiRequest(`my/activity${buildQS({
+    limit: opts.limit ?? 100,
+    offset: opts.offset ?? 0,
+  })}`);
   if (!j?.status) throw new Error(j?.message || "Activity fetch failed");
   return (j.data || []) as ActivityRow[];
 }

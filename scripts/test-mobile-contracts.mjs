@@ -600,6 +600,9 @@ const crudFormSource = fs.readFileSync(path.join(workspace, "components/crud/Cru
 assert.match(crudFormSource, /initializedFormKeyRef/);
 assert.match(crudFormSource, /if \(initializedFormKeyRef\.current === initializationKey\) return/);
 assert.match(crudFormSource, /const EMPTY_CUSTOM_FIELDS: CustomFieldRow\[\] = \[\]/);
+const activityQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/activity.ts"), "utf8");
+assert.match(activityQuerySource, /my\/activity/);
+assert.doesNotMatch(activityQuerySource, /core_crm_api/);
 for (const key of [
   "setup_customer_groups", "setup_ticket_priorities", "setup_ticket_replies", "setup_ticket_statuses",
   "setup_ticket_services", "setup_lead_sources", "setup_lead_statuses", "setup_taxes", "setup_currencies",

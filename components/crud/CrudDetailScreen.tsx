@@ -39,6 +39,7 @@ import { ActionRunner } from "./ActionRunner";
 import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { taskRelationTypeLabel } from "@/lib/task-display";
+import { EmailTemplateSummary } from "./EmailTemplateSummary";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -241,7 +242,9 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
                 <RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={module.color} />
               }
             >
-              <RecordSummary module={module} row={row} />
+              {module.key === "setup_email_templates"
+                ? <EmailTemplateSummary row={row} />
+                : <RecordSummary module={module} row={row} />}
             </ScrollView>
           ) : (() => {
             const tab = module.tabs?.find((t) => t.key === activeTab);

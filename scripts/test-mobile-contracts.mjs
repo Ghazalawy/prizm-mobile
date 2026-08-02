@@ -252,6 +252,11 @@ assert.equal(
   "a web Custom Field detail link must open the native Custom Field detail screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/emails/email_template/12"),
+  "/(tabs)/erp/setup_email_templates/12",
+  "a web Email Template detail link must open the native Email Template detail screen",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
   "/(tabs)/erp",
   "an unmatched ERP URL must stay inside the app on the native ERP hub",
@@ -501,6 +506,7 @@ for (const [webPath, nativePath] of [
   ["expenses/categories", "/(tabs)/erp/setup_expense_categories"],
   ["contracts/types", "/(tabs)/erp/setup_contract_types"],
   ["departments", "/(tabs)/erp/setup_departments"],
+  ["emails", "/(tabs)/erp/setup_email_templates"],
   ["roles", "/(tabs)/erp/setup_roles"],
   ["custom_fields", "/(tabs)/erp/setup_custom_fields"],
 ]) {
@@ -687,6 +693,23 @@ assert.match(customFieldEditorSource, /custom_fields_admin_api\/config/);
 assert.match(customFieldEditorSource, /Schema locked/);
 assert.match(customFieldEditorSource, /Options already saved on records cannot be removed/);
 assert.doesNotMatch(customFieldEditorSource, /console\.(?:log|warn|error)/);
+assert.ok(registryKeys.includes("setup_email_templates"), "Email Templates must be registered as a native module");
+const emailTemplatesBlock = registrySource.match(/key: "setup_email_templates",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(emailTemplatesBlock, /endpoint: "email_templates_api"/);
+assert.match(emailTemplatesBlock, /permissionFeature: "email_templates"/);
+assert.match(emailTemplatesBlock, /supportsAdvancedFilters: true/);
+assert.match(emailTemplatesBlock, /canCreate: false/);
+assert.match(emailTemplatesBlock, /canDelete: false/);
+assert.match(emailTemplatesBlock, /variants/);
+const emailTemplatesApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Email_templates_api.php"), "utf8");
+assert.match(emailTemplatesApiSource, /emails_model->update\(\$payload\)/);
+assert.match(emailTemplatesApiSource, /app_merge_fields->all\(\)/);
+assert.match(emailTemplatesApiSource, /api_apply_advanced_filters/);
+const emailTemplateEditorSource = fs.readFileSync(path.join(workspace, "components/crud/EmailTemplateEditor.tsx"), "utf8");
+assert.match(emailTemplateEditorSource, /Tap a token to insert it at the cursor/);
+assert.match(emailTemplateEditorSource, /Language content/);
+assert.match(emailTemplateEditorSource, /useWindowDimensions/);
+assert.doesNotMatch(emailTemplateEditorSource, /console\.(?:log|warn|error)/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);

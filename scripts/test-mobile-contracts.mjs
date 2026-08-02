@@ -247,6 +247,11 @@ assert.equal(
   "a web Role detail link must open the native Role detail screen",
 );
 assert.equal(
+  routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/custom_fields/field/17"),
+  "/(tabs)/erp/setup_custom_fields/17",
+  "a web Custom Field detail link must open the native Custom Field detail screen",
+);
+assert.equal(
   routing.resolveIncomingAppLink("https://ms.prizm-energy.com/MS/admin/dashboard"),
   "/(tabs)/erp",
   "an unmatched ERP URL must stay inside the app on the native ERP hub",
@@ -497,6 +502,7 @@ for (const [webPath, nativePath] of [
   ["contracts/types", "/(tabs)/erp/setup_contract_types"],
   ["departments", "/(tabs)/erp/setup_departments"],
   ["roles", "/(tabs)/erp/setup_roles"],
+  ["custom_fields", "/(tabs)/erp/setup_custom_fields"],
 ]) {
   assert.equal(
     routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
@@ -665,6 +671,22 @@ assert.match(roleEditorSource, /roles_api\/permissions/);
 assert.match(roleEditorSource, /View and View Own are mutually exclusive/);
 assert.match(roleEditorSource, /Update assigned staff/);
 assert.doesNotMatch(roleEditorSource, /Alert\.alert/);
+assert.ok(registryKeys.includes("setup_custom_fields"), "Custom Fields must be registered as a native module");
+const customFieldsBlock = registrySource.match(/key: "setup_custom_fields",[\s\S]*?(?=\n  \{\n    key: "|\n\];)/)?.[0] ?? "";
+assert.match(customFieldsBlock, /endpoint: "custom_fields_admin_api"/);
+assert.match(customFieldsBlock, /supportsAdvancedFilters: true/);
+assert.match(customFieldsBlock, /adminOnlyAccess: true/);
+assert.match(customFieldsBlock, /disalow_client_to_edit/);
+const customFieldsApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Custom_fields_admin_api.php"), "utf8");
+assert.match(customFieldsApiSource, /after_custom_fields_select_options/);
+assert.match(customFieldsApiSource, /api_apply_advanced_filters/);
+assert.match(customFieldsApiSource, /cannot change after values have been saved/);
+assert.match(customFieldsApiSource, /cant_change_option_custom_field/);
+const customFieldEditorSource = fs.readFileSync(path.join(workspace, "components/crud/CustomFieldDefinitionEditor.tsx"), "utf8");
+assert.match(customFieldEditorSource, /custom_fields_admin_api\/config/);
+assert.match(customFieldEditorSource, /Schema locked/);
+assert.match(customFieldEditorSource, /Options already saved on records cannot be removed/);
+assert.doesNotMatch(customFieldEditorSource, /console\.(?:log|warn|error)/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);

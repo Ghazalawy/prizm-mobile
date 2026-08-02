@@ -27,6 +27,7 @@ import { FieldInput } from "./FieldInput";
 import { DateInput } from "./DateInput";
 import { DepartmentImapTools } from "./DepartmentImapTools";
 import { RolePermissionsEditor } from "./RolePermissionsEditor";
+import { CustomFieldDefinitionEditor } from "./CustomFieldDefinitionEditor";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -73,7 +74,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
   const row = useMemo(() => unwrapRow(detail.data, module), [detail.data, module]);
   const fields = useMemo(() => (module ? editableFields(module, isEdit) : []), [module, isEdit]);
-  const sections = useMemo(() => groupFields(fields.filter((field) => !field.hidden)), [fields]);
+  const sections = useMemo(() => groupFields(fields.filter((field) => !field.hidden && !field.customEditor)), [fields]);
 
   // Custom fields: fetched for create (no id, blank values) or edit (id given,
   // values populated). Tracked in their own values map keyed by custom_field_id.
@@ -327,6 +328,16 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
           {module.key === "setup_roles" ? (
             <RolePermissionsEditor
               id={id}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "setup_custom_fields" ? (
+            <CustomFieldDefinitionEditor
               values={values}
               onChange={(field, value) => {
                 setValues((current) => ({ ...current, [field]: value }));

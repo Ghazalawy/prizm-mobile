@@ -215,6 +215,8 @@ export type ModuleField = {
   readOnly?: boolean;
   /** Included in form state/payload but never rendered; used for parent-scoped child defaults. */
   hidden?: boolean;
+  /** Rendered by a module-specific native editor while remaining visible on detail screens. */
+  customEditor?: boolean;
   /** Editable when creating, then immutable in the generic edit form. */
   createOnly?: boolean;
   /** Secret may be replaced on edit; a blank value is omitted to retain the saved secret. */
@@ -5879,6 +5881,49 @@ export const MODULES: ModuleDefinition[] = [
       ] },
       { key: "folder", label: "Folder", section: "Incoming Email", placeholder: "INBOX when blank" },
       { key: "delete_after_import", label: "Delete mail after import", section: "Incoming Email", type: "boolean" },
+    ],
+  },
+  {
+    key: "setup_custom_fields",
+    title: "Custom Field",
+    plural: "Custom Fields",
+    group: "Admin",
+    endpoint: "custom_fields_admin_api",
+    supportsAdvancedFilters: true,
+    idKey: "id",
+    icon: "options-outline",
+    color: "#0891B2",
+    titleFields: ["name"],
+    subtitleFields: ["scope_summary", "visibility_summary"],
+    searchFields: ["name", "fieldto", "type", "slug"],
+    filterableFields: ["id", "name", "fieldto", "type", "slug", "active", "required", "show_on_table"],
+    sortableFields: ["id", "name", "fieldto", "type", "slug", "active", "field_order", "value_count"],
+    defaultSort: { field: "field_order", direction: "asc" },
+    adminOnlyAccess: true,
+    adminOnlyMutations: true,
+    fields: [
+      { key: "fieldto", label: "Belongs To", section: "Definition", required: true, customEditor: true },
+      { key: "name", label: "Field Name", section: "Definition", required: true, customEditor: true },
+      { key: "type", label: "Type", section: "Definition", required: true, customEditor: true },
+      { key: "options", label: "Options", section: "Values", type: "multiline", customEditor: true },
+      { key: "default_value", label: "Default Value", section: "Values", customEditor: true },
+      { key: "field_order", label: "Display Order", section: "Layout", type: "number", defaultValue: 0, customEditor: true },
+      { key: "bs_column", label: "Column Width", section: "Layout", type: "number", required: true, defaultValue: 12, customEditor: true },
+      { key: "active", label: "Active", section: "Behaviour", type: "boolean", defaultValue: "on", customEditor: true },
+      { key: "display_inline", label: "Display Checkboxes Inline", section: "Behaviour", type: "boolean", customEditor: true },
+      { key: "only_admin", label: "Admin Only", section: "Behaviour", type: "boolean", customEditor: true },
+      { key: "disalow_client_to_edit", label: "Prevent Customer Editing", section: "Behaviour", type: "boolean", customEditor: true },
+      { key: "required", label: "Required", section: "Behaviour", type: "boolean", customEditor: true },
+      { key: "show_on_table", label: "Show on Table", section: "Visibility", type: "boolean", customEditor: true },
+      { key: "show_on_pdf", label: "Show on PDF", section: "Visibility", type: "boolean", customEditor: true },
+      { key: "show_on_client_portal", label: "Show on Customer Portal", section: "Visibility", type: "boolean", customEditor: true },
+      { key: "show_on_ticket_form", label: "Show on Ticket Form", section: "Visibility", type: "boolean", customEditor: true },
+      { key: "locked_schema", label: "Schema Locked", hidden: true },
+      { key: "slug", label: "Slug", section: "Identity", readOnly: true },
+      { key: "target_label", label: "Module", section: "Identity", readOnly: true },
+      { key: "type_label", label: "Field Type", section: "Identity", readOnly: true },
+      { key: "value_count", label: "Saved Values", section: "Usage", type: "number", readOnly: true },
+      { key: "visibility_summary", label: "Visibility", section: "Usage", type: "multiline", readOnly: true },
     ],
   },
   {

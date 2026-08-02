@@ -68,7 +68,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
   const row = useMemo(() => unwrapRow(detail.data, module), [detail.data, module]);
   const fields = useMemo(() => (module ? editableFields(module, isEdit) : []), [module, isEdit]);
-  const sections = useMemo(() => groupFields(fields), [fields]);
+  const sections = useMemo(() => groupFields(fields.filter((field) => !field.hidden)), [fields]);
 
   // Custom fields: fetched for create (no id, blank values) or edit (id given,
   // values populated). Tracked in their own values map keyed by custom_field_id.
@@ -140,6 +140,11 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
             ? ["crud", invalidateModule, "detail", invalidateId]
             : ["crud", invalidateModule],
         });
+        if (invalidateId) {
+          await queryClient.invalidateQueries({
+            queryKey: ["crud", invalidateModule, invalidateId, "tab"],
+          });
+        }
       }
       if (basePath && !isEdit) {
         router.replace(basePath as any);

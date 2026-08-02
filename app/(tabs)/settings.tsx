@@ -14,6 +14,7 @@ import {
   type EnvironmentKey,
 } from "@/lib/environment";
 import { colors } from "@/lib/theme";
+import * as IntentLauncher from "expo-intent-launcher";
 
 /** Convert the ISO build timestamp from CI into something human-friendly:
  *  "May 25, 2026" rather than "2026-05-24T22:56:24Z". Defensive — if
@@ -253,6 +254,21 @@ export default function SettingsScreen() {
     }
   };
 
+  const openSupportedLinksSettings = async () => {
+    if (Platform.OS !== "android") return;
+    try {
+      await IntentLauncher.startActivityAsync(
+        IntentLauncher.ActivityAction.APP_OPEN_BY_DEFAULT_SETTINGS,
+        { data: "package:com.prizmenergy.mobile" },
+      );
+    } catch {
+      await IntentLauncher.startActivityAsync(
+        IntentLauncher.ActivityAction.APPLICATION_DETAILS_SETTINGS,
+        { data: "package:com.prizmenergy.mobile" },
+      );
+    }
+  };
+
   return (
     <>
     <ScrollView className="flex-1 bg-surface">
@@ -393,6 +409,20 @@ export default function SettingsScreen() {
 
         <Text className="text-sm text-muted font-medium mb-2 ml-1 uppercase">About</Text>
         <View className="bg-white rounded-xl overflow-hidden mb-6">
+          {Platform.OS === "android" ? (
+            <TouchableOpacity
+              onPress={openSupportedLinksSettings}
+              className="flex-row items-center px-4 py-4 border-b border-gray-100"
+              activeOpacity={0.7}
+            >
+              <Ionicons name="open-outline" size={22} color={colors.primary} />
+              <View className="ml-3 flex-1">
+                <Text className="text-foreground font-medium">Open ERP links in Prizm CRM</Text>
+                <Text className="text-muted text-xs mt-0.5">Enable “Open supported links” if your phone keeps using the browser.</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color={colors.slate400} />
+            </TouchableOpacity>
+          ) : null}
           <View className="px-4 py-4 border-b border-gray-100">
             <Text className="text-foreground font-medium">Version</Text>
             <Text className="text-muted text-sm mt-1">v{BUILD_VERSION}</Text>

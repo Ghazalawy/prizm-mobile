@@ -22,6 +22,7 @@ import { KNOWLEDGE_FILTER_CONFIG } from "@/lib/filter-configs";
 import { FilterBar } from "@/components/ui/FilterBar";
 import { FilterChip } from "@/components/ui/FilterChip";
 import { FilterSheet } from "@/components/ui/FilterSheet";
+import { usePermissions } from "@/lib/permission-context";
 
 // ─── Group Section ───────────────────────────────────────────────────────
 
@@ -142,6 +143,7 @@ function ArticleCard({ article }: { article: KBArticle }) {
 // ─── Main Screen ─────────────────────────────────────────────────────────
 
 export function KnowledgeBaseScreen() {
+  const permissions = usePermissions();
   const [showFilterSheet, setShowFilterSheet] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Set<string>>(
     new Set(),
@@ -299,6 +301,17 @@ export function KnowledgeBaseScreen() {
         onUpdateRule={filter.updateRule}
         onSetMatchType={filter.setMatchType}
       />
+      {permissions.canCreate("knowledge_base") ? (
+        <TouchableOpacity
+          onPress={() => router.push("/(tabs)/erp/knowledge/new" as any)}
+          accessibilityRole="button"
+          accessibilityLabel="Create knowledge article"
+          className="absolute right-5 bottom-5 w-14 h-14 rounded-2xl items-center justify-center shadow-lg"
+          style={{ backgroundColor: colors.primary }}
+        >
+          <Ionicons name="add" size={28} color="#FFFFFF" />
+        </TouchableOpacity>
+      ) : null}
     </View>
   );
 }

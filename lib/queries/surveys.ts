@@ -17,13 +17,32 @@ export type SurveyListItem = {
   totalresponses?: number;
 };
 
-export type SurveyResult = {
+export type SurveyResultOption = {
+  id: number;
+  label: string;
+  count: number;
+  percent: number;
+};
+
+export type SurveyResultAnswer = {
   resultid: number;
-  surveyid: number;
-  staff_id: number;
-  results: string | null;
-  datetime: string;
-  staff_name?: string;
+  resultsetid: number;
+  answer: string;
+};
+
+export type SurveyResultQuestion = {
+  questionid: number;
+  question: string;
+  boxtype: string;
+  total_answers: number;
+  options: SurveyResultOption[];
+  answers: SurveyResultAnswer[];
+};
+
+export type SurveyResults = {
+  survey_id: number;
+  total_responses: number;
+  questions: SurveyResultQuestion[];
 };
 
 export type SurveySendLog = {
@@ -70,7 +89,7 @@ export function useSurveyResults(surveyId: string | number | undefined) {
     queryKey: ["surveys", "results", String(surveyId)],
     queryFn: async () => {
       const data = await apiRequest(`surveys_api/results/${surveyId}`);
-      return normalizeList(data).items as SurveyResult[];
+      return (data?.data ?? data) as SurveyResults;
     },
     enabled: !!surveyId,
     staleTime: 30_000,

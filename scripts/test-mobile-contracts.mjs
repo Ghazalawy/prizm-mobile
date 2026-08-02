@@ -267,15 +267,9 @@ assert.ok(appLinkFilter, "Android App Links must use a verified VIEW intent filt
 assert.ok(appLinkFilter.category.includes("BROWSABLE") && appLinkFilter.category.includes("DEFAULT"));
 assert.ok(
   appLinkFilter.data.some(
-    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS/admin",
+    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
   ),
-  "the verified intent filter must capture production ERP admin links",
-);
-assert.ok(
-  appLinkFilter.data.some(
-    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS/przpurchase",
-  ),
-  "the verified intent filter must capture production purchasing record links",
+  "the verified intent filter must capture every production ERP link",
 );
 const assetLinks = JSON.parse(
   fs.readFileSync(path.join(workspace, "public/.well-known/assetlinks.json"), "utf8"),
@@ -522,7 +516,13 @@ assert.match(otpSourcesBlock, /manage_sources/);
 assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
 
-const backendWorkspace = path.resolve(workspace, "..", "prizm331-wt-mobile-parity");
+const backendWorkspace = path.resolve(
+  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-admin-parity"),
+);
+assert.ok(
+  fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
+  `PRIZM331_SOURCE_ROOT must point to the deployable backend source (got ${backendWorkspace})`,
+);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
@@ -608,12 +608,21 @@ assert.match(knowledgeScreenSource, /useFilterState\(KNOWLEDGE_FILTER_CONFIG\.ru
 assert.match(knowledgeScreenSource, /filters: queryParams\.filters/);
 assert.match(knowledgeQuerySource, /filters: filters\.filters/);
 const knowledgeBlock = registrySource.match(/key: "knowledge",[\s\S]*?(?=\r?\n  \{\r?\n    key: "surveys")/)?.[0] ?? "";
-assert.match(knowledgeBlock, /canCreate: false/);
-assert.match(knowledgeBlock, /canUpdate: false/);
-assert.match(knowledgeBlock, /canDelete: false/);
-assert.doesNotMatch(knowledgeQuerySource, /use(?:Create|Update|Delete)KBArticle/);
+assert.doesNotMatch(knowledgeBlock, /canCreate: false/);
+assert.doesNotMatch(knowledgeBlock, /canUpdate: false/);
+assert.doesNotMatch(knowledgeBlock, /canDelete: false/);
+for (const mutation of ["useCreateKBArticle", "useUpdateKBArticle", "useDeleteKBArticle"]) {
+  assert.match(knowledgeQuerySource, new RegExp(`function ${mutation}\\(`));
+}
 const knowledgeApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Knowledge_api.php"), "utf8");
-assert.match(knowledgeApiSource, /knowledge_base_model->add\(/, "Known backend CRUD mismatch must remain visible until corrected");
+for (const modelMethod of ["add_article", "update_article", "delete_article"]) {
+  assert.match(knowledgeApiSource, new RegExp(`knowledge_base_model->${modelMethod}\\(`));
+}
+assert.doesNotMatch(knowledgeApiSource, /knowledge_base_model->(?:add|update|delete|search)\(/);
+assert.match(knowledgeApiSource, /api_apply_advanced_filters/);
+assert.match(knowledgeApiSource, /require_capability\('create'\)/);
+assert.match(knowledgeApiSource, /require_capability\('edit'\)/);
+assert.match(knowledgeApiSource, /require_capability\('delete'\)/);
 const calendarScreenSource = fs.readFileSync(path.join(workspace, "components/calendar/CalendarScreen.tsx"), "utf8");
 const calendarQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/calendar.ts"), "utf8");
 const calendarDetailSource = fs.readFileSync(path.join(workspace, "app/(tabs)/calendar/[id].tsx"), "utf8");
@@ -813,27 +822,41 @@ assert.match(endpointOverrideFormSource, /params\._mutation_endpoint/);
 const costCentersBlock = registrySource.match(/key: "cost_centers",[\s\S]*?(?=\n  \{\n    key: "timesheets")/)?.[0] ?? "";
 assert.match(costCentersBlock, /permissionFeature: "costcenters"/);
 assert.doesNotMatch(costCentersBlock, /permissionFeature: "costcenter"/);
+for (const child of ["cost_center_members", "cost_center_supervisors", "cost_center_activity"]) {
+  assert.match(costCentersBlock, new RegExp(`moduleKey: "${child}"`));
+}
 const costCentersApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Cost_centers_api.php"), "utf8");
-assert.match(costCentersApiSource, /costcenter_members cm[\s\S]*cm\.staff_id/);
-assert.match(costCentersApiSource, /costcenter_supervisors cs[\s\S]*cs\.staff_id/);
-assert.match(costCentersApiSource, /order_by\('dateadded'[\s\S]*costcenter_activity_log/);
+assert.match(costCentersApiSource, /costcenter_members cm[\s\S]*cm\.member_id/);
+assert.match(costCentersApiSource, /costcenter_supervisors cs[\s\S]*cs\.supervisor_id/);
+assert.match(costCentersApiSource, /order_by\('date'[\s\S]*costcenter_activity_log/);
+assert.match(costCentersApiSource, /costcenters_model->add_edit_members/);
+assert.match(costCentersApiSource, /costcenters_model->add_edit_supervisors/);
+assert.match(costCentersApiSource, /api_apply_advanced_filters/);
+assert.doesNotMatch(costCentersApiSource, /prz_cost_centers/);
 const costCentersInstallSource = fs.readFileSync(path.join(backendWorkspace, "modules/costcenters/install.php"), "utf8");
 assert.match(costCentersInstallSource, /costcenter_members[\s\S]*`member_id`/);
 assert.match(costCentersInstallSource, /costcenter_supervisors[\s\S]*`supervisor_id`/);
 assert.match(costCentersInstallSource, /costcenter_activity_log[\s\S]*`date` datetime/);
-assert.doesNotMatch(costCentersBlock, /moduleKey: "cost_center_(?:members|supervisors|activity)"/);
 const surveysBlock = registrySource.match(/key: "surveys",[\s\S]*?(?=\n  \{\n    key: "survey_send_log")/)?.[0] ?? "";
 const surveySendLogBlock = registrySource.match(/key: "survey_send_log",[\s\S]*?(?=\n  \{\n    key: "custom_statuses")/)?.[0] ?? "";
 assert.match(surveysBlock, /moduleKey: "survey_send_log"/);
 assert.match(surveysBlock, /surveys_api\/send_log\/\{id\}/);
+assert.match(surveysBlock, /kind: "survey_results"/);
+assert.match(surveysBlock, /surveys_api\/results\/\{id\}/);
 assert.match(surveySendLogBlock, /canOpenDetail: false/);
 assert.match(surveySendLogBlock, /canCreate: false/);
 const surveysApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Surveys_api.php"), "utf8");
 assert.match(surveysApiSource, /function send_log_get/);
-assert.match(surveysApiSource, /function results_get[\s\S]*surveyresults/);
+assert.match(surveysApiSource, /function results_get[\s\S]*form_results/);
+assert.match(surveysApiSource, /surveyresultsets/);
+assert.match(surveysApiSource, /api_apply_advanced_filters/);
+assert.doesNotMatch(surveysApiSource, /prz_surveys|surveyresults(?!ets)/);
 const surveysInstallSource = fs.readFileSync(path.join(backendWorkspace, "modules/surveys/install.php"), "utf8");
 assert.match(surveysInstallSource, /surveyresultsets/);
-assert.doesNotMatch(surveysBlock, /surveys_api\/results/);
+const surveyResultsTabSource = fs.readFileSync(path.join(workspace, "components/surveys/SurveyResultsTab.tsx"), "utf8");
+assert.match(surveyResultsTabSource, /useSurveyResults/);
+assert.match(surveyResultsTabSource, /totalResponses/);
+assert.match(surveyResultsTabSource, /progress-bar|percentage|percent/i);
 
 for (const key of [
   "fixed_equipment_categories", "fixed_equipment_manufacturers", "fixed_equipment_models",

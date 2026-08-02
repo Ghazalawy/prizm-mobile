@@ -117,6 +117,35 @@ export function useUnpublishKBArticle() {
   });
 }
 
+export function useCreateKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (data: Record<string, unknown>) =>
+      apiRequest("knowledge_api", { method: "POST", body: JSON.stringify(data) }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kb-articles"] }),
+  });
+}
+
+export function useUpdateKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ id, ...data }: { id: string | number } & Record<string, unknown>) =>
+      apiRequest(`knowledge_api/${id}`, { method: "PUT", body: JSON.stringify(data) }),
+    onSuccess: (_, values) => {
+      qc.invalidateQueries({ queryKey: ["kb-article", String(values.id)] });
+      qc.invalidateQueries({ queryKey: ["kb-articles"] });
+    },
+  });
+}
+
+export function useDeleteKBArticle() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string | number) => apiRequest(`knowledge_api/${id}`, { method: "DELETE" }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ["kb-articles"] }),
+  });
+}
+
 // ─── Search ─────────────────────────────────────────────────────────────────
 
 export function useSearchKB(query: string) {

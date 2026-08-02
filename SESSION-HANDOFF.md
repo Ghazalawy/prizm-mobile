@@ -1231,3 +1231,14 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Published APK SHA-256 is `3809566ecbb6f0640ba4baed702fd97224cec4b556bc2ef8e322a83f7e3b19f8`; production signer and domain verification passed after emulator installation.
 - The legacy monolithic contract now reads the deployable backend and honestly exposes an older missing Contacts `global_list_get` contract; this remains open parity debt and is not represented as complete.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26015-R01__admin-parity-universal-links-20260802.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 14.0 2026-08-02 — Native Tender Triage and truthful parity baseline
+
+- Added an admin-only native Tender Triage queue with dense KPIs, buckets, search, country filters, Perfex advanced filters, details, decisions, undo, bulk dismiss, and reversible mute controls.
+- Backend endpoints mirror the web schema, transition rules, permission/no-trace behavior, activity logging, and optimistic concurrency.
+- Emulator and direct API tests passed default, Low override, multi-value, AND, OR, cross-field OR, search-plus-filter, decision/undo, selection, and no-trace cases.
+- Static web-menu audit baseline is 93/347 native destinations, with 254 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
+- Checkpoint commits: mobile `233d78d`; backend `d797b637f`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the consolidated final release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26018-R01__tender-triage-native-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

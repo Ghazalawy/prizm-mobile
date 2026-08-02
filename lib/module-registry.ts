@@ -2905,6 +2905,7 @@ export const MODULES: ModuleDefinition[] = [
     ],
     supportsAdvancedFilters: true,
     filterRules: {
+      sequence_number: { ruleType: "NumberRule" },
       supplier_id: { ruleType: "MultiSelectRule" },
       po_id: { ruleType: "MultiSelectRule" },
       project_id: { ruleType: "MultiSelectRule" },

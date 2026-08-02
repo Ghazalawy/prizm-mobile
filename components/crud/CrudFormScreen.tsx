@@ -211,7 +211,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
         </Text>
         <TouchableOpacity
           onPress={() => {
-            const error = validateRequired(fields, values);
+            const error = validateRequired(fields, values, isEdit);
             if (error) {
               Alert.alert("Missing field", error);
               return;
@@ -245,7 +245,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
                   >
                     <Text className="text-xs text-muted mb-1">
                       {field.label}
-                      {field.required ? " *" : ""}
+                      {isFieldRequired(field, values, isEdit) ? " *" : ""}
                     </Text>
                     <FieldInput
                       field={field}
@@ -439,8 +439,17 @@ function groupFields(fields: ModuleField[]): Array<[string, ModuleField[]]> {
   return Array.from(sections.entries());
 }
 
-function validateRequired(fields: ModuleField[], values: Record<string, string>): string | null {
-  const missing = fields.find((field) => field.required && !String(values[field.key] ?? "").trim());
+function isFieldRequired(field: ModuleField, values: Record<string, string>, isEdit: boolean): boolean {
+  if (field.required) return true;
+  if (!isEdit && field.requiredOnCreateUnless) {
+    const alternative = String(values[field.requiredOnCreateUnless] ?? "").toLowerCase();
+    return !["1", "on", "true", "yes"].includes(alternative);
+  }
+  return false;
+}
+
+function validateRequired(fields: ModuleField[], values: Record<string, string>, isEdit: boolean): string | null {
+  const missing = fields.find((field) => isFieldRequired(field, values, isEdit) && !String(values[field.key] ?? "").trim());
   return missing ? `${missing.label} is required.` : null;
 }
 

@@ -10,11 +10,10 @@ export const TENDERS_FILTER_CONFIG: ModuleFilterConfig = {
   rules: [
     { id: "tender_number", type: "TextRule", label: "Tender #" },
     { id: "tender_description", type: "TextRule", label: "Description" },
-    { id: "client", type: "MultiSelectRule", label: "Client" },
+    { id: "client", type: "TextRule", label: "Client" },
     { id: "floating_date", type: "DateRule", label: "Floating Date" },
     { id: "closing_date", type: "DateRule", label: "Closing Date" },
-    { id: "tenderer_name", type: "MultiSelectRule", label: "Tenderer" },
-    { id: "tenderActivityName", type: "MultiSelectRule", label: "Activity Name" },
+    { id: "tenderer_name", type: "TextRule", label: "Tenderer" },
     {
       id: "status",
       type: "MultiSelectRule",

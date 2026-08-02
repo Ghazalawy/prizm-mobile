@@ -523,6 +523,15 @@ assert.ok(
   fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
   `PRIZM331_SOURCE_ROOT must point to the deployable backend source (got ${backendWorkspace})`,
 );
+const mobileAppLinkBridge = fs.readFileSync(
+  path.join(backendWorkspace, "modules/api/helpers/mobile_app_link_helper.php"),
+  "utf8",
+);
+assert.match(mobileAppLinkBridge, /package=com\.prizmenergy\.mobile/);
+assert.match(mobileAppLinkBridge, /S\.browser_fallback_url=/);
+assert.match(mobileAppLinkBridge, /prizm_web/);
+assert.match(mobileAppLinkBridge, /\^\/MS\(\?:\/\|\$\)/);
+assert.match(mobileAppLinkBridge, /api\|uploads\?\|download\|media\|assets\?/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
@@ -638,6 +647,7 @@ const reportsQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/rep
 const reportsListSource = fs.readFileSync(path.join(workspace, "components/reports/ReportListScreen.tsx"), "utf8");
 const reportsDetailSource = fs.readFileSync(path.join(workspace, "components/reports/ReportDetailScreen.tsx"), "utf8");
 const reportsEditSource = fs.readFileSync(path.join(workspace, "components/reports/ReportEditScreen.tsx"), "utf8");
+const reportsApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Reports_api.php"), "utf8");
 const { reportImageUrl, reportImageUrls } = loadTypeScriptModule("lib/report-images.ts", {
   "./environment": {
     getCurrentEnvironment: () => ({ uploadsBase: "https://ms.prizm-energy.com/MS" }),
@@ -662,6 +672,11 @@ assert.equal(
 );
 assert.match(reportsDetailSource, /sourceIndex \+ 1 < sources\.length/, "Report details must fall back for legacy images");
 assert.match(reportsEditSource, /fallbackUris/, "Report editing must fall back for legacy images");
+assert.match(
+  reportsApiSource,
+  /uploads\/prizm_reports\/['"]?\s*\.\s*\(int\)\s*\$report_id\s*\.\s*['"]\/images\//,
+  "mobile report uploads must use the web UI's per-report Hetzner location",
+);
 for (const reportForm of ["components/reports/ReportCreateScreen.tsx", "components/reports/ReportEditScreen.tsx"]) {
   const source = fs.readFileSync(path.join(workspace, reportForm), "utf8");
   assert.match(source, /<DateInput[\s\S]*?mode="date"/, `${reportForm} must use the native date picker`);
@@ -671,6 +686,24 @@ assert.doesNotMatch(tasksScreenSource, /useTasksByStatus/, "Task board must use 
 assert.match(tasksScreenSource, /tasks=\{boardItems\[col\.status\] \?\? \[\]\}/);
 const timesheetEntriesSource = fs.readFileSync(path.join(workspace, "app/(tabs)/timesheets/entries.tsx"), "utf8");
 assert.match(timesheetEntriesSource, /CrudListScreen moduleKey="timesheets"/);
+const timesheetsBlock = registrySource.match(/key: "timesheets",[\s\S]*?(?=\n  \{\n    key: "recruitment_candidates")/)?.[0] ?? "";
+assert.ok(timesheetsBlock, "Timesheets must remain a native module");
+assert.doesNotMatch(timesheetsBlock, /permissionFeature:/, "Every staff member can access their own web timesheets");
+assert.match(timesheetsBlock, /titleFields: \["task_name", "task_id"\]/);
+assert.match(timesheetsBlock, /key: "end_time"[^\n]*required: true/);
+assert.match(timesheetsBlock, /key: "active"[\s\S]*?label: "Running"/);
+assert.match(timesheetsBlock, /key: "duration_seconds"/);
+assert.match(timesheetsApiSource, /db_prefix\(\) \. 'taskstimers'/);
+assert.doesNotMatch(timesheetsApiSource, /prz_timesheets/);
+assert.match(timesheetsApiSource, /staff_can\('view-timesheets', 'reports'/);
+assert.match(timesheetsApiSource, /tasks_model->timesheet\(/);
+assert.match(timesheetsApiSource, /tasks_model->delete_timesheet\(/);
+assert.match(timesheetsApiSource, /tasks_model->timer_tracking\(/);
+const tasksModelSource = fs.readFileSync(path.join(backendWorkspace, "application/models/Tasks_model.php"), "utf8");
+assert.match(tasksModelSource, /function timer_tracking\([^\n]*\$staffId = null/);
+const taskApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Tasks.php"), "utf8");
+assert.match(taskApiSource, /timer_tracking\([^;]*false, \$staffid\)/s);
+assert.match(taskApiSource, /\$adminStop, \$staffid\)/);
 const nativeRoutingSource = fs.readFileSync(path.join(workspace, "lib/native-routing.ts"), "utf8");
 assert.match(nativeRoutingSource, /timesheets: "\/\(tabs\)\/timesheets\/entries"/);
 assert.equal(fs.existsSync(path.join(workspace, "lib/queries/advance-leads.ts")), false, "Unsupported legacy Advance Leads mutations must stay removed");

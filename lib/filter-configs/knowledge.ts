@@ -9,7 +9,7 @@ export const KNOWLEDGE_FILTER_CONFIG: ModuleFilterConfig = {
     { id: "articlegroup", type: "MultiSelectRule", label: "Group" },
     {
       id: "active",
-      type: "SelectRule",
+      type: "MultiSelectRule",
       label: "Publication status",
       options: [
         { value: "1", label: "Published" },

@@ -82,8 +82,9 @@ export function FieldInput({ field, value, onChange }: FieldInputProps) {
       placeholderTextColor="#94A3B8"
       multiline={multiline}
       textAlignVertical={multiline ? "top" : "center"}
-      autoCapitalize={field.type === "email" || field.type === "url" ? "none" : "sentences"}
-      autoCorrect={field.type !== "email" && field.type !== "url"}
+      autoCapitalize={field.type === "email" || field.type === "url" || field.type === "password" ? "none" : "sentences"}
+      autoCorrect={field.type !== "email" && field.type !== "url" && field.type !== "password"}
+      secureTextEntry={field.type === "password"}
       keyboardType={keyboardType(field)}
       className={`text-foreground bg-gray-50 rounded-xl px-3 ${multiline ? "min-h-[104px] py-3" : "h-11"}`}
     />

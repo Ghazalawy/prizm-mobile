@@ -2,7 +2,7 @@
   "expo": {
     "name": "Prizm CRM",
     "slug": "prizm-mobile",
-    "version": "1.16.0",
+    "version": "1.17.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "prizmcrm",
@@ -46,7 +46,7 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 34
+      "versionCode": 35
     },
     "web": {
       "bundler": "metro",

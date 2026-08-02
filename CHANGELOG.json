@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.17.0",
+      "date": "2026-08-02",
+      "title": "Complete native workflows and dependable filters",
+      "highlights": [
+        "Multi-status chips and Perfex funnel rules now combine correctly with AND, OR, exclusions, dates, and search.",
+        "Task cards separate priority rails from text and replace internal ERP keys with useful linked-record details.",
+        "Record pages now identify their module immediately and pack short fields into clear, information-dense layouts.",
+        "Site report pictures resolve from Hetzner's new per-report upload folders with legacy-image fallback.",
+        "Purchasing, HR, materials, automation, recruitment, goals, and other ERP workflows gain native mobile coverage."
+      ]
+    },
+    {
       "version": "1.16.0",
       "date": "2026-08-02",
       "title": "Native administration and universal ERP links",

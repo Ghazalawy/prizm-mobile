@@ -1171,3 +1171,15 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Task list rows now keep the priority bar clear of text, wrap long titles, hide raw `erp_dev` metadata, and preserve meaningful linked records.
 - The exact published APK (`7a51c97e…e629`) was installed on the emulator; the reported Payment Request 1211 HTTPS URL cold-launched Prizm in 1.48 seconds with the domain verified.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26014-R01__mobile-jwt-auth-20260802.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 13.0 2026-08-02 — Native admin parity and universal ERP App Links
+
+- Backend Knowledge CRUD/publishing, Survey result aggregation, and Cost Center member/supervisor/activity APIs deployed through `PrizmIT/prizm331#1193` and hotfix `#1194`; production HEAD is `4d257f54`.
+- Production probes passed Knowledge, Surveys, and Cost Centers reads; combined AND, OR, multi-select, and dynamic-date filters; invalid-field rejection; and all three Cost Center child endpoints.
+- Mobile v1.16.0/code34 deployed from `d838c06` via merge `b0fe7af8`; workflow `30725249245` passed.
+- Every verified ERP HTTPS path under `/MS` is captured. The exact Payment Request 1211 URL resolves to Prizm above Chrome, and Settings links directly to Android supported-link controls.
+- Published APK SHA-256 is `3809566ecbb6f0640ba4baed702fd97224cec4b556bc2ef8e322a83f7e3b19f8`; production signer and domain verification passed after emulator installation.
+- The legacy monolithic contract now reads the deployable backend and honestly exposes an older missing Contacts `global_list_get` contract; this remains open parity debt and is not represented as complete.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26015-R01__admin-parity-universal-links-20260802.md` and canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

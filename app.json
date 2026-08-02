@@ -30,8 +30,11 @@
           "data": [
             {
               "scheme": "https",
-              "host": "ms.prizm-energy.com",
-              "pathPrefix": "/MS"
+              "host": "ms.prizm-energy.com"
+            },
+            {
+              "scheme": "http",
+              "host": "ms.prizm-energy.com"
             }
           ],
           "category": [

@@ -45,6 +45,7 @@ function loadTypeScriptModule(relativePath, imports = {}) {
 }
 
 const { isInvalidTokenResponse } = loadTypeScriptModule("lib/auth-response.ts");
+const { safePostAuthRoute } = loadTypeScriptModule("lib/post-auth-route.ts");
 const { taskRelationSummary, taskRelationTypeLabel } = loadTypeScriptModule("lib/task-display.ts");
 const { serializeDirectFilterGroup, serializeModuleFilterGroup, serializePerfexFilterGroup } = loadTypeScriptModule("lib/filters.ts");
 const authEvents = loadTypeScriptModule("lib/auth-events.ts");
@@ -267,10 +268,24 @@ assert.ok(appLinkFilter, "Android App Links must use a verified VIEW intent filt
 assert.ok(appLinkFilter.category.includes("BROWSABLE") && appLinkFilter.category.includes("DEFAULT"));
 assert.ok(
   appLinkFilter.data.some(
-    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
+    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && !item.path && !item.pathPrefix,
   ),
-  "the verified intent filter must capture every production ERP link",
+  "the verified intent filter must capture the complete production host",
 );
+assert.ok(
+  appLinkFilter.data.some(
+    (item) => item.scheme === "http" && item.host === "ms.prizm-energy.com" && !item.path && !item.pathPrefix,
+  ),
+  "plain HTTP links must enter the app before the web server redirects to HTTPS",
+);
+assert.equal(
+  safePostAuthRoute("/approvals/payment_request/1211"),
+  "/approvals/payment_request/1211",
+  "a Payment Request App Link must survive password or biometric sign-in",
+);
+assert.equal(safePostAuthRoute(["/projects/42"]), "/projects/42");
+assert.equal(safePostAuthRoute("https://example.com/phish"), "/(tabs)");
+assert.equal(safePostAuthRoute("//example.com/phish"), "/(tabs)");
 const assetLinks = JSON.parse(
   fs.readFileSync(path.join(workspace, "public/.well-known/assetlinks.json"), "utf8"),
 );

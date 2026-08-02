@@ -249,6 +249,13 @@ assert.equal(
   "the browser custom-scheme fallback must preserve and resolve the complete ERP URL",
 );
 assert.equal(
+  routing.resolveIncomingAppLink(
+    "prizmcrm://ms.prizm-energy.com/MS/przpurchase/Payment_Request/view_payment_request/1211",
+  ),
+  "/(tabs)/approvals/payment_request/1211",
+  "the legacy-compatible browser bridge must preserve the ERP host and record path",
+);
+assert.equal(
   routing.resolveIncomingAppLink("prizmcrm://open?url=https%3A%2F%2Fexample.com%2Fphish"),
   "/(tabs)/erp",
   "the browser custom-scheme fallback must reject non-Prizm targets",

@@ -1310,3 +1310,14 @@ When building a new detail screen for ANY module, apply these rules in order:
 - Static web-menu parity is now 109/347 native destinations, with 238 missing and 4 dynamic paths unresolved. The overall parity programme remains open.
 - Checkpoint commits: mobile `e11b5c7`; backend `3973fecf9`. Nothing was pushed or deployed; release metadata remains v1.17.0/code35 until the single consolidated final release.
 - QC: `docs/qc/PE-QAQC-QC-RPT-26023-R01__native-email-templates-parity-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.
+
+---
+
+## 20.0 2026-08-02 — Payment Request App Link and native detail recovery
+
+- Reproduced the exact Payment Request 1211 URL through Android. Production `assetlinks.json`, APK signature, domain verification, and supported-link state are correct; the emulator handed HTTPS to Prizm MainActivity and reached the native Payment Request module.
+- Found the native `Payment Request not found` root cause after reading the web controller/model: the API detail path joined nonexistent `suppliers`, while production uses `tblsuppliers`. The prefixed join returns record 1211 in read-only production SQL.
+- Hardened the browser/WebView bridge to use the installed `prizmcrm` scheme with the complete original ERP URL, browser fallback, and an internal-host fence. The scheme went from Expo Unmatched Route to the native Payment Request route in the emulator.
+- Contract and syntax gates pass: TypeScript, complete mobile contracts, 11/11 bridge checks, 4/4 payment-detail checks, and production schema/query probes.
+- Checkpoint commits: mobile `f980d65`; backend `0ef48f2f3`. Nothing was pushed or deployed; no Android build was started, preserving the single consolidated release.
+- QC: `docs/qc/PE-QAQC-QC-RPT-26024-R01__payment-request-app-link-detail-20260802.md`; canonical PDF/MD under `C:\Users\osama\.claude-brain\_audits\qc-reports\`.

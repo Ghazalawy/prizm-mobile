@@ -40,6 +40,7 @@ import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
 import { taskRelationTypeLabel } from "@/lib/task-display";
 import { EmailTemplateSummary } from "./EmailTemplateSummary";
+import { SupplierInvoiceSummary } from "./SupplierInvoiceSummary";
 
 type CrudDetailScreenProps = {
   moduleKey: string;
@@ -244,7 +245,9 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
             >
               {module.key === "setup_email_templates"
                 ? <EmailTemplateSummary row={row} />
-                : <RecordSummary module={module} row={row} />}
+                : module.key === "purchase_supplier_invoices"
+                  ? <SupplierInvoiceSummary row={row} />
+                  : <RecordSummary module={module} row={row} />}
             </ScrollView>
           ) : (() => {
             const tab = module.tabs?.find((t) => t.key === activeTab);

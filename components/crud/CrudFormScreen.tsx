@@ -29,6 +29,7 @@ import { DepartmentImapTools } from "./DepartmentImapTools";
 import { RolePermissionsEditor } from "./RolePermissionsEditor";
 import { CustomFieldDefinitionEditor } from "./CustomFieldDefinitionEditor";
 import { EmailTemplateEditor } from "./EmailTemplateEditor";
+import { SupplierInvoiceEditor } from "./SupplierInvoiceEditor";
 import {
   useCustomFields,
   decodeCustomFieldValue,
@@ -349,6 +350,17 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
 
           {module.key === "setup_email_templates" ? (
             <EmailTemplateEditor
+              row={row}
+              values={values}
+              onChange={(field, value) => {
+                setValues((current) => ({ ...current, [field]: value }));
+                setTouched(true);
+              }}
+            />
+          ) : null}
+
+          {module.key === "purchase_supplier_invoices" ? (
+            <SupplierInvoiceEditor
               row={row}
               values={values}
               onChange={(field, value) => {

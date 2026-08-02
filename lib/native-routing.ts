@@ -64,6 +64,7 @@ const MODULE_DETAIL_ROUTES: Record<string, (id: string) => string> = {
   purchase_orders: (id) => `/(tabs)/approvals/purchase_order/${id}`,
   purchase_payment_requests: (id) => `/(tabs)/approvals/payment_request/${id}`,
   purchase_expense_requests: (id) => `/(tabs)/approvals/expense_request/${id}`,
+  purchase_supplier_invoices: (id) => `/(tabs)/erp/purchase_supplier_invoices/${id}`,
 };
 
 const MODULE_LIST_ROUTES: Record<string, string> = {
@@ -161,6 +162,8 @@ const CONTROLLER_TO_MODULE: Record<string, string> = {
   purchase_order: "purchase_orders",
   payment_request: "purchase_payment_requests",
   expense_request: "purchase_expense_requests",
+  supplierinvoice: "purchase_supplier_invoices",
+  supplier_invoice: "purchase_supplier_invoices",
   received_vouchers: "purchase_received_vouchers",
   delivery_notes: "purchase_delivery_notes",
   quotations: "purchase_quotations",
@@ -289,6 +292,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^purchase_api\/requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_requests", m[1])! },
   { re: /^purchase_api\/orders\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^purchase_api\/payment_requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_payment_requests", m[1])! },
+  { re: /^purchase_api\/supplier_invoices\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_supplier_invoices", m[1])! },
   { re: /^purchase_api\/expense_requests\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_expense_requests", m[1])! },
   { re: /^purchase_api\/received_vouchers\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
   { re: /^purchase_api\/delivery_notes\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },
@@ -299,6 +303,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^przpurchase\/purorder(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_orders")! },
   { re: /^przpurchase\/expense_request(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_expense_requests")! },
   { re: /^przpurchase\/payment_request(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_payment_requests")! },
+  { re: /^przpurchase\/supplierinvoice(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_supplier_invoices")! },
   { re: /^przpurchase\/received_vouchers(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_received_vouchers")! },
   { re: /^przpurchase\/delivery_notes(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_delivery_notes")! },
   { re: /^przpurchase\/quotations(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("purchase_quotations")! },
@@ -307,6 +312,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^(?:przpurchase\/)?purorder\/(?:ag_)?view_purchase_order\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^(?:przpurchase\/)?purchase_order\/(?:ag_)?view_purchase_order\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_orders", m[1])! },
   { re: /^(?:przpurchase\/)?payment_request\/(?:ag_)?view_payment_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_payment_requests", m[1])! },
+  { re: /^(?:przpurchase\/)?supplierinvoice\/(?:view_supplier_invoice|view|add_edit)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_supplier_invoices", m[1])! },
   { re: /^(?:przpurchase\/)?expense_request\/view_expense_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_expense_requests", m[1])! },
   { re: /^received_vouchers\/(?:ag_)?view_voucher\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
   { re: /^delivery_notes\/view_delivery_note\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },

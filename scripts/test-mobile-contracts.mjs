@@ -490,6 +490,7 @@ for (const [webPath, nativePath] of [
   ["przpurchase/PurOrder/ag_index", "/(tabs)/erp/purchase_orders"],
   ["przpurchase/Expense_Request", "/(tabs)/erp/purchase_expense_requests"],
   ["przpurchase/Payment_Request/ag_index", "/(tabs)/erp/purchase_payment_requests"],
+  ["przpurchase/SupplierInvoice/ag_index", "/(tabs)/erp/purchase_supplier_invoices"],
   ["przpurchase/Received_Vouchers/ag_index", "/(tabs)/erp/purchase_received_vouchers"],
   ["przpurchase/Delivery_Notes", "/(tabs)/erp/purchase_delivery_notes"],
   ["przpurchase/Quotations/ag_index", "/(tabs)/erp/purchase_quotations"],
@@ -1195,6 +1196,31 @@ for (const token of ["_purchase_requests_list", "_purchase_orders_list", "delive
 }
 assert.match(purchaseApiSource, /function vendor_contact_get/);
 assert.match(purchaseApiSource, /advanced_filters_applied/);
+assert.match(purchaseApiSource, /function supplier_invoices_get/);
+assert.match(purchaseApiSource, /function supplier_invoice_options_get/);
+assert.match(purchaseApiSource, /function supplier_invoices_po_items_get/);
+assert.match(purchaseApiSource, /function supplier_invoice_item_matches_get/);
+assert.equal(
+  routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/przpurchase/SupplierInvoice/view/1211"),
+  "/(tabs)/erp/purchase_supplier_invoices/1211",
+);
+const supplierInvoiceBlock = registrySource.match(/key: "purchase_supplier_invoices",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
+assert.match(supplierInvoiceBlock, /supportsAdvancedFilters: true/);
+assert.match(supplierInvoiceBlock, /detailRootKey: "invoice"/);
+assert.match(supplierInvoiceBlock, /status: \{ ruleType: "MultiSelectRule" \}/);
+assert.match(supplierInvoiceBlock, /payment_status: \{ ruleType: "MultiSelectRule" \}/);
+for (const action of ["submit", "approve", "reject", "cancel", "reopen", "mark_paid", "undo_paid"]) {
+  assert.match(supplierInvoiceBlock, new RegExp(`key: "${action}"`));
+}
+const supplierInvoiceEditorSource = fs.readFileSync(path.join(workspace, "components/crud/SupplierInvoiceEditor.tsx"), "utf8");
+assert.match(supplierInvoiceEditorSource, /supplier_invoice_options/);
+assert.match(supplierInvoiceEditorSource, /Import PO/);
+assert.match(supplierInvoiceEditorSource, /supplier_invoice_item_matches/);
+assert.match(supplierInvoiceEditorSource, /Supplier Invoice Workspace/);
+const supplierInvoiceSummarySource = fs.readFileSync(path.join(workspace, "components/crud/SupplierInvoiceSummary.tsx"), "utf8");
+for (const section of ["Supplier Invoice", "Commercial snapshot", "Invoice lines", "Approval route", "Activity"]) {
+  assert.match(supplierInvoiceSummarySource, new RegExp(section));
+}
 assert.ok(apiRoutesSource.indexOf("api/purchase_api/vendor_contact/(:num)") >= 0, "Vendor contact detail route must exist separately from the vendor child list");
 const purchaseContactsBlock = registrySource.match(/key: "purchase_vendor_contacts",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
 assert.match(purchaseContactsBlock, /detailEndpoint: "purchase_api\/vendor_contact"/);

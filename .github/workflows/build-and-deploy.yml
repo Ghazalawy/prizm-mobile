@@ -1,8 +1,6 @@
-name: Build APK and Deploy Pages
+name: Build APK and Deploy Pages (manual fallback)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 permissions:
@@ -11,7 +9,7 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages
+  group: android-release
   cancel-in-progress: true
 
 env:
@@ -21,6 +19,7 @@ jobs:
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     outputs:
       short_sha: ${{ steps.meta.outputs.short_sha }}
       build_time: ${{ steps.meta.outputs.build_time }}
@@ -39,26 +38,19 @@ jobs:
           cache: npm
 
       - name: Setup Java 17 (Temurin)
-        run: |
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq wget apt-transport-https gnupg
-          wget -qO - https://packages.adoptium.net/artifactory/api/gpg/key/public | sudo gpg --dearmor -o /usr/share/keyrings/adoptium.gpg
-          echo "deb [signed-by=/usr/share/keyrings/adoptium.gpg] https://packages.adoptium.net/artifactory/deb $(awk -F= '/^VERSION_CODENAME/{print$2}' /etc/os-release) main" | sudo tee /etc/apt/sources.list.d/adoptium.list
-          sudo apt-get update -qq
-          sudo apt-get install -y -qq temurin-17-jdk
-          java -version
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Restore Gradle caches
+        uses: gradle/actions/setup-gradle@v4
 
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
       - name: Install npm dependencies
-        run: npm install --no-audit --no-fund --legacy-peer-deps
-
-      - name: Install missing peer/build deps (Expo SDK matrix)
-        run: npx expo install react-native-worklets babel-preset-expo expo-local-authentication expo-file-system expo-intent-launcher @tanstack/react-query react-native-toast-message @react-native-community/datetimepicker expo-image-picker expo-document-picker
-
-      - name: Apply native package patches
-        run: npx patch-package
+        run: npm ci --no-audit --no-fund --legacy-peer-deps
 
       - name: Validate Expo dependency matrix
         run: npx expo install --check
@@ -98,7 +90,7 @@ jobs:
 
       - name: Build release APK
         working-directory: android
-        run: ./gradlew assembleRelease --no-daemon --stacktrace --warning-mode all 2>&1 | tee gradle-build.log
+        run: ./gradlew assembleRelease --build-cache --no-daemon --stacktrace --warning-mode all 2>&1 | tee gradle-build.log
         shell: bash
 
       - name: Upload Gradle log on failure

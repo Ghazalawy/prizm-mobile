@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.16.0",
+      "date": "2026-08-02",
+      "title": "Native administration and universal ERP links",
+      "highlights": [
+        "Every verified Prizm ERP link under /MS can now hand off to the installed Android app.",
+        "Settings now opens Android's supported-link controls when a phone keeps ERP links in its browser.",
+        "Knowledge articles can be created, edited, published, unpublished, and deleted with web-equivalent permissions.",
+        "Survey responses now have a dense native results view with totals, percentages, and written answers.",
+        "Cost Centers now expose native member, supervisor, and activity tabs with scoped access controls."
+      ]
+    },
+    {
       "version": "1.15.2",
       "date": "2026-08-02",
       "title": "Reliable sessions and cleaner task cards",

@@ -4,6 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   ActivityIndicator,
+  Alert,
   Share,
   useWindowDimensions,
 } from "react-native";
@@ -16,6 +17,7 @@ import {
   useKBArticle,
   usePublishKBArticle,
   useUnpublishKBArticle,
+  useDeleteKBArticle,
 } from "@/lib/queries/knowledge";
 import { usePermissions } from "@/lib/permission-context";
 
@@ -52,6 +54,7 @@ export function ArticleViewer({ id }: { id: string | number }) {
   const permissions = usePermissions();
   const publish = usePublishKBArticle();
   const unpublish = useUnpublishKBArticle();
+  const remove = useDeleteKBArticle();
   const { width } = useWindowDimensions();
 
   const handleShare = async () => {
@@ -75,6 +78,26 @@ export function ArticleViewer({ id }: { id: string | number }) {
     } catch (error: any) {
       Toast.show({ type: "error", text1: error?.message || "Couldn’t update article" });
     }
+  };
+
+  const handleDelete = () => {
+    if (!article) return;
+    Alert.alert("Delete article", "This action cannot be undone.", [
+      { text: "Cancel", style: "cancel" },
+      {
+        text: "Delete",
+        style: "destructive",
+        onPress: async () => {
+          try {
+            await remove.mutateAsync(article.articleid);
+            Toast.show({ type: "success", text1: "Article deleted" });
+            router.replace("/(tabs)/knowledge" as any);
+          } catch (error: any) {
+            Toast.show({ type: "error", text1: error?.message || "Couldn’t delete article" });
+          }
+        },
+      },
+    ]);
   };
 
   if (isLoading) {
@@ -187,15 +210,32 @@ export function ArticleViewer({ id }: { id: string | number }) {
         </View>
 
         {permissions.canEdit("knowledge_base") ? (
+          <View className="flex-row mt-4">
+            <TouchableOpacity
+              onPress={() => router.push(`/(tabs)/erp/knowledge/${article.articleid}/edit` as any)}
+              className="flex-1 rounded-xl items-center py-3 bg-slate-100 mr-2"
+            >
+              <Text className="font-semibold text-slate-700">Edit article</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              onPress={handlePublication}
+              disabled={publish.isPending || unpublish.isPending}
+              className="flex-1 rounded-xl items-center py-3"
+              style={{ backgroundColor: isActive ? colors.slate100 : colors.primaryBg }}
+            >
+              <Text className="font-semibold" style={{ color: isActive ? colors.slate700 : colors.primary }}>
+                {isActive ? "Unpublish" : "Publish"}
+              </Text>
+            </TouchableOpacity>
+          </View>
+        ) : null}
+        {permissions.canDelete("knowledge_base") ? (
           <TouchableOpacity
-            onPress={handlePublication}
-            disabled={publish.isPending || unpublish.isPending}
-            className="mt-4 rounded-xl items-center py-3"
-            style={{ backgroundColor: isActive ? colors.slate100 : colors.primaryBg }}
+            onPress={handleDelete}
+            disabled={remove.isPending}
+            className="mt-2 rounded-xl items-center py-3 bg-red-50"
           >
-            <Text className="font-semibold" style={{ color: isActive ? colors.slate700 : colors.primary }}>
-              {isActive ? "Unpublish article" : "Publish article"}
-            </Text>
+            <Text className="font-semibold text-red-600">Delete article</Text>
           </TouchableOpacity>
         ) : null}
       </ScrollView>

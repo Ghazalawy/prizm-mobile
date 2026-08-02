@@ -34,6 +34,7 @@ import {
 } from "@/lib/queries/custom-fields";
 import { usePermissions } from "@/lib/permission-context";
 import { FilesTab } from "./FilesTab";
+import { SurveyResultsTab } from "@/components/surveys/SurveyResultsTab";
 import { ActionRunner } from "./ActionRunner";
 import { navigateInAppOrExternalLink } from "@/lib/native-routing";
 import { ScreenHeader } from "@/components/ui/ScreenHeader";
@@ -250,6 +251,9 @@ export function CrudDetailScreen({ moduleKey, id, basePath }: CrudDetailScreenPr
                   color={module.color}
                 />
               );
+            }
+            if (tab?.kind === "survey_results") {
+              return <SurveyResultsTab surveyId={moduleId(module, row)} color={module.color} />;
             }
             return (
               <RelatedTab
@@ -1073,7 +1077,7 @@ function uniqueRowsById(module: ModuleDefinition, rows: any[]): any[] {
 }
 
 function buildVisibleFields(module: ModuleDefinition, row: any): ModuleField[] {
-  const configured = module.fields.filter((field) => !isEmpty(row?.[field.key], field));
+  const configured = module.fields.filter((field) => !field.hidden && !isEmpty(row?.[field.key], field));
   const known = new Set([
     module.idKey,
     ...module.fields.map((field) => field.key),

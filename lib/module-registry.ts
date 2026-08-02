@@ -210,6 +210,8 @@ export type ModuleField = {
   submitAsArray?: boolean;
   required?: boolean;
   readOnly?: boolean;
+  /** Included in form state/payload but never rendered; used for parent-scoped child defaults. */
+  hidden?: boolean;
   /** Editable when creating, then immutable in the generic edit form. */
   createOnly?: boolean;
   section?: string;
@@ -286,7 +288,7 @@ export type ModuleTab = {
    * camera/gallery/document upload, not the generic related-list view.
    * The associated rel_type for /api/files is taken from `fixedFilters.rel_type`.
    */
-  kind?: "files";
+  kind?: "files" | "survey_results";
 };
 
 export type StatusOption = {
@@ -2273,6 +2275,78 @@ export const MODULES: ModuleDefinition[] = [
       { key: "created_at", label: "Created", section: "Audit", type: "datetime", readOnly: true },
       { key: "updated_at", label: "Updated", section: "Audit", type: "datetime", readOnly: true },
     ],
+    tabs: [
+      { key: "members", title: "Members", moduleKey: "cost_center_members", endpointTemplate: "cost_centers_api/members/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
+      { key: "supervisors", title: "Supervisors", moduleKey: "cost_center_supervisors", endpointTemplate: "cost_centers_api/supervisors/{id}", createDefaults: { costcenter_id: "{id}" }, unpaginated: true },
+      { key: "activity", title: "Activity", moduleKey: "cost_center_activity", endpointTemplate: "cost_centers_api/activity/{id}", canCreate: false, unpaginated: true },
+    ],
+  },
+  {
+    key: "cost_center_members",
+    title: "Cost Center Member",
+    plural: "Cost Center Members",
+    group: "Finance",
+    endpoint: "cost_centers_api/members",
+    permissionFeature: "costcenters",
+    permissionCapabilities: { create: "edit", delete: "edit" },
+    idKey: "id",
+    icon: "people-outline",
+    color: "#EA580C",
+    titleFields: ["staff_name", "member_id"],
+    subtitleFields: ["email"],
+    fields: [
+      { key: "costcenter_id", label: "Cost Center", section: "Assignment", type: "number", hidden: true, required: true },
+      { key: "member_id", label: "Staff Member", section: "Assignment", relation: "staff", required: true },
+      { key: "staff_name", label: "Name", section: "Staff", readOnly: true },
+      { key: "email", label: "Email", section: "Staff", type: "email", readOnly: true },
+    ],
+    canOpenDetail: false,
+    canUpdate: false,
+  },
+  {
+    key: "cost_center_supervisors",
+    title: "Cost Center Supervisor",
+    plural: "Cost Center Supervisors",
+    group: "Finance",
+    endpoint: "cost_centers_api/supervisors",
+    permissionFeature: "costcenters",
+    permissionCapabilities: { create: "edit", delete: "edit" },
+    idKey: "id",
+    icon: "person-circle-outline",
+    color: "#EA580C",
+    titleFields: ["staff_name", "supervisor_id"],
+    subtitleFields: ["email"],
+    fields: [
+      { key: "costcenter_id", label: "Cost Center", section: "Assignment", type: "number", hidden: true, required: true },
+      { key: "supervisor_id", label: "Supervisor", section: "Assignment", relation: "staff", required: true },
+      { key: "staff_name", label: "Name", section: "Staff", readOnly: true },
+      { key: "email", label: "Email", section: "Staff", type: "email", readOnly: true },
+    ],
+    canOpenDetail: false,
+    canUpdate: false,
+  },
+  {
+    key: "cost_center_activity",
+    title: "Cost Center Activity",
+    plural: "Cost Center Activity",
+    group: "Finance",
+    endpoint: "cost_centers_api/activity",
+    permissionFeature: "costcenters",
+    idKey: "id",
+    icon: "pulse-outline",
+    color: "#EA580C",
+    titleFields: ["description"],
+    subtitleFields: ["full_name", "date"],
+    fields: [
+      { key: "description", label: "Activity", section: "Event", readOnly: true },
+      { key: "additional_data", label: "Details", section: "Event", readOnly: true },
+      { key: "full_name", label: "By", section: "Audit", readOnly: true },
+      { key: "date", label: "Date", section: "Audit", type: "datetime", readOnly: true },
+    ],
+    canCreate: false,
+    canOpenDetail: false,
+    canUpdate: false,
+    canDelete: false,
   },
   {
     key: "tenders",
@@ -5145,11 +5219,6 @@ export const MODULES: ModuleDefinition[] = [
       { key: "publish", title: "Publish", icon: "globe-outline", endpointTemplate: "knowledge_api/{id}/publish", method: "PUT", confirm: "Publish this article?", successMessage: "Article published" },
       { key: "unpublish", title: "Unpublish", icon: "eye-off-outline", endpointTemplate: "knowledge_api/{id}/unpublish", method: "PUT", confirm: "Unpublish this article?", successMessage: "Article unpublished" },
     ],
-    // The current API calls nonexistent model methods for CRUD. Do not show
-    // actions that will 500 until it delegates to add_article/update_article/delete_article.
-    canCreate: false,
-    canUpdate: false,
-    canDelete: false,
   },
   {
     key: "surveys",
@@ -5184,6 +5253,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "close", title: "Close (Deactivate)", icon: "stop-circle-outline", endpointTemplate: "surveys_api/{id}/close", method: "PUT", confirm: "Close this survey to new responses?", successMessage: "Survey closed" },
     ],
     tabs: [
+      { key: "results", title: "Results", moduleKey: "surveys", endpointTemplate: "surveys_api/results/{id}", kind: "survey_results", canCreate: false, unpaginated: true },
       { key: "send_log", title: "Send History", moduleKey: "survey_send_log", endpointTemplate: "surveys_api/send_log/{id}", canCreate: false, unpaginated: true },
     ],
   },

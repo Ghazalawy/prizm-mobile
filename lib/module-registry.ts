@@ -4346,8 +4346,8 @@ export const MODULES: ModuleDefinition[] = [
       rel_type: { ruleType: "MultiSelectRule" },
       duration: { ruleType: "MultiSelectRule" },
       representative_id: { ruleType: "MultiSelectRule" },
-      status: { ruleType: "CheckboxRule" },
-      is_converted: { ruleType: "CheckboxRule" },
+      status: { ruleType: "SelectRule" },
+      is_converted: { ruleType: "SelectRule" },
     },
     fields: [
       { key: "request_classification", label: "Request Type", section: "Request", type: "select", required: true, customEditor: true, options: [{ label: "Site Visit", value: "Site Visit" }, { label: "Gate Pass", value: "Gate Pass" }] },
@@ -6542,8 +6542,8 @@ const API_FILTER_RULE_TYPE_OVERRIDES: Partial<
     rel_type: "MultiSelectRule",
     duration: "MultiSelectRule",
     representative_id: "MultiSelectRule",
-    status: "CheckboxRule",
-    is_converted: "CheckboxRule",
+    status: "SelectRule",
+    is_converted: "SelectRule",
   },
   gatepass_vehicles: {
     type: "MultiSelectRule",

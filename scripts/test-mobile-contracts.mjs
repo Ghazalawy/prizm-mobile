@@ -302,13 +302,13 @@ assert.ok(appLinkFilter, "Android App Links must use a verified VIEW intent filt
 assert.ok(appLinkFilter.category.includes("BROWSABLE") && appLinkFilter.category.includes("DEFAULT"));
 assert.ok(
   appLinkFilter.data.some(
-    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && !item.path && !item.pathPrefix,
+    (item) => item.scheme === "https" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
   ),
-  "the verified intent filter must capture the complete production host",
+  "the verified intent filter must capture every ERP route under /MS",
 );
 assert.ok(
   appLinkFilter.data.some(
-    (item) => item.scheme === "http" && item.host === "ms.prizm-energy.com" && !item.path && !item.pathPrefix,
+    (item) => item.scheme === "http" && item.host === "ms.prizm-energy.com" && item.pathPrefix === "/MS",
   ),
   "plain HTTP links must enter the app before the web server redirects to HTTPS",
 );

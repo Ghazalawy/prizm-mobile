@@ -20,7 +20,7 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\release-android-lo
   -DeviceSerial emulator-5554
 ```
 
-This runs the release metadata gate, Expo dependency check, TypeScript, mobile contracts, list/CRUD audits, web parity audit, Expo prebuild, certificate checks, Gradle build, APK signer verification, installation, and App-Link smoke test. It writes the candidate to `out/prizm-mobile.apk` but does not upload it.
+This runs the Expo dependency check, synchronizes generated Android metadata, applies the release metadata gate, then runs TypeScript, mobile contracts, list/CRUD audits, web parity audit, certificate checks, Gradle build, APK signer verification, installation, and App-Link smoke test. It writes the candidate to `out/prizm-mobile.apk` but does not upload it.
 
 ## Final zero-minute publication
 

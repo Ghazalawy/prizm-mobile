@@ -10,6 +10,7 @@
     "web": "expo start --web",
     "test:contracts": "node scripts/test-mobile-contracts.mjs",
     "test:admin-parity": "node scripts/test-admin-parity-batch.mjs",
+    "audit:web-parity": "node scripts/audit-web-menu-parity.mjs",
     "test:crud-contracts": "node scripts/audit-crud-contracts.mjs",
     "test:list-contracts": "node scripts/audit-list-contracts.mjs",
     "verify:release": "node scripts/verify-release-metadata.mjs"

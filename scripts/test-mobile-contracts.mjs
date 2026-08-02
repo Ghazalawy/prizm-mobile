@@ -434,6 +434,42 @@ assert.equal(
   routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/fixed_equipment/settings?tab=models"),
   "/(tabs)/erp/fixed_equipment_models",
 );
+for (const [webPath, nativePath] of [
+  ["invoice_items", "/(tabs)/erp/items"],
+  ["utilities/calendar", "/(tabs)/calendar"],
+  ["utilities/activity_log", "/(tabs)/activity"],
+  ["staff/timesheets?view=all", "/(tabs)/timesheets/entries"],
+  ["costcenters/ag_index", "/(tabs)/erp/cost_centers"],
+  ["gatepass/Gatepass/ag_index", "/(tabs)/erp/gatepass"],
+  ["materials/Materials", "/(tabs)/erp/materials"],
+  ["opportunities/dashboard", "/(tabs)/opportunities"],
+  ["prizm_reports", "/(tabs)/reports"],
+  ["przpurchase/przpurchase/ag_index", "/(tabs)/erp/purchase_requests"],
+  ["przpurchase/PurOrder/ag_index", "/(tabs)/erp/purchase_orders"],
+  ["przpurchase/Expense_Request", "/(tabs)/erp/purchase_expense_requests"],
+  ["przpurchase/Payment_Request/ag_index", "/(tabs)/erp/purchase_payment_requests"],
+  ["przpurchase/Received_Vouchers/ag_index", "/(tabs)/erp/purchase_received_vouchers"],
+  ["przpurchase/Delivery_Notes", "/(tabs)/erp/purchase_delivery_notes"],
+  ["przpurchase/Quotations/ag_index", "/(tabs)/erp/purchase_quotations"],
+  ["przpurchase/suppliers/ag_index", "/(tabs)/erp/purchase_vendors"],
+  ["hr_payroll/payslip_manage", "/(tabs)/erp/hr_payslips"],
+  ["hr_profile/contracts", "/(tabs)/erp/hr_contracts"],
+  ["hr_profile/job_positions", "/(tabs)/erp/hr_job_positions"],
+  ["rfq2/rfq", "/(tabs)/erp/rfq2"],
+  ["technicalinquiries/Technicalinquiries", "/(tabs)/erp/technical_inquiries"],
+  ["tenders/triage", "/(tabs)/tenders/triage"],
+  ["tenders/tender", "/(tabs)/tenders"],
+  ["prizmbudget/manage_budget", "/(tabs)/erp/budget_items"],
+  ["prizmbusinesspartners/prizmbusinesspartners", "/(tabs)/erp/business_partners"],
+  ["surveys", "/(tabs)/erp/surveys"],
+  ["timesheets/requisition_manage", "/(tabs)/leave"],
+]) {
+  assert.equal(
+    routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
+    nativePath,
+    `${webPath} must open its existing native screen instead of the ERP hub`,
+  );
+}
 
 const registryKeys = moduleRegistryKeys();
 assert.equal(new Set(registryKeys).size, registryKeys.length, "Module registry keys must be unique");
@@ -517,7 +553,7 @@ assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
 
 const backendWorkspace = path.resolve(
-  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-admin-parity"),
+  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
 );
 assert.ok(
   fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
@@ -602,6 +638,23 @@ const tendersApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/ap
 assert.doesNotMatch(tendersApiSource, /\['tender_status' => '(?:Won|Lost)'\]/, "Tender actions must not write the non-existent tender_status column");
 assert.match(tendersApiSource, /Won is not a valid tender status/);
 assert.match(tendersApiSource, /convert_to_opportunity/);
+const tenderTriageScreenSource = fs.readFileSync(path.join(workspace, "components/tenders/TenderTriageScreen.tsx"), "utf8");
+const tenderTriageQuerySource = fs.readFileSync(path.join(workspace, "lib/queries/tender-triage.ts"), "utf8");
+const tenderTriageApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Tender_triage_api.php"), "utf8");
+assert.match(tenderTriageScreenSource, /TENDER OPERATIONS/);
+assert.match(tenderTriageScreenSource, /matchType=\{filter\.matchType\}/, "Tender Triage must expose logical AND\/OR filters");
+assert.match(tenderTriageScreenSource, /useTenderTriageBulkDismiss/);
+assert.match(tenderTriageScreenSource, /useTenderTriageMute/);
+assert.match(tenderTriageScreenSource, /previous: notice\.previous/, "Tender Triage must preserve the server undo snapshot");
+for (const endpoint of ["overview", "items", "action", "bulk_dismiss", "mutes", "mute", "unmute"]) {
+  assert.match(tenderTriageQuerySource, new RegExp(`tender_triage/${endpoint}`));
+}
+for (const method of ["items_get", "overview_get", "action_post", "bulk_dismiss_post", "mutes_get", "mute_post", "unmute_post"]) {
+  assert.match(tenderTriageApiSource, new RegExp(`function ${method}\\s*\\(`));
+}
+assert.match(tenderTriageApiSource, /api_apply_advanced_filters/);
+assert.match(tenderTriageApiSource, /\$allowedFrom/);
+assert.match(tenderTriageApiSource, /where\('triage_status', \$current\)/);
 const opportunityBoqBlock = registrySource.match(/key: "opportunity_boq",[\s\S]*?(?=\r?\n  \{\r?\n    key: "opportunity_notes")/)?.[0] ?? "";
 assert.match(opportunityBoqBlock, /key: "boq_id"/);
 assert.match(opportunityBoqBlock, /key: "item_name"/);
@@ -727,6 +780,9 @@ assert.match(customStatusesApiSource, /\['projects', 'tasks'\]/);
 assert.match(customStatusesApiSource, /six-digit hex value/);
 const otpApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Otpmanager.php"), "utf8");
 const apiRoutesSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/config/routes.php"), "utf8");
+for (const route of ["items", "overview", "action", "bulk_dismiss", "mutes", "mute", "unmute"]) {
+  assert.match(apiRoutesSource, new RegExp(`api/tender_triage/${route}`));
+}
 for (const staleCall of ["projects_model", "delete_milestone", "update_milestone", "verify_otp"]) {
   assert.doesNotMatch(otpApiSource, new RegExp(staleCall), `OTP API must not contain stale ${staleCall} calls`);
 }

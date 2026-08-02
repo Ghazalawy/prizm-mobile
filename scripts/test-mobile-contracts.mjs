@@ -478,6 +478,18 @@ for (const [webPath, nativePath] of [
   ["prizmbusinesspartners/prizmbusinesspartners", "/(tabs)/erp/business_partners"],
   ["surveys", "/(tabs)/erp/surveys"],
   ["timesheets/requisition_manage", "/(tabs)/leave"],
+  ["clients/groups", "/(tabs)/erp/setup_customer_groups"],
+  ["tickets/priorities", "/(tabs)/erp/setup_ticket_priorities"],
+  ["tickets/predefined_replies", "/(tabs)/erp/setup_ticket_replies"],
+  ["tickets/statuses", "/(tabs)/erp/setup_ticket_statuses"],
+  ["tickets/services", "/(tabs)/erp/setup_ticket_services"],
+  ["leads/sources", "/(tabs)/erp/setup_lead_sources"],
+  ["leads/statuses", "/(tabs)/erp/setup_lead_statuses"],
+  ["taxes", "/(tabs)/erp/setup_taxes"],
+  ["currencies", "/(tabs)/erp/setup_currencies"],
+  ["paymentmodes", "/(tabs)/erp/setup_payment_modes"],
+  ["expenses/categories", "/(tabs)/erp/setup_expense_categories"],
+  ["contracts/types", "/(tabs)/erp/setup_contract_types"],
 ]) {
   assert.equal(
     routing.resolveNativeRoute(`https://ms.prizm-energy.com/MS/admin/${webPath}`),
@@ -562,7 +574,7 @@ assert.match(otpBlock, /relation: "otp_source"/);
 assert.match(otpBlock, /otpmanager\/\{id\}\/reveal/);
 assert.match(otpBlock, /resultFields:/);
 assert.doesNotMatch(otpBlock, /identifier|expires_at/);
-const otpSourcesBlock = registrySource.match(/key: "otp_sources",[\s\S]*?(?=\n  \},\n\];)/)?.[0] ?? "";
+const otpSourcesBlock = registrySource.match(/key: "otp_sources",[\s\S]*?(?=\n  \{\n    key: ")/)?.[0] ?? "";
 assert.match(otpSourcesBlock, /manage_sources/);
 assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
@@ -583,6 +595,34 @@ assert.match(mobileAppLinkBridge, /S\.browser_fallback_url=/);
 assert.match(mobileAppLinkBridge, /prizm_web/);
 assert.match(mobileAppLinkBridge, /\^\/MS\(\?:\/\|\$\)/);
 assert.match(mobileAppLinkBridge, /api\|uploads\?\|download\|media\|assets\?/);
+const setupApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Setup_api.php"), "utf8");
+const crudFormSource = fs.readFileSync(path.join(workspace, "components/crud/CrudFormScreen.tsx"), "utf8");
+assert.match(crudFormSource, /initializedFormKeyRef/);
+assert.match(crudFormSource, /if \(initializedFormKeyRef\.current === initializationKey\) return/);
+assert.match(crudFormSource, /const EMPTY_CUSTOM_FIELDS: CustomFieldRow\[\] = \[\]/);
+for (const key of [
+  "setup_customer_groups", "setup_ticket_priorities", "setup_ticket_replies", "setup_ticket_statuses",
+  "setup_ticket_services", "setup_lead_sources", "setup_lead_statuses", "setup_taxes", "setup_currencies",
+  "setup_payment_modes", "setup_expense_categories", "setup_contract_types",
+]) {
+  assert.ok(registryKeys.includes(key), `${key} must be registered as a native admin module`);
+  const block = registrySource.match(new RegExp(`key: "${key}",[\\s\\S]*?(?=\\n  \\{\\n    key: "|\\n\\];)`))?.[0] ?? "";
+  assert.match(block, /adminOnlyAccess: true/);
+  assert.match(block, /adminOnlyMutations: true/);
+  assert.match(block, /supportsAdvancedFilters: true/);
+  assert.match(block, /endpoint: "setup_api\//);
+}
+for (const resource of [
+  "customer_groups", "ticket_priorities", "ticket_replies", "ticket_statuses", "ticket_services",
+  "lead_sources", "lead_statuses", "taxes", "currencies", "payment_modes", "expense_categories", "contract_types",
+]) {
+  assert.match(setupApiSource, new RegExp(`'${resource}'`), `${resource} must have a backend definition`);
+}
+assert.match(setupApiSource, /api_apply_advanced_filters/);
+assert.match(setupApiSource, /HTTP_NOT_FOUND/);
+assert.match(setupApiSource, /make_base_currency/);
+assert.match(setupApiSource, /delete_ticket_status/);
+assert.match(setupApiSource, /delete_status/);
 const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\s\S]*?(?=\r?\n  \{\r?\n    key: "leads")/)?.[0] ?? "";
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);

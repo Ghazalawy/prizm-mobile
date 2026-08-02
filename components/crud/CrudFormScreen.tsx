@@ -11,7 +11,7 @@ import {
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { router, useLocalSearchParams } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createEntity, getEntity, updateEntity } from "@/lib/api";
 import {
@@ -38,6 +38,8 @@ type CrudFormScreenProps = {
   basePath?: string;
 };
 
+const EMPTY_CUSTOM_FIELDS: CustomFieldRow[] = [];
+
 export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps) {
   const module = getModule(moduleKey);
   const params = useLocalSearchParams<Record<string, string | string[]>>();
@@ -46,6 +48,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   const useRouteRecord = isEdit && firstParam(params._use_route_record) === "1";
   const [values, setValues] = useState<Record<string, string>>({});
   const [touched, setTouched] = useState(false);
+  const initializedFormKeyRef = useRef<string | null>(null);
   const permissions = usePermissions();
 
   // Permission gate: block access if user lacks create/edit permission
@@ -73,12 +76,14 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   // Custom fields: fetched for create (no id, blank values) or edit (id given,
   // values populated). Tracked in their own values map keyed by custom_field_id.
   const customFieldsQuery = useCustomFields(module?.customFieldsType, isEdit ? id : undefined);
-  const customFields = customFieldsQuery.data || [];
+  const customFields = customFieldsQuery.data ?? EMPTY_CUSTOM_FIELDS;
   const [customValues, setCustomValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     if (!customFields.length) {
-      setCustomValues({});
+      setCustomValues((current) =>
+        Object.keys(current).length > 0 ? {} : current,
+      );
       return;
     }
     const next: Record<string, string> = {};
@@ -91,6 +96,18 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
   useEffect(() => {
     if (!module) return;
     if (isEdit && !row && !useRouteRecord) return;
+    const routeFieldValues = fields.map((field) => [
+      field.key,
+      firstParam(params[field.key]) ?? null,
+    ]);
+    const initializationKey = JSON.stringify([
+      module.key,
+      id ?? "new",
+      useRouteRecord,
+      routeFieldValues,
+    ]);
+    if (initializedFormKeyRef.current === initializationKey) return;
+
     const next: Record<string, string> = {};
     fields.forEach((field) => {
       const paramValue = firstParam(params[field.key]);
@@ -103,6 +120,7 @@ export function CrudFormScreen({ moduleKey, id, basePath }: CrudFormScreenProps)
         next[field.key] = String(value ?? "");
       }
     });
+    initializedFormKeyRef.current = initializationKey;
     setValues(next);
     setTouched(false);
   }, [fields, isEdit, module, params, row, useRouteRecord]);

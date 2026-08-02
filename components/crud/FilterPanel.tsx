@@ -353,7 +353,7 @@ export const FilterPanel = memo(function FilterPanel({
           <TouchableOpacity onPress={onClose} hitSlop={10}>
             <Ionicons name="close" size={24} color="#0F172A" />
           </TouchableOpacity>
-          <Text className="ml-3 text-lg font-semibold flex-1">Perfix Filters</Text>
+          <Text className="ml-3 text-lg font-semibold flex-1">Advanced Filters</Text>
           {draftCount > 0 ? (
             <TouchableOpacity onPress={clearAll} hitSlop={8}>
               <Text className="text-primary font-medium text-sm">Clear all</Text>

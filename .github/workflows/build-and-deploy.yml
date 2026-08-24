@@ -61,6 +61,9 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
 
+      - name: Biometric sign-in policy tests
+        run: node scripts/test-biometric-policy.mjs
+
       - name: Write .env
         run: echo "EXPO_PUBLIC_API_URL=${{ env.API_URL }}" > .env
 

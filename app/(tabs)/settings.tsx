@@ -36,8 +36,7 @@ function formatBuildTime(iso: string): string {
 
 import { checkForUpdate, downloadAndInstall } from "@/lib/updates";
 import {
-  isBiometricAvailable,
-  isBiometricEnabled,
+  resolveBiometricGate,
   setBiometricEnabled,
 } from "@/lib/biometric";
 import { CheckinCard } from "@/components/CheckinCard";
@@ -158,6 +157,9 @@ export default function SettingsScreen() {
   const [bioAvailable, setBioAvailable] = useState(false);
   const [bioOn, setBioOn] = useState(false);
   const [bioReady, setBioReady] = useState(false);
+  // Opted in, but the protected credential is missing — the switch has to read
+  // OFF because fingerprint sign-in genuinely won't work, so say why.
+  const [bioNeedsSetup, setBioNeedsSetup] = useState(false);
   const [checkingUpdate, setCheckingUpdate] = useState(false);
   const [biometricModalVisible, setBiometricModalVisible] = useState(false);
   const [biometricPassword, setBiometricPassword] = useState("");
@@ -166,12 +168,10 @@ export default function SettingsScreen() {
 
   useEffect(() => {
     (async () => {
-      const [available, enabled] = await Promise.all([
-        isBiometricAvailable(),
-        isBiometricEnabled(),
-      ]);
-      setBioAvailable(available);
-      setBioOn(enabled);
+      const gate = await resolveBiometricGate();
+      setBioAvailable(gate.available);
+      setBioOn(gate.canSignIn);
+      setBioNeedsSetup(gate.needsReenrollment);
       setBioReady(true);
     })();
   }, []);
@@ -186,6 +186,7 @@ export default function SettingsScreen() {
       }
       await setBiometricEnabled(next);
       setBioOn(next);
+      setBioNeedsSetup(false);
     },
     [bioAvailable]
   );
@@ -200,6 +201,7 @@ export default function SettingsScreen() {
       return;
     }
     setBioOn(true);
+    setBioNeedsSetup(false);
     setBiometricPassword("");
     setBiometricModalVisible(false);
   }, [biometricPassword, biometricSaving, enableBiometric]);
@@ -288,6 +290,10 @@ export default function SettingsScreen() {
                 ) : !bioAvailable ? (
                   <Text className="text-muted text-xs mt-1">
                     Not available on this device
+                  </Text>
+                ) : bioNeedsSetup ? (
+                  <Text className="text-xs mt-1" style={{ color: colors.warning }}>
+                    Needs setting up again — confirm your password to restore it
                   </Text>
                 ) : (
                   <Text className="text-muted text-xs mt-1">

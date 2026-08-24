@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.18.1",
+      "date": "2026-08-24",
+      "title": "Fingerprint sign-in restored after sign-out",
+      "highlights": [
+        "The sign-in screen now offers fingerprint whenever the device can use it, however you got signed out.",
+        "Devices that had fingerprint login on before v1.14 are offered a one-time password confirmation to restore it.",
+        "A fingerprint or screen-lock change no longer leaves an unusable saved credential with a misleading error.",
+        "Signing in with a password no longer silently switches fingerprint login off for good.",
+        "Settings now says when fingerprint login needs setting up again instead of just showing the switch off."
+      ]
+    },
+    {
       "version": "1.18.0",
       "date": "2026-08-02",
       "title": "Native administration and purchasing parity",

@@ -1,6 +1,6 @@
 {
   "name": "prizm-mobile",
-  "version": "1.18.0",
+  "version": "1.18.1",
   "main": "expo-router/entry",
   "scripts": {
     "postinstall": "patch-package",
@@ -9,6 +9,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "test:contracts": "node scripts/test-mobile-contracts.mjs",
+    "test:biometric": "node scripts/test-biometric-policy.mjs",
     "test:admin-parity": "node scripts/test-admin-parity-batch.mjs",
     "audit:web-parity": "node scripts/audit-web-menu-parity.mjs",
     "test:crud-contracts": "node scripts/audit-crud-contracts.mjs",

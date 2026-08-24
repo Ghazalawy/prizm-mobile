@@ -5,6 +5,18 @@ const TOKEN_KEY = "prizm_auth_token";
 const SESSION_KEY = "prizm_session_cookie";
 const PROFILE_KEY = "prizm_staff_profile";
 
+/**
+ * Outcome of a sign-in attempt. `networkError` separates "the server said no"
+ * from "we never reached the server" — callers that act on a rejection (such
+ * as discarding a saved fingerprint credential) must not do so just because
+ * the device was offline.
+ */
+export type LoginOutcome = {
+  success: boolean;
+  message?: string;
+  networkError?: boolean;
+};
+
 /** The current authenticated staff record. Stored on login, read by
  * Action Center / My Activity / anywhere that needs the staffid. */
 export type StaffProfile = {
@@ -67,7 +79,7 @@ export async function clearSession(): Promise<void> {
 export async function login(
   email: string,
   password: string
-): Promise<{ success: boolean; message?: string }> {
+): Promise<LoginOutcome> {
   try {
     const formData = new FormData();
     formData.append("email", email);
@@ -115,6 +127,7 @@ export async function login(
     return {
       success: false,
       message: err.message || "Could not connect to server",
+      networkError: true,
     };
   }
 }
@@ -130,7 +143,7 @@ export async function login(
 export async function loginViaApi(
   email: string,
   password: string
-): Promise<{ success: boolean; message?: string }> {
+): Promise<LoginOutcome> {
   try {
     const res = await fetch(`${API_URL}/login/auth`, {
       method: "POST",
@@ -174,6 +187,7 @@ export async function loginViaApi(
     return {
       success: false,
       message: err.message || "Could not connect to server",
+      networkError: true,
     };
   }
 }

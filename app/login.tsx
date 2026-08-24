@@ -9,17 +9,28 @@ import {
   Alert,
   Image,
 } from "react-native";
-import { useState, useEffect } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Ionicons } from "@expo/vector-icons";
-import { router, useLocalSearchParams } from "expo-router";
+import { router, useFocusEffect, useLocalSearchParams } from "expo-router";
 import { useAuth } from "@/lib/auth-context";
-import { markBiometricAsked, saveBiometricCredentials } from "@/lib/biometric";
+import {
+  markBiometricAsked,
+  saveBiometricCredentials,
+  setBiometricEnabled,
+} from "@/lib/biometric";
 import { useEnvironment } from "@/lib/environment";
 import { safePostAuthRoute } from "@/lib/post-auth-route";
 import { colors } from "@/lib/theme";
 
 export default function LoginScreen() {
-  const { isAuthenticated, isLoading, login, biometricPending, retryBiometric } = useAuth();
+  const {
+    isAuthenticated,
+    isLoading,
+    login,
+    biometricPending,
+    retryBiometric,
+    refreshBiometricState,
+  } = useAuth();
   const { returnTo } = useLocalSearchParams<{ returnTo?: string | string[] }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -33,12 +44,50 @@ export default function LoginScreen() {
     }
   }, [isAuthenticated, returnTo]);
 
+  // Whether a fingerprint can sign this device in is stored in SecureStore, so
+  // read it every time the screen is shown. Relying on the flag some other code
+  // path happened to set is what left the button missing after a surprise
+  // sign-out — reaching /login is itself the reason to ask the question.
+  useFocusEffect(
+    useCallback(() => {
+      void refreshBiometricState();
+    }, [refreshBiometricState]),
+  );
+
   const handleBiometric = async () => {
     if (biometricBusy) return;
     setBiometricBusy(true);
     try {
-      const ok = await retryBiometric();
-      if (!ok) {
+      const result = await retryBiometric();
+      if (result.ok) return;
+      // Say which of the failures happened. "Try again" is useless advice when
+      // the stored credential is gone and no retry can ever succeed.
+      if (result.reason === "unusable") {
+        Alert.alert(
+          "Set fingerprint up again",
+          "This device's saved fingerprint credential is no longer valid — that " +
+            "happens after a fingerprint or screen-lock change. Sign in with your " +
+            "password once and we'll offer to re-enable it.",
+        );
+      } else if (result.reason === "rejected") {
+        Alert.alert(
+          "Password changed",
+          "Your saved password no longer works. Sign in with your current " +
+            "password and we'll offer to re-enable fingerprint sign-in.",
+        );
+      } else if (result.reason === "offline") {
+        Alert.alert(
+          "No connection",
+          "Your fingerprint was accepted but the server could not be reached. " +
+            "Check your connection and try again.",
+        );
+      } else if (result.reason === "unavailable") {
+        Alert.alert(
+          "Fingerprint unavailable",
+          "No fingerprint is enrolled on this device, or fingerprint login is " +
+            "switched off in Settings.",
+        );
+      } else {
         Alert.alert(
           "Fingerprint cancelled",
           "Try again, or sign in with your password.",
@@ -65,17 +114,32 @@ export default function LoginScreen() {
     }
 
     if (result.shouldOfferBiometric) {
+      const isReenroll = result.biometricOfferReason === "reenroll";
       await markBiometricAsked();
       Alert.alert(
-        "Enable fingerprint login?",
-        "Use your fingerprint to sign in next time instead of typing your password.",
+        isReenroll ? "Set fingerprint up again?" : "Enable fingerprint login?",
+        isReenroll
+          ? "Fingerprint login is on for this device but its saved credential is " +
+              "missing, so we couldn't offer it on the sign-in screen. Restore it now?"
+          : "Use your fingerprint to sign in next time instead of typing your password.",
         [
-          { text: "Not now", style: "cancel" },
           {
-            text: "Enable",
+            text: "Not now",
+            style: "cancel",
+            // Declining a restore means "stop asking". Leaving the opt-in on
+            // would re-raise this alert on every single sign-in.
+            onPress: isReenroll
+              ? () => {
+                  void setBiometricEnabled(false);
+                }
+              : undefined,
+          },
+          {
+            text: isReenroll ? "Restore" : "Enable",
             onPress: async () => {
               try {
                 await saveBiometricCredentials(email.trim(), password);
+                await refreshBiometricState();
               } catch {
                 Alert.alert(
                   "Fingerprint not enabled",

@@ -173,6 +173,20 @@ const CONTROLLER_TO_MODULE: Record<string, string> = {
   completion_certificate: "purchase_completion_certificates",
 };
 
+/**
+ * Links whose id belongs to a table no native screen reads. Routing them
+ * generically opens a DIFFERENT record that happens to share the number —
+ * worse than the explicit "no native screen" fallback. `rfq/rfq/rfq/{id}` and
+ * `rfq2/rfq/rfq/{id}` both address legacy tblrfqs, while the rfq2 screen reads
+ * tblrfq2 (same auto-increment space, different rows; see Pipeline::view).
+ */
+const NO_NATIVE_SCREEN_PATTERNS: RegExp[] = [
+  /^rfq2?\/rfq\/rfq\/\d+/i,
+  // Additional-hours approvals have no native screen; the bare path would land
+  // an approver on their own leave list, which looks like a page but is not.
+  /^timesheets\/requisition_manage\?(?:.*&)?tab=additional_timesheets/i,
+];
+
 const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^#taskid=(\d+)/i, to: (m) => routeForModuleRecord("tasks", m[1])! },
   { re: /^#leadid=(\d+)/i, to: (m) => routeForModuleRecord("leads", m[1])! },
@@ -207,7 +221,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^advanceleads\/(?:advanceleads|advanceleads_grid|dashboard)(?:\/|$)/i, to: () => routeForModuleList("advance_leads")! },
   { re: /^dewa_contacts\/(?:add_dewa_contact|index)\/(\d+)/i, to: (m) => routeForModuleRecord("dewa_contacts", m[1])! },
   { re: /^dewa_contacts\/(?:dewa_contacts|index)(?:\/|$)/i, to: () => routeForModuleList("dewa_contacts")! },
-  { re: /^prizmsubscription\/prizmsubscription\/edit_subscription\/(\d+)/i, to: (m) => routeForModuleRecord("documents", m[1])! },
+  { re: /^prizmsubscription\/(?:prizmsubscription\/)?edit_subscription\/(\d+)/i, to: (m) => routeForModuleRecord("documents", m[1])! },
   { re: /^prizmsubscription\/(?:prizmsubscription|index)(?:\/|$)/i, to: () => routeForModuleList("documents")! },
   { re: /^contracts\/contract\/(\d+)/i, to: (m) => routeForModuleRecord("contracts", m[1])! },
   { re: /^tickets\/ticket\/(\d+)/i, to: (m) => routeForModuleRecord("tickets", m[1])! },
@@ -215,7 +229,9 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^credit_notes\/(?:list_credit_notes|credit_note)\/(\d+)/i, to: (m) => routeForModuleRecord("credit_notes", m[1])! },
   { re: /^contacts\/contact\/(\d+)/i, to: (m) => routeForModuleRecord("contacts", m[1])! },
   { re: /^staff\/member\/(\d+)/i, to: (m) => routeForModuleRecord("staff", m[1])! },
+  { re: /^hr_profile\/member\/(\d+)/i, to: (m) => routeForModuleRecord("staff", m[1])! },
   { re: /^invoice_items\/?$/i, to: () => routeForModuleList("items")! },
+  { re: /^utilities\/calendar\/?\?(?:.*&)?eventid=(\d+)/i, to: (m) => `/(tabs)/calendar/${m[1]}` },
   { re: /^utilities\/calendar\/?$/i, to: () => routeForModuleList("calendar")! },
   { re: /^utilities\/activity_log\/?$/i, to: () => "/(tabs)/activity" },
   { re: /^staff\/timesheets\/?$/i, to: () => routeForModuleList("timesheets")! },
@@ -234,6 +250,7 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^otpmanager\/settings(?:\?group=sources)?/i, to: () => routeForModuleList("otp_sources")! },
   { re: /^automation_manager\/(?:edit\/)?(\d+)(?:\/|$)/i, to: (m) => routeForModuleRecord("automation", m[1])! },
   { re: /^automation_manager(?:\/|$)/i, to: () => routeForModuleList("automation")! },
+  { re: /^costcenters\/view\/(\d+)/i, to: (m) => routeForModuleRecord("cost_centers", m[1])! },
   { re: /^costcenters(?:\/ag_index)?\/?$/i, to: () => routeForModuleList("cost_centers")! },
   { re: /^gatepass\/requestmanager\/(?:view|request)\/(\d+)/i, to: (m) => routeForModuleRecord("gatepass_requests", m[1])! },
   { re: /^gatepass\/requestmanager(?:\/|$)/i, to: () => routeForModuleList("gatepass_requests")! },
@@ -261,7 +278,12 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^technicalinquiries\/boq_management\/boq_tree_builder(?:\/|$)/i, to: () => "/(tabs)/erp/cost_calculations/new" },
   { re: /^technicalinquiries\/boq_management\/boq_tree(?:\/|$)/i, to: () => routeForModuleList("cost_calculations")! },
   { re: /^materials\/material_categories(?:\/|$)/i, to: () => routeForModuleList("material_categories")! },
-  { re: /^materials\/(?:materials|items)\/?$/i, to: () => routeForModuleList("materials")! },
+  // materials/Items/* is the item catalogue (tblprizmbudget_items, Items_model),
+  // which the mobile budget_items module reads via budget_api/items. The
+  // materials module reads tblmaterials — a different table with its own ids.
+  { re: /^materials\/items\/view\/(\d+)/i, to: (m) => routeForModuleRecord("budget_items", m[1])! },
+  { re: /^materials\/items\/?$/i, to: () => routeForModuleList("budget_items")! },
+  { re: /^materials\/materials\/?$/i, to: () => routeForModuleList("materials")! },
   { re: /^materials\/itemclassification\/manage_commodity\/(\d+)/i, to: (m) => routeForModuleRecord("unspsc_commodities", m[1])! },
   { re: /^materials\/itemclassification(?:\/|$)/i, to: () => routeForModuleList("unspsc_commodities")! },
   { re: /^materials\/kits\/items\/(\d+)/i, to: (m) => routeForModuleRecord("material_kits", m[1])! },
@@ -322,9 +344,9 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^(?:przpurchase\/)?payment_request\/(?:ag_)?view_payment_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_payment_requests", m[1])! },
   { re: /^(?:przpurchase\/)?supplierinvoice\/(?:view_supplier_invoice|view|add_edit)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_supplier_invoices", m[1])! },
   { re: /^(?:przpurchase\/)?expense_request\/view_expense_request\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_expense_requests", m[1])! },
-  { re: /^received_vouchers\/(?:ag_)?view_voucher\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
-  { re: /^delivery_notes\/view_delivery_note\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },
-  { re: /^quotations\/(?:quotation|ag_quotation|view_quotation)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_quotations", m[1])! },
+  { re: /^(?:przpurchase\/)?received_vouchers\/(?:ag_)?view_voucher\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_received_vouchers", m[1])! },
+  { re: /^(?:przpurchase\/)?delivery_notes\/view_delivery_note\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_delivery_notes", m[1])! },
+  { re: /^(?:przpurchase\/)?quotations\/(?:quotation|ag_quotation|view_quotation|list_quotations)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_quotations", m[1])! },
   { re: /^completion_certificate\/(?:view|edit)\/(\d+)/i, to: (m) => routeForModuleRecord("purchase_completion_certificates", m[1])! },
   { re: /^hr_payroll\/(?:view_payslip_detail|view_payslip_detail_v2|view_staff_payslip_modal)\/(\d+)/i, to: (m) => `/(tabs)/payslip-detail?id=${m[1]}` },
   { re: /^hr_payroll\/payslip_manage\/?$/i, to: () => routeForModuleList("hr_payslips")! },
@@ -336,10 +358,12 @@ const DIRECT_PATTERNS: RoutePattern[] = [
   { re: /^hr_profile\/resignation_procedures\/?$/i, to: () => routeForModuleList("hr_resignations")! },
   { re: /^hr_profile\/training\?group=training_program/i, to: () => routeForModuleList("hr_training_programs")! },
   { re: /^rfq2\/rfq\/?$/i, to: () => routeForModuleList("rfq2")! },
+  { re: /^technicalinquiries\/view\/(\d+)/i, to: (m) => routeForModuleRecord("technical_inquiries", m[1])! },
   { re: /^technicalinquiries(?:\/technicalinquiries)?\/?$/i, to: () => routeForModuleList("technical_inquiries")! },
   { re: /^tenders\/triage\/?$/i, to: () => "/(tabs)/tenders/triage" },
   { re: /^tenders\/tender\/?$/i, to: () => routeForModuleList("tenders")! },
   { re: /^prizmbudget\/manage_budget\/?$/i, to: () => routeForModuleList("budget_items")! },
+  { re: /^prizmbudget\/view_item\/(\d+)/i, to: (m) => routeForModuleRecord("budget_items", m[1])! },
   { re: /^prizmbusinesspartners\/prizmbusinesspartners\/?$/i, to: () => routeForModuleList("business_partners")! },
   { re: /^surveys\/?$/i, to: () => routeForModuleList("surveys")! },
   { re: /^timesheets\/requisition_manage\/?$/i, to: () => "/(tabs)/leave" },
@@ -373,36 +397,111 @@ export function routeForModuleEdit(
   return `/(tabs)/erp/${encodeURIComponent(moduleKey)}/${cleanId}/edit`;
 }
 
+/**
+ * Inbox items that arrive without a deeplink still identify their record by
+ * type + id. Without this, tapping them did nothing.
+ */
+const INBOX_TYPE_ROUTES: Record<string, (id: string) => string> = {
+  leave_request: (id) => `/(tabs)/approvals/leave/${id}`,
+};
+
+export function routeForInboxItem(item: {
+  type?: string | null;
+  id?: string | number | null;
+  deeplink?: string | null;
+}): string | null {
+  if (item.deeplink) return item.deeplink;
+  const builder = item.type ? INBOX_TYPE_ROUTES[item.type] : undefined;
+  if (!builder || item.id === null || item.id === undefined || String(item.id).trim() === "") return null;
+  return builder(encodeURIComponent(String(item.id).trim()));
+}
+
+/**
+ * A native route embedded in a backend string. Inbox_api rewrites links with
+ * a partial preg_replace, so "#taskid=5" becomes "#/(tabs)/erp/tasks/5" and an
+ * absolute admin_url() link becomes "https://…/MS/admin//(tabs)/approvals/…".
+ */
+function embeddedNativeRoute(raw: string): string | null {
+  const index = raw.indexOf("/(tabs)/");
+  if (index < 0) return null;
+  if (index === 0) return raw;
+  const prefix = raw.slice(0, index);
+  if (prefix === "#" || /^https?:\/\/[^/]+(?:\/[^?#]*)?\/?$/i.test(prefix)) {
+    const parsed = tryParseUrl(raw);
+    if (parsed && !isInternalHost(parsed.hostname)) return null;
+    return raw.slice(index);
+  }
+  return null;
+}
+
+/**
+ * Backend-built "/(tabs)/erp/<module>/<id>" routes bypass modules that have a
+ * dedicated screen (tasks, projects, contracts, purchase approvals…). Send them
+ * to the same screen the app itself would open.
+ */
+function canonicalNativeRoute(route: string): string {
+  const match = route.match(/^\/\(tabs\)\/erp\/([^/?#]+)(?:\/([^/?#]+))?\/?((?:[?#].*)?)$/);
+  if (!match) return route;
+  const [, moduleKey, id, rest = ""] = match;
+  // Only record ids and bare lists: "/(tabs)/erp/contracts/new" has no
+  // dedicated equivalent and must stay on the generic create screen.
+  if (id && !/^\d+$/.test(id)) return route;
+  const key = decodeURIComponent(moduleKey);
+  const canonical = id ? routeForModuleRecord(key, decodeURIComponent(id)) : routeForModuleList(key);
+  return canonical ? `${canonical}${rest}` : route;
+}
+
+/** How a link was resolved. "generic" and "hint" are heuristics, not mappings. */
+export type NativeRouteSource = "embedded" | "settings" | "direct" | "generic" | "hint";
+
 export function resolveNativeRoute(rawLink: string | null | undefined, opts: ResolveOptions = {}): string | null {
+  return explainNativeRoute(rawLink, opts).route;
+}
+
+/**
+ * Same as resolveNativeRoute, plus which rule produced the route. The deeplink
+ * wiring gate uses this to reject record links that only resolve through the
+ * controller-name heuristic: that heuristic once opened the wrong table's
+ * record for every "materials/Items/view/{id}" notification.
+ */
+export function explainNativeRoute(
+  rawLink: string | null | undefined,
+  opts: ResolveOptions = {},
+): { route: string | null; via: NativeRouteSource | null } {
+  const none = { route: null, via: null };
   const incoming = cleanLink(rawLink);
-  if (!incoming) return null;
+  if (!incoming) return none;
   const bridged = unwrapPrizmAppLink(incoming);
-  if (PRIZM_APP_SCHEME_RE.test(incoming) && !bridged) return null;
+  if (PRIZM_APP_SCHEME_RE.test(incoming) && !bridged) return none;
   const raw = bridged || incoming;
-  if (raw.startsWith("/(tabs)/") || raw.startsWith("/settings")) return raw;
+  const embedded = embeddedNativeRoute(raw);
+  if (embedded) return { route: canonicalNativeRoute(embedded), via: "embedded" };
+  if (raw.startsWith("/settings")) return { route: raw, via: "settings" };
 
   const normalized = normalizeInternalPath(raw);
   if (!normalized) {
-    return routeFromModuleHint(raw, opts.moduleKey);
+    const hinted = routeFromModuleHint(raw, opts.moduleKey);
+    return hinted ? { route: hinted, via: "hint" } : none;
   }
 
-  const candidates = [
-    normalized.hash,
-    normalized.path,
-    `${normalized.path}${normalized.search ? `?${normalized.search}` : ""}`,
-  ].filter(Boolean);
+  // Most specific first: "utilities/calendar?eventid=7" must reach the event,
+  // not the calendar list that the bare path also matches.
+  const withSearch = `${normalized.path}${normalized.search ? `?${normalized.search}` : ""}`;
+  if (NO_NATIVE_SCREEN_PATTERNS.some((re) => re.test(withSearch))) return none;
+  const candidates = [...new Set([normalized.hash, withSearch, normalized.path].filter(Boolean))];
 
   for (const candidate of candidates) {
     for (const { re, to } of DIRECT_PATTERNS) {
       const match = candidate.match(re);
-      if (match) return to(match);
+      if (match) return { route: to(match), via: "direct" };
     }
   }
 
   const generic = routeFromGenericPerfexPath(normalized.path, normalized.search);
-  if (generic) return generic;
+  if (generic) return { route: generic, via: "generic" };
 
-  return routeFromModuleHint(raw, opts.moduleKey);
+  const hinted = routeFromModuleHint(raw, opts.moduleKey);
+  return hinted ? { route: hinted, via: "hint" } : none;
 }
 
 export function isCompanyInternalLink(rawLink: string | null | undefined): boolean {
@@ -474,7 +573,12 @@ function routeFromGenericPerfexPath(path: string, search: string): string | null
   const id = firstId(parts.slice(1)) || idFromSearch(search);
   const moduleKey = CONTROLLER_TO_MODULE[controller];
 
-  if (id && moduleKey) return routeForModuleRecord(moduleKey, id);
+  // A controller often serves several entities (prizmbudget/view_budget,
+  // prizmbudget/request_advance_cash, …). Only its plain view/edit action, or a
+  // bare id, is safe to read as "this module's record"; anything else would
+  // open an unrelated record that happens to share the number.
+  const recordAction = !action || /^(?:view|edit|\d+)$/i.test(action);
+  if (id && moduleKey && recordAction) return routeForModuleRecord(moduleKey, id);
   return listRoute;
 }
 
@@ -506,7 +610,9 @@ function normalizeInternalPath(raw: string): { path: string; search: string; has
   const explicitInternalPrefix = /^\/*(?:MS\/)?(?:admin|api)\//i.test(pathPart);
   const path = stripAdminPrefix(pathPart);
   if (!path && !hash) return null;
-  if (path && !explicitInternalPrefix && !looksLikeInternalPath(path) && !hash) return null;
+  if (path && !explicitInternalPrefix && !looksLikeInternalPath(path) && !matchesDirectPattern(path, searchPart) && !hash) {
+    return null;
+  }
   return { path, search: searchPart, hash };
 }
 
@@ -527,9 +633,20 @@ function looksLikeInternalPath(path: string): boolean {
   return Boolean(controller && (CONTROLLER_TO_MODULE[controller] || controller === "przpurchase" || controller === "purchase_api"));
 }
 
+/**
+ * Relative ERP paths ("timesheets/requisition_detail/5") are stored in
+ * tblnotifications without an admin/ prefix. Any path an explicit pattern
+ * recognises is internal even when its controller has no generic mapping.
+ */
+function matchesDirectPattern(path: string, search: string): boolean {
+  const withSearch = `${path}${search ? `?${search}` : ""}`;
+  return DIRECT_PATTERNS.some(({ re }) => re.test(withSearch) || re.test(path));
+}
+
+/** Perfex record URLs put the id right after the action: controller/action/{id}/… */
 function firstId(parts: string[]): string | null {
-  for (let i = parts.length - 1; i >= 0; i -= 1) {
-    const match = String(parts[i]).match(/^(\d+)$/);
+  for (const part of parts) {
+    const match = String(part).match(/^(\d+)$/);
     if (match) return match[1];
   }
   return null;

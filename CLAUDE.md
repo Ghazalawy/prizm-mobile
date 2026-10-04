@@ -95,13 +95,45 @@ identified. Don't repeat.
 
 ## CI / build
 
-- `gh run list -R Ghazalawy/prizm-mobile` shows build status.
-- APK published as a rolling release at
-  `github.com/Ghazalawy/prizm-mobile/releases/latest`.
-- In-app auto-update banner polls that release on app start.
-- TypeScript: `npx tsc --noEmit -p tsconfig.json` before commit. The 3
-  pre-existing errors (datetimepicker, image-picker, document-picker)
-  are missing peer deps, not regressions — ignore them.
+- **Quality Gates** (`.github/workflows/quality-gates.yml`) run on every PR and
+  push to `main`: Expo deps, TypeScript, unit & routing regressions, release
+  metadata/version bump, QC integrity (ratchet), backend contracts & deeplink
+  wiring, read-only live API smoke. All fail closed. Philosophy and gate
+  inventory: `docs/autosync/QC-PHILOSOPHY.md`.
+- **Release APK** (`.github/workflows/build-and-deploy.yml`) runs on push to
+  `main` when `package.json` carries a version with no `v<version>` release:
+  all gates → signed build → certificate check vs `assetlinks.json` →
+  emulator smoke → GitHub release `v<version>` marked latest.
+- In-app auto-update banner reads `releases/latest` and compares the SHA in
+  the release name with `BUILD_SHA`.
+- Required repo secrets: `PRIZM331_READ_TOKEN` (read PrizmIT/prizm331),
+  `PRIZM_QA_EMAIL`, `PRIZM_QA_PASSWORD` (live smoke). Missing → gates fail.
+- Backend-aware scripts read `PRIZM_BACKEND_WORKSPACE` (a prizm331 checkout).
+  CI pins it to `autosync/state.json` `backend.syncedSha`.
+- Before pushing: `npm run qc:all` (with `PRIZM_BACKEND_WORKSPACE` set) and
+  `npx expo install --check`. TypeScript currently has zero errors; keep it so.
+
+## Weekly autonomous sync
+
+A Routine runs every Saturday and follows
+`docs/autosync/WEEKLY-SYNC-PLAYBOOK.md`: diff prizm331 since the pinned
+commit (`npm run diff:web-surface`), triage, implement, gate, PR, merge when
+green, release. Its branches are `autosync/<date>`; CI forbids them from
+editing gates/workflows, deleting assertions, or growing a baseline without
+moving the backend pin. Autonomy limits live in `autosync/policy.json`.
+
+## Deeplink wiring rules
+
+- Every backend notification/approval link must open the correct native
+  screen through the bell, the approvals inbox and App Links
+  (`npm run test:deeplinks`). Known gaps: `qc/deeplink-wiring-baseline.json`
+  (shrink-only).
+- Every record link is pinned in `qc/record-link-contracts.json` to the screen
+  whose endpoint reads the same table as the web controller. New or moved
+  contracts need `Verified …` evidence.
+- Never rely on the controller-name heuristic for records: add an explicit
+  pattern after reading the web controller (it once opened `tblmaterials`
+  rows for `materials/Items/view/{id}`, which are `tblprizmbudget_items`).
 
 ## Pre-push release checklist (mandatory)
 

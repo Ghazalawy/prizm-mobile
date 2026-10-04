@@ -58,10 +58,12 @@ const routing = loadTypeScriptModule("lib/native-routing.ts", {
 const nativeIntent = loadTypeScriptModule("app/+native-intent.ts", {
   "../lib/native-routing": routing,
 });
+const biometricPolicy = loadTypeScriptModule("lib/biometric-policy.ts");
 const secureValues = new Map();
 const secureOptions = new Map();
 let biometricPromptOptions = null;
 const biometric = loadTypeScriptModule("lib/biometric.ts", {
+  "./biometric-policy": biometricPolicy,
   "expo-local-authentication": {
     hasHardwareAsync: async () => true,
     isEnrolledAsync: async () => true,
@@ -101,22 +103,23 @@ assert.equal(taskRelationSummary({ rel_type: "project", rel_id: "42", rel_name: 
 
 await biometric.saveBiometricCredentials("qa@prizm-energy.com", "device-secret");
 assert.equal(await biometric.isBiometricAvailable(), true);
-assert.equal(await biometric.isBiometricEnabled(), true);
+assert.equal(await biometric.isBiometricOptedIn(), true);
 assert.equal(await biometric.hasBiometricCredentials(), true);
 assert.equal(secureOptions.get("set:prizm_biometric_credentials")?.requireAuthentication, true);
 assert.equal(
   secureOptions.get("set:prizm_biometric_credentials")?.keychainAccessible,
   "when-unlocked-this-device-only",
 );
-assert.deepEqual(await biometric.getBiometricCredentials(), {
-  email: "qa@prizm-energy.com",
-  password: "device-secret",
+assert.deepEqual(await biometric.unlockBiometricCredentials(), {
+  ok: true,
+  credentials: { email: "qa@prizm-energy.com", password: "device-secret" },
 });
 assert.equal(secureOptions.get("get:prizm_biometric_credentials")?.requireAuthentication, true);
 assert.equal(await biometric.promptBiometric(), true);
 assert.equal(biometricPromptOptions?.disableDeviceFallback, false);
 assert.equal(await biometric.keepBiometricCredentialsForAccount("other@prizm-energy.com"), false);
 assert.equal(await biometric.hasBiometricCredentials(), false, "cross-account login must clear the old fingerprint vault");
+assert.equal(await biometric.isBiometricOptedIn(), true, "clearing a foreign vault must keep the fingerprint opt-in");
 
 const serialized = serializePerfexFilterGroup({
   match_type: "or",
@@ -619,7 +622,9 @@ assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
 
 const backendWorkspace = path.resolve(
-  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
+  process.env.PRIZM331_SOURCE_ROOT ||
+    process.env.PRIZM_BACKEND_WORKSPACE ||
+    path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
 );
 assert.ok(
   fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
@@ -1297,15 +1302,23 @@ assert.doesNotMatch(registrySource, /key: "task_template_(?:groups|tasks|milesto
 assert.doesNotMatch(registrySource, /key: "(?:product_families|client_items)"/);
 assert.doesNotMatch(materialsApiSource, /function (?:product_families|client_items)_/);
 
-// A push to main must never spend 20+ hosted minutes implicitly. The release
-// workflow is a manual cached fallback; normal publication is local, signer-
-// verified, emulator-smoke-tested, and requires an explicit -Publish switch.
+// The release workflow may run on push to main (public repository: hosted
+// minutes are not billed), but it must only publish a NEW version, and only
+// after every quality gate, the signer check and the emulator smoke passed on
+// that exact commit.
 const androidReleaseWorkflowSource = fs.readFileSync(
   path.join(workspace, ".github/workflows/build-and-deploy.yml"),
   "utf8",
 );
 assert.match(androidReleaseWorkflowSource, /workflow_dispatch:/);
-assert.doesNotMatch(androidReleaseWorkflowSource, /^\s{2}push:/m);
+assert.match(androidReleaseWorkflowSource, /gh release view "\$TAG"/, "an existing version must not be rebuilt on every push");
+assert.match(androidReleaseWorkflowSource, /if: needs\.detect\.outputs\.release == 'true'/);
+assert.match(androidReleaseWorkflowSource, /uses: \.\/\.github\/workflows\/quality-gates\.yml/);
+assert.match(androidReleaseWorkflowSource, /needs: \[detect, gates\]/, "the APK build must wait for every quality gate");
+assert.match(androidReleaseWorkflowSource, /needs: \[detect, build-apk, emulator-smoke\]/, "publication must wait for the emulator smoke");
+assert.match(androidReleaseWorkflowSource, /apksigner/);
+assert.match(androidReleaseWorkflowSource, /assetlinks\.json/);
+assert.match(androidReleaseWorkflowSource, /Prizm Mobile v\$\{VERSION\} \(\$\{SHORT_SHA\}\)/, "lib/updates.ts parses the short SHA in parentheses");
 assert.match(androidReleaseWorkflowSource, /gradle\/actions\/setup-gradle@v4/);
 assert.match(androidReleaseWorkflowSource, /npm ci --no-audit --no-fund --legacy-peer-deps/);
 assert.match(androidReleaseWorkflowSource, /assembleRelease --build-cache/);

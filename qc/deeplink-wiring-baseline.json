@@ -1,0 +1,722 @@
+{
+  "schema": 1,
+  "entries": [
+    {
+      "key": "app-link #activityid={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link #postid={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link #resource={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link https://ms.prizm-energy.com/MS/admin/przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link https://ms.prizm-energy.com/MS/admin/timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/Department_budget/view/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/manage_relocation_requests",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/manage_settings?group=approval_stages",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/manage_settings?group=approval_statuses",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/request_advance_cash/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/request_advance_cash/{id}?status=2&action=view",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/request_advance_cash/{id}?status=4&action=view",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/request_advance_cash/{id}?status=6&action=view",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/view_budget/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/view_budget/{id}?group=budget_discussions&discussion_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/view_deployment/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prizmbudget/view_resource_request/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prz_approvals/delegations",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prz_approvals/reassign/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link prz_approvals/reassign/{id}?project_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link przdataops/dataops/vto_monitor#vto-local-release-watch",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link przdataops/dataops/vto_monitor#vto-model-library",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link recruitment/recruitment_portal/applied_jobs",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link recruitment/recruitment_portal/interview_schedules",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link rfq/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link rfq2/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link tenders/show_tender/{id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "app-link timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "ERP_HOME_FALLBACK",
+        "RECORD_ID_LOST"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval #activityid={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval #postid={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval #resource={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval https://ms.prizm-energy.com/MS/admin/przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval https://ms.prizm-energy.com/MS/admin/timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/Department_budget/view/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/manage_relocation_requests",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/manage_settings?group=approval_stages",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/manage_settings?group=approval_statuses",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/request_advance_cash/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/request_advance_cash/{id}?status=2&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/request_advance_cash/{id}?status=4&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/request_advance_cash/{id}?status=6&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/view_budget/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/view_budget/{id}?group=budget_discussions&discussion_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/view_deployment/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prizmbudget/view_resource_request/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prz_approvals/delegations",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prz_approvals/reassign/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval prz_approvals/reassign/{id}?project_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval przdataops/dataops/vto_monitor#vto-local-release-watch",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval przdataops/dataops/vto_monitor#vto-model-library",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval recruitment/recruitment_portal/applied_jobs",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval recruitment/recruitment_portal/interview_schedules",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval rfq/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval rfq2/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval tenders/show_tender/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "approval timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification #activityid={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification #postid={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification #resource={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification https://ms.prizm-energy.com/MS/admin/przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification https://ms.prizm-energy.com/MS/admin/timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/Department_budget/view/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/manage_relocation_requests",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/manage_settings?group=approval_stages",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/manage_settings?group=approval_statuses",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/request_advance_cash/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/request_advance_cash/{id}?status=2&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/request_advance_cash/{id}?status=4&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/request_advance_cash/{id}?status=6&action=view",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/view_budget/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/view_budget/{id}?group=budget_discussions&discussion_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/view_deployment/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prizmbudget/view_resource_request/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prz_approvals/delegations",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prz_approvals/reassign/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification prz_approvals/reassign/{id}?project_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification przdataops/dataops/vto_monitor#vto-local-release-watch",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification przdataops/dataops/vto_monitor#vto-model-library",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification przpurchase/suppliers/smart_add/summary?batch_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification recruitment/recruitment_portal/applied_jobs",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification recruitment/recruitment_portal/interview_schedules",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification rfq/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification rfq2/rfq/rfq/{id}/0/1/1/",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification tenders/show_tender/{id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification timesheets/requisition_manage?tab=additional_timesheets&additional_timesheets_id={id}",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
+      "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    }
+  ]
+}

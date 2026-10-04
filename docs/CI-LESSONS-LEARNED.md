@@ -14,6 +14,8 @@
 | 2 | 2026-05-29 | `614aece`, `6ac72ab` | Untracked dependency files | CI fails at "TypeScript check" | `17ea33f`, `54bc837` |
 | 3 | 2026-05-29 | `614aece` QC report | **Rubber-stamp QC** — `tsc --noEmit` ≠ functional test | 6 defects found post-deploy | 6 fix commits |
 | 4 | 2026-05-29 | — | **Version desync** — `app.json: 1.8.0`, `package.json: 1.8.2`, `versionCode` not bumped | APK shows wrong version; WhatsNew modal shows stale release notes | `app.json` synced to 1.8.2, versionCode 18→19, WhatsNewModal now reads CHANGELOG.json directly |
+| 5 | 2026-10-04 | `feb73f6` | **No PR gates** — the only workflow was manual, so `test:contracts` was never run on PRs | `test:contracts` broken on `main` for 6 weeks (stale biometric API calls, unstubbed import); `test:admin-parity` pointed at a missing worktree | Quality Gates workflow on every PR/push; scripts accept `PRIZM_BACKEND_WORKSPACE` |
+| 6 | 2026-10-04 | — | **Routing verified by eye, not by backend source** | Leave approvals, delivery notes, received vouchers opened the ERP home; `materials/Items` and `prizmbudget/*` links opened records from another table; legacy RFQ links opened RFQ #1 | `test-deeplink-wiring` reads every backend link each run; record links pinned in `qc/record-link-contracts.json` |
 
 ---
 

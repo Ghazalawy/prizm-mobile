@@ -4,7 +4,7 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 const workspace = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
-const backend = path.resolve(process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-admin-parity"));
+const backend = path.resolve(process.env.PRIZM331_SOURCE_ROOT || process.env.PRIZM_BACKEND_WORKSPACE || path.join(workspace, "..", "prizm331-wt-mobile-admin-parity"));
 const read = (root, relative) => fs.readFileSync(path.join(root, relative), "utf8");
 const registry = read(workspace, "lib/module-registry.ts");
 const detail = read(workspace, "components/crud/CrudDetailScreen.tsx");

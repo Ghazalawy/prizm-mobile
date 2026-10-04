@@ -1,0 +1,165 @@
+{
+  "schema": 1,
+  "contracts": [
+    {
+      "template": "#leadid={id}",
+      "screen": "app/(tabs)/leads/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "#taskid={id}",
+      "screen": "app/(tabs)/tasks/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "clients/client/{id}?group=attachments",
+      "screen": "app/(tabs)/customers/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "contracts/contract/{id}",
+      "screen": "app/(tabs)/contracts/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "costcenters/view/{id}",
+      "screen": "app/(tabs)/erp/cost_centers/[id]",
+      "evidence": "Verified 2026-10-04: web Costcenters::view -> costcenters_model->get and mobile Cost_centers_api both read tblcostcenters."
+    },
+    {
+      "template": "estimate_request/view/{id}",
+      "screen": "app/(tabs)/erp/estimate_requests/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "estimates/list_estimates/{id}",
+      "screen": "app/(tabs)/estimates/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "gatepass/RequestManager/view/{id}",
+      "screen": "app/(tabs)/erp/gatepass_requests/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "hr_profile/member/{id}/training",
+      "screen": "app/(tabs)/erp/staff/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "https://ms.prizm-energy.com/MS/admin/timesheets/requisition_detail/{id}",
+      "screen": "app/(tabs)/approvals/leave/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "materials/Items/view/{id}#item_review",
+      "screen": "app/(tabs)/erp/budget_items/[id]",
+      "evidence": "Verified 2026-10-04: web Items::view -> Items_model::get_item_details reads tblprizmbudget_items; mobile budget_items -> budget_api/items reads tblprizmbudget_items. (Previously routed to the materials module = tblmaterials: wrong record.)"
+    },
+    {
+      "template": "opportunities/view/{id}",
+      "screen": "app/(tabs)/opportunities/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "opportunities/view/{id}?group=opportunity_discussions&discussion_id={id}",
+      "screen": "app/(tabs)/opportunities/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "payments/payment/{id}",
+      "screen": "app/(tabs)/erp/payments/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "prizmsubscription/edit_subscription/{id}",
+      "screen": "app/(tabs)/erp/documents/[id]",
+      "evidence": "Verified 2026-10-04: web Prizmsubscription::edit_subscription and mobile documents -> dms_api both read tbl_subscriptions."
+    },
+    {
+      "template": "projects/view/{id}",
+      "screen": "app/(tabs)/projects/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "projects/view/{id}?group=project_discussions&discussion_id={id}",
+      "screen": "app/(tabs)/projects/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "projects/view/{id}?group=project_files&file_id={id}",
+      "screen": "app/(tabs)/projects/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "proposals/list_proposals/{id}",
+      "screen": "app/(tabs)/proposals/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "przpurchase/ag_view_purchase_request/{id}",
+      "screen": "app/(tabs)/approvals/purchase_request/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "przpurchase/Delivery_Notes/view_delivery_note/{id}",
+      "screen": "app/(tabs)/erp/purchase_delivery_notes/[id]",
+      "evidence": "Verified 2026-10-04: web Delivery_model::get_delivery_detail reads tblprz_delivery_note; mobile purchase_api delivery_notes reads prz_delivery_note."
+    },
+    {
+      "template": "przpurchase/Expense_Request/view_expense_request/{id}",
+      "screen": "app/(tabs)/approvals/expense_request/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "przpurchase/Payment_request/view_payment_request/{id}",
+      "screen": "app/(tabs)/approvals/payment_request/[id]",
+      "evidence": "Verified 2026-08-02 (QC 26024): web Payment_Request controller and purchase_api/payment_requests/{id}/approval both read tblprz_payment_request by id."
+    },
+    {
+      "template": "przpurchase/PurOrder/ag_view_purchase_order/{id}",
+      "screen": "app/(tabs)/approvals/purchase_order/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "przpurchase/PurOrder/view_purchase_order/{id}",
+      "screen": "app/(tabs)/approvals/purchase_order/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "przpurchase/Received_Vouchers/view_voucher/{id}",
+      "screen": "app/(tabs)/erp/purchase_received_vouchers/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "quotations/list_quotations/{id}",
+      "screen": "app/(tabs)/erp/purchase_quotations/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "technicalinquiries/view/{id}",
+      "screen": "app/(tabs)/erp/technical_inquiries/[id]",
+      "evidence": "Verified 2026-10-04: web Technicalinquiries::view -> get_technicalinquiry; mobile technical_inquiries API reads tbltechnicalinquiries."
+    },
+    {
+      "template": "technicalinquiries/view/{id}?group=technicalinquiry_discussions&discussion_id={id}",
+      "screen": "app/(tabs)/erp/technical_inquiries/[id]",
+      "evidence": "Verified 2026-10-04: same entity as technicalinquiries/view/{id} (tbltechnicalinquiries)."
+    },
+    {
+      "template": "tickets/ticket/{id}",
+      "screen": "app/(tabs)/tickets/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "timesheets/requisition_detail/{id}",
+      "screen": "app/(tabs)/approvals/leave/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    },
+    {
+      "template": "utilities/calendar?eventid={id}",
+      "screen": "app/(tabs)/calendar/[id]",
+      "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
+    }
+  ]
+}

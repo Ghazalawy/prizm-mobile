@@ -19,7 +19,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { API_URL, staffAvatarUrl } from "@/lib/config";
 import { buildAuthHeaders, parseApiResponse } from "@/lib/api";
 import { getSessionGeneration } from "@/lib/auth-events";
-import { navigateInAppOrExternalLink } from "@/lib/native-routing";
+import { navigateInAppOrExternalLink, routeForInboxItem } from "@/lib/native-routing";
 import { useEffectiveUser } from "@/lib/effective-user";
 import { rtlTextStyle } from "@/lib/rtl";
 import { colors as prizmColors } from "@/lib/theme";
@@ -189,7 +189,7 @@ function InboxRow({
   const handleTap = () => {
     markRead(inboxKey(item.type, item.id));
     onItemRead?.(item);
-    const link = item.deeplink;
+    const link = routeForInboxItem(item);
     if (!link) {
       onClose();
       return;
@@ -308,7 +308,7 @@ function InboxRow({
             </View>
           ) : null}
         </View>
-        {item.deeplink ? (
+        {routeForInboxItem(item) ? (
           <Ionicons name="chevron-forward" size={16} color="#94A3B8" />
         ) : null}
       </View>

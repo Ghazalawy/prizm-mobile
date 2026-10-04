@@ -1,0 +1,18 @@
+{
+  "schema": 1,
+  "description": "What the unattended weekly sync may do on its own. autosync/* branches cannot change this file (scripts/check-qc-ratchet.mjs); edit it yourself to widen or narrow autonomy.",
+  "mobile": {
+    "autoMerge": true,
+    "maxFeatureItemsPerRun": 5,
+    "minBaselineBurnDownPerRun": 3
+  },
+  "backend": {
+    "openPullRequests": true,
+    "autoMerge": false,
+    "autoDeploy": false,
+    "reason": "Backend changes go to the shared production ERP (web + mobile, whole company) and this cloud environment cannot reach production to verify them. Flip autoMerge/autoDeploy to true to let the loop merge its own green PrizmIT/prizm331 PRs and run 'Deploy On Demand'."
+  },
+  "notify": {
+    "weeklyIssue": true
+  }
+}

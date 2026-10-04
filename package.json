@@ -1,6 +1,6 @@
 {
   "name": "prizm-mobile",
-  "version": "1.18.1",
+  "version": "1.18.2",
   "main": "expo-router/entry",
   "scripts": {
     "postinstall": "patch-package",
@@ -15,6 +15,13 @@
     "test:crud-contracts": "node scripts/audit-crud-contracts.mjs",
     "test:list-contracts": "node scripts/audit-list-contracts.mjs",
     "verify:release": "node scripts/verify-release-metadata.mjs",
+    "test:deeplinks": "node scripts/test-deeplink-wiring.mjs",
+    "test:deeplink-regressions": "node scripts/test-deeplink-regressions.mjs",
+    "test:live-smoke": "node scripts/smoke-live-api.mjs",
+    "check:version-bump": "node scripts/check-version-bump.mjs",
+    "check:qc-ratchet": "node scripts/check-qc-ratchet.mjs",
+    "diff:web-surface": "node scripts/diff-web-surface.mjs",
+    "qc:all": "npm run verify:release && npx tsc --noEmit -p tsconfig.json && npm run test:biometric && npm run test:deeplink-regressions && npm run test:deeplinks && npm run test:contracts && npm run test:crud-contracts && npm run test:list-contracts && npm run test:admin-parity",
     "release:android:local": "powershell -NoProfile -ExecutionPolicy Bypass -File scripts/release-android-local.ps1"
   },
   "dependencies": {

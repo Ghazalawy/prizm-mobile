@@ -2,6 +2,19 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.18.2",
+      "date": "2026-10-04",
+      "title": "Notifications open the right screen",
+      "highlights": [
+        "Leave approval notifications open the leave approval screen instead of the ERP home.",
+        "Delivery Note and Received Voucher approvals now open the record you were notified about.",
+        "Item catalogue notifications open that item; before, they could show an unrelated material.",
+        "Calendar reminders open the event; cost-center and training notifications open their record.",
+        "Links to features not yet on mobile (advance cash, budgets, old RFQs) no longer open a wrong record.",
+        "Tapping a pending leave request in the Action Center now opens it for approval."
+      ]
+    },
+    {
       "version": "1.18.1",
       "date": "2026-08-24",
       "title": "Fingerprint sign-in restored after sign-out",

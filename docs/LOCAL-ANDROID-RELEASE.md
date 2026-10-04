@@ -1,5 +1,15 @@
 # Local Android release
 
+> **Superseded as the primary path (2026-10-04).** Releases are now built by
+> the **Release APK** workflow on every version bump merged to `main`, after
+> all quality gates, a signer check and an emulator smoke. The repository is
+> public, so standard GitHub-hosted runner minutes are not billed. CI
+> publishes one `v<version>` release per version, marked latest.
+>
+> The local script below still uploads to the old rolling `latest` tag and
+> re-marks it latest. Use it only when CI is unavailable, and expect the next
+> CI release to take "latest" back.
+
 The production APK is intentionally not built on every push. The GitHub workflow is a manual, cached fallback. The normal release path builds on the Windows workstation and uploads the verified APK directly to the rolling GitHub Release, consuming zero GitHub-hosted Actions minutes.
 
 ## Safety contract

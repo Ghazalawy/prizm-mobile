@@ -87,8 +87,9 @@ if (!baseContracts) {
   for (const contract of after) {
     const old = before.get(contract.template);
     if (old && old.screen === contract.screen) continue;
-    if (!/^Verified /.test(contract.evidence || "")) {
-      errors.push(`qc/record-link-contracts.json: "${contract.template}" ${old ? `moved ${old.screen} -> ${contract.screen}` : "added"} without "Verified ..." evidence naming the web controller/model and the mobile endpoint tables`);
+    const reusedEvidence = old && old.evidence === contract.evidence;
+    if (!/^Verified /.test(contract.evidence || "") || reusedEvidence) {
+      errors.push(`qc/record-link-contracts.json: "${contract.template}" ${old ? `moved ${old.screen} -> ${contract.screen}` : "added"} without new "Verified ..." evidence naming the web controller/model and the mobile endpoint tables`);
     }
   }
 }

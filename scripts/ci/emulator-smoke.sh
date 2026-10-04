@@ -14,6 +14,7 @@ alive() { adb shell pidof "$PKG" >/dev/null 2>&1; }
 fail() { echo "::error::$1"; adb logcat -d > "$LOG" || true; exit 1; }
 
 adb wait-for-device
+# shellcheck disable=SC2016  # expands on the device, not on the runner
 adb shell 'while [ "$(getprop sys.boot_completed)" != "1" ]; do sleep 2; done'
 adb install -r -g "$APK" || fail "APK did not install"
 adb logcat -c

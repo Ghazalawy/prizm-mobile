@@ -118,10 +118,13 @@ jobs:
           node-version: 20
       - name: Resolve diff base and source branch
         id: base
+        env:
+          # Branch names are attacker-controlled text; never interpolate them into the script.
+          HEAD_REF: ${{ github.head_ref }}
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
-            echo "branch=${{ github.head_ref }}" >> "$GITHUB_OUTPUT"
+            printf 'branch=%s\n' "$HEAD_REF" >> "$GITHUB_OUTPUT"
           else
             BEFORE="${{ github.event.before }}"
             if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then BEFORE="$(git rev-parse HEAD~1)"; fi

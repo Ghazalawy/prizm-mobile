@@ -22,6 +22,9 @@
  *      PRIZM_API_URL (default https://ms.prizm-energy.com/MS/api)
  * Flags: --allow-missing-credentials  (local only; CI must never pass it)
  *        --prune                       drop fixed entries from the baseline
+ *        --bootstrap-baseline "<reason>"  one-time seeding while
+ *                                      qc/live-smoke-baseline.json does not exist
+ *                                      (module sweep only; tap failures never)
  *        --json <file>
  */
 import fs from "node:fs";
@@ -103,7 +106,10 @@ function classify(res, { expectId } = {}) {
   if (res.status === 403) return { code: "forbidden" };
   const message = sanitize(res.json?.message || res.json?.error || "");
   if (res.status === 404) {
-    if (/unknown (api )?method|not found\.?$/i.test(message) && !expectId) return { code: "ENDPOINT_MISSING", detail: `404 ${message}` };
+    // "Unknown method" means the route is absent from the deployed backend;
+    // any other 404 on a record the list just returned is the Payment Request
+    // class of defect (API read path differs from the web's).
+    if (/unknown (api )?method|unknown method/i.test(message)) return { code: "ENDPOINT_MISSING", detail: `404 ${message}` };
     return { code: expectId ? "DETAIL_NOT_FOUND" : "ENDPOINT_MISSING", detail: `404 ${message}` };
   }
   if (res.status >= 500) return { code: "SERVER_ERROR", detail: `${res.status} ${message || sanitize(res.text)}` };
@@ -255,6 +261,23 @@ const stale = baseline.entries.filter((entry) => okNow.has(entry.key) && failing
 
 if (args.includes("--json")) {
   fs.writeFileSync(args[args.indexOf("--json") + 1], JSON.stringify({ tapChecks, tapFailures, tapWarnings, sweep, stale }, null, 2));
+}
+if (args.includes("--bootstrap-baseline")) {
+  const reason = args[args.indexOf("--bootstrap-baseline") + 1];
+  if (fs.existsSync(BASELINE_FILE)) {
+    console.error("Baseline already exists; bootstrap is one-time. Fix failures or let the weekly sync defer them with a reason.");
+    process.exit(2);
+  }
+  if (!reason || reason.startsWith("--") || reason.length < 20) {
+    console.error("--bootstrap-baseline needs a reason of at least 20 characters.");
+    process.exit(2);
+  }
+  const statePath = path.join(mobileWorkspace, "autosync", "state.json");
+  const since = fs.existsSync(statePath) ? JSON.parse(fs.readFileSync(statePath, "utf8")).backend?.syncedSha ?? null : null;
+  const entries = sweepFailures.map((item) => ({ key: item.key, code: item.code, reason, since }));
+  fs.writeFileSync(BASELINE_FILE, `${JSON.stringify({ schema: 1, entries }, null, 2)}\n`);
+  console.log(`Seeded ${entries.length} module-sweep failures. Tap failures (${tapFailures.length}) are never baselined.`);
+  process.exit(tapFailures.length ? 1 : 0);
 }
 if (args.includes("--prune")) {
   baseline.entries = baseline.entries.filter((entry) => !stale.includes(entry));

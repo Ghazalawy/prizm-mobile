@@ -163,7 +163,8 @@ jobs:
         run: |
           mkdir -p out
           cp android/app/build/outputs/apk/release/app-release.apk out/prizm-mobile.apk
-          APKSIGNER="$(ls -d "$ANDROID_HOME"/build-tools/*/ | sort -V | tail -1)apksigner"
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          [ -x "$APKSIGNER" ] || { echo "::error::apksigner not found under $ANDROID_HOME/build-tools"; exit 1; }
           EXPECTED="$(jq -r '.[0].target.sha256_cert_fingerprints[0]' public/.well-known/assetlinks.json | tr -d ':' | tr 'A-F' 'a-f')"
           ACTUAL="$("$APKSIGNER" verify --print-certs out/prizm-mobile.apk | sed -n 's/.*certificate SHA-256 digest: *\([0-9a-fA-F]\{64\}\).*/\1/p' | head -1 | tr 'A-F' 'a-f')"
           if [ "$ACTUAL" != "$EXPECTED" ]; then

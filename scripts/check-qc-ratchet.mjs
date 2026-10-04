@@ -55,8 +55,21 @@ const pinMoved = Boolean(headPin && headPin !== basePin);
 
 // 1. Baselines only shrink.
 for (const file of ["qc/deeplink-wiring-baseline.json", "qc/live-smoke-baseline.json"]) {
-  const before = readJson(baseRef, file, { entries: [] });
+  const beforeDoc = readJson(baseRef, file, null);
   const after = readJson(headRef, file, { entries: [] });
+  const everExisted = git("log", baseRef, "--format=%H", "-1", "--", file).trim() !== "";
+  if (!beforeDoc && after.entries.length && (everExisted || branch.startsWith("autosync/"))) {
+    errors.push(`${file}: re-creating a baseline${branch.startsWith("autosync/") ? " from an automated branch" : " that existed before"} is not a bootstrap — fix the defects instead`);
+    continue;
+  }
+  if (!beforeDoc && after.entries.length) {
+    // First appearance of a baseline is its bootstrap; from then on it only shrinks.
+    const unexplained = after.entries.filter((entry) => !entry.reason || entry.reason.length < 20);
+    if (unexplained.length) errors.push(`${file}: bootstrap entries need a reason (>= 20 chars): ${unexplained.slice(0, 5).map((e) => e.key).join(", ")}`);
+    notes.push(`${file}: bootstrapped with ${after.entries.length} known gap(s)`);
+    continue;
+  }
+  const before = beforeDoc ?? { entries: [] };
   const pairs = (doc) => new Set(doc.entries.flatMap((entry) =>
     (entry.codes ?? [entry.code]).map((code) => `${entry.key}\u0000${code}`)));
   const beforePairs = pairs(before);
@@ -107,6 +120,7 @@ const QC_INFRA = [
   /^\.github\/workflows\//,
   /^docs\/autosync\/QC-PHILOSOPHY\.md$/,
   /^docs\/autosync\/WEEKLY-SYNC-PLAYBOOK\.md$/,
+  /^docs\/autosync\/SETUP\.md$/,
   /^autosync\/policy\.json$/,
 ];
 const changed = git("diff", "--name-only", `${baseRef}...${headRef}`).split("\n").filter(Boolean);

@@ -55,6 +55,13 @@ Open issues titled `Release blocked on release PC: …` are priority 1: the last
 merged version never reached staff. Read the log tail in the issue, fix the
 cause on this run's branch, and reference the issue in the PR.
 
+Also compare `main`'s `package.json` version with the latest release of
+`Ghazalawy/prizm-mobile-releases` (attach it with read access). If `main` is
+ahead and the merge is more than 24 h old with no "Release blocked" issue, the
+release PC is not running (off, task not scheduled, or not set up). Report it
+at the top of the weekly issue as "release PC not publishing" — it needs a
+person at the DSO PC; nothing in this session can build or publish an APK.
+
 
 `git -C /home/user/prizm331 checkout --detach "$PIN"`, then `npm run qc:all`.
 It must be green.

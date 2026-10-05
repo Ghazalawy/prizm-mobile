@@ -676,7 +676,7 @@ export const MODULES: ModuleDefinition[] = [
       ...shippingFields,
     ],
     tabs: [
-      { key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "customers/contacts?customer_id={id}", createDefaults: { customer_id: "{id}" } },
+      { key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "customers/contacts?customer_id={id}", canCreate: false },
       { key: "invoices", title: "Invoices", moduleKey: "invoices", endpointTemplate: "invoices?clientid={userid}", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
       { key: "estimates", title: "Estimates", moduleKey: "estimates", endpointTemplate: "estimates?clientid={userid}", childField: "clientid", parentField: "userid", createDefaults: { clientid: "{id}" } },
       { key: "proposals", title: "Proposals", moduleKey: "proposals", endpointTemplate: "proposals?rel_id={userid}", childField: "rel_id", parentField: "userid", fixedFilters: { rel_type: "customer" }, createDefaults: { rel_id: "{id}", rel_type: "customer" } },
@@ -708,13 +708,19 @@ export const MODULES: ModuleDefinition[] = [
     sortableFields: ["lastname", "firstname", "email", "company", "datecreated", "active", "id"],
     filterableFields: ["customer_id", "firstname", "lastname", "email", "phonenumber", "title", "is_primary", "active", "datecreated"],
     filterRules: { active: { ruleType: "MultiSelectRule" } },
+    // View-only: contacts are client-portal logins and Prizm gives customers
+    // no system access (BUILD_FLAGS.customerContactWrites, lib/write-policy.ts).
+    canCreate: false,
+    canUpdate: false,
+    canDelete: false,
     fields: [
       { key: "customer_id", label: "Customer", section: "Contact", type: "number", relation: "customer", required: true },
       { key: "firstname", label: "First Name", section: "Contact", required: true },
       { key: "lastname", label: "Last Name", section: "Contact", required: true },
       { key: "email", label: "Email", section: "Contact", type: "email", required: true },
-      { key: "password", label: "Password", section: "Portal", type: "password", requiredOnCreateUnless: "send_set_password_email" },
-      { key: "send_set_password_email", label: "Email a secure password setup link", section: "Portal", type: "boolean" },
+      // Portal login fields disabled with the contact-write feature:
+      // { key: "password", label: "Password", section: "Portal", type: "password", requiredOnCreateUnless: "send_set_password_email" },
+      // { key: "send_set_password_email", label: "Email a secure password setup link", section: "Portal", type: "boolean" },
       { key: "title", label: "Title", section: "Contact" },
       { key: "phonenumber", label: "Phone", section: "Contact", type: "phone" },
       { key: "is_primary", label: "Primary", section: "Portal", type: "boolean" },
@@ -727,18 +733,19 @@ export const MODULES: ModuleDefinition[] = [
       { key: "ticket_emails", label: "Ticket Emails", section: "Notifications", type: "boolean" },
       { key: "task_emails", label: "Task Emails", section: "Notifications", type: "boolean" },
     ],
-    actions: [
-      {
-        key: "change_status",
-        title: "Change active status",
-        icon: "toggle-outline",
-        endpointTemplate: "contacts/{id}/status",
-        method: "PUT",
-        requiresConfirm: false,
-        fields: [{ key: "status", label: "Status", type: "select", required: true, options: statusOptions }],
-        successMessage: "Contact status updated.",
-      },
-    ],
+    // Activating a contact enables its client-portal login — disabled.
+    // actions: [
+    //   {
+    //     key: "change_status",
+    //     title: "Change active status",
+    //     icon: "toggle-outline",
+    //     endpointTemplate: "contacts/{id}/status",
+    //     method: "PUT",
+    //     requiresConfirm: false,
+    //     fields: [{ key: "status", label: "Status", type: "select", required: true, options: statusOptions }],
+    //     successMessage: "Contact status updated.",
+    //   },
+    // ],
   },
   {
     key: "leads",

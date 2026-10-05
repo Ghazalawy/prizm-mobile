@@ -58,10 +58,12 @@ const routing = loadTypeScriptModule("lib/native-routing.ts", {
 const nativeIntent = loadTypeScriptModule("app/+native-intent.ts", {
   "../lib/native-routing": routing,
 });
+const biometricPolicy = loadTypeScriptModule("lib/biometric-policy.ts");
 const secureValues = new Map();
 const secureOptions = new Map();
 let biometricPromptOptions = null;
 const biometric = loadTypeScriptModule("lib/biometric.ts", {
+  "./biometric-policy": biometricPolicy,
   "expo-local-authentication": {
     hasHardwareAsync: async () => true,
     isEnrolledAsync: async () => true,
@@ -101,22 +103,23 @@ assert.equal(taskRelationSummary({ rel_type: "project", rel_id: "42", rel_name: 
 
 await biometric.saveBiometricCredentials("qa@prizm-energy.com", "device-secret");
 assert.equal(await biometric.isBiometricAvailable(), true);
-assert.equal(await biometric.isBiometricEnabled(), true);
+assert.equal(await biometric.isBiometricOptedIn(), true);
 assert.equal(await biometric.hasBiometricCredentials(), true);
 assert.equal(secureOptions.get("set:prizm_biometric_credentials")?.requireAuthentication, true);
 assert.equal(
   secureOptions.get("set:prizm_biometric_credentials")?.keychainAccessible,
   "when-unlocked-this-device-only",
 );
-assert.deepEqual(await biometric.getBiometricCredentials(), {
-  email: "qa@prizm-energy.com",
-  password: "device-secret",
+assert.deepEqual(await biometric.unlockBiometricCredentials(), {
+  ok: true,
+  credentials: { email: "qa@prizm-energy.com", password: "device-secret" },
 });
 assert.equal(secureOptions.get("get:prizm_biometric_credentials")?.requireAuthentication, true);
 assert.equal(await biometric.promptBiometric(), true);
 assert.equal(biometricPromptOptions?.disableDeviceFallback, false);
 assert.equal(await biometric.keepBiometricCredentialsForAccount("other@prizm-energy.com"), false);
 assert.equal(await biometric.hasBiometricCredentials(), false, "cross-account login must clear the old fingerprint vault");
+assert.equal(await biometric.isBiometricOptedIn(), true, "clearing a foreign vault must keep the fingerprint opt-in");
 
 const serialized = serializePerfexFilterGroup({
   match_type: "or",
@@ -619,7 +622,9 @@ assert.match(otpSourcesBlock, /submitAsArray: true/);
 assert.match(relationPickerSource, /endpoint: "otpmanager\/sources"/);
 
 const backendWorkspace = path.resolve(
-  process.env.PRIZM331_SOURCE_ROOT || path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
+  process.env.PRIZM331_SOURCE_ROOT ||
+    process.env.PRIZM_BACKEND_WORKSPACE ||
+    path.join(workspace, "..", "prizm331-wt-mobile-parity-next"),
 );
 assert.ok(
   fs.existsSync(path.join(backendWorkspace, "modules/api/controllers")),
@@ -734,6 +739,40 @@ const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
 assert.match(contactsBlock, /sortableFields:/);
+// Customer contacts are client-portal logins; Prizm gives customers no system
+// access. The app must never create, edit, activate or delete one, and must
+// never ship a shared default password again (one was public in source).
+assert.match(contactsBlock, /canCreate: false/);
+assert.match(contactsBlock, /canUpdate: false/);
+assert.match(contactsBlock, /canDelete: false/);
+assert.doesNotMatch(contactsBlock, /^\s*\{ key: "(?:password|send_set_password_email)"/m, "portal login fields must stay disabled");
+assert.doesNotMatch(contactsBlock, /^\s*actions: \[/m, "contact status (portal activation) action must stay disabled");
+assert.match(registrySource, /\{ key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "customers\/contacts\?customer_id=\{id\}", canCreate: false \}/);
+const buildInfoSource = fs.readFileSync(path.join(workspace, "lib/build-info.ts"), "utf8");
+assert.match(buildInfoSource, /customerContactWrites: false/);
+const writePolicy = loadTypeScriptModule("lib/write-policy.ts", { "./build-info": { BUILD_FLAGS: { customerContactWrites: false } } });
+for (const [endpoint, method] of [["contacts", "POST"], ["customers/contacts", "POST"], ["customers/contacts", "PUT"], ["customers/contacts", "DELETE"], ["contacts/12", "DELETE"], ["contacts/12/status", "PUT"]]) {
+  assert.equal(writePolicy.blockedWriteReason(endpoint, method), writePolicy.CUSTOMER_CONTACT_WRITES_DISABLED_MESSAGE, `${method} ${endpoint} must be blocked`);
+}
+for (const [endpoint, method] of [["contacts/detail/12", "GET"], ["customers/contacts?customer_id=4", undefined], ["purchase_api/vendor_contacts/3", "POST"], ["dewa_contacts_api", "POST"], ["tasks", "POST"]]) {
+  assert.equal(writePolicy.blockedWriteReason(endpoint, method), null, `${method ?? "GET"} ${endpoint} must stay allowed`);
+}
+assert.match(fs.readFileSync(path.join(workspace, "lib/api.ts"), "utf8"), /const blocked = blockedWriteReason\(endpoint, options\.method\);/);
+const customerScreenSource = fs.readFileSync(path.join(workspace, "components/customers/CustomerDetailScreen.tsx"), "utf8");
+assert.match(customerScreenSource, /const CONTACT_WRITES = BUILD_FLAGS\.customerContactWrites;/);
+for (const dir of ["app", "components", "lib"]) {
+  const stack = [path.join(workspace, dir)];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (/\.(tsx?|jsx?)$/.test(entry.name)) {
+        assert.doesNotMatch(fs.readFileSync(full, "utf8"), /\bpassword\s*:\s*["'][^"']{4,}["']/, `hardcoded password literal in ${path.relative(workspace, full)}`);
+      }
+    }
+  }
+}
 const contactsApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Contacts.php"), "utf8");
 assert.match(contactsApiSource, /function global_list_get/);
 assert.match(contactsApiSource, /api_apply_advanced_filters/);
@@ -1297,15 +1336,33 @@ assert.doesNotMatch(registrySource, /key: "task_template_(?:groups|tasks|milesto
 assert.doesNotMatch(registrySource, /key: "(?:product_families|client_items)"/);
 assert.doesNotMatch(materialsApiSource, /function (?:product_families|client_items)_/);
 
-// A push to main must never spend 20+ hosted minutes implicitly. The release
-// workflow is a manual cached fallback; normal publication is local, signer-
-// verified, emulator-smoke-tested, and requires an explicit -Publish switch.
+// Private repository: hosted minutes are billed. Building, publishing and the
+// full gate suite never run implicitly on GitHub; the release PC does them
+// (scripts/release-android-watch.ps1 -> release-android-local.ps1). The manual
+// fallback keeps the same contract: every gate, signer check, emulator smoke.
 const androidReleaseWorkflowSource = fs.readFileSync(
   path.join(workspace, ".github/workflows/build-and-deploy.yml"),
   "utf8",
 );
 assert.match(androidReleaseWorkflowSource, /workflow_dispatch:/);
-assert.doesNotMatch(androidReleaseWorkflowSource, /^\s{2}push:/m);
+assert.doesNotMatch(androidReleaseWorkflowSource, /^\s{2}(?:push|pull_request|schedule):/m, "a push must never spend hosted build minutes");
+assert.match(androidReleaseWorkflowSource, /RELEASE_REPO: Ghazalawy\/prizm-mobile-releases/);
+assert.match(androidReleaseWorkflowSource, /gh release view "\$TAG"/, "an existing version must not be rebuilt");
+assert.match(androidReleaseWorkflowSource, /if: needs\.detect\.outputs\.release == 'true'/);
+assert.match(androidReleaseWorkflowSource, /uses: \.\/\.github\/workflows\/quality-gates\.yml/);
+assert.match(androidReleaseWorkflowSource, /needs: \[detect, gates\]/, "the APK build must wait for every quality gate");
+assert.match(androidReleaseWorkflowSource, /needs: \[detect, build-apk, emulator-smoke\]/, "publication must wait for the emulator smoke");
+assert.match(androidReleaseWorkflowSource, /apksigner/);
+assert.match(androidReleaseWorkflowSource, /assetlinks\.json/);
+assert.match(androidReleaseWorkflowSource, /Prizm Mobile v\$\{VERSION\} \(\$\{SHORT_SHA\}\)/, "lib/updates.ts parses the short SHA in parentheses");
+const qualityGatesWorkflowSource = fs.readFileSync(path.join(workspace, ".github/workflows/quality-gates.yml"), "utf8");
+assert.doesNotMatch(qualityGatesWorkflowSource, /^\s{2}(?:push|pull_request|schedule):/m, "the full gate suite runs on the release PC and in the sync session, not on hosted minutes");
+const qcIntegrityWorkflowSource = fs.readFileSync(path.join(workspace, ".github/workflows/qc-integrity.yml"), "utf8");
+assert.match(qcIntegrityWorkflowSource, /pull_request:/);
+assert.doesNotMatch(qcIntegrityWorkflowSource, /npm (?:ci|install)/, "the per-PR hosted check must stay install-free");
+const updatesSource = fs.readFileSync(path.join(workspace, "lib/updates.ts"), "utf8");
+assert.match(updatesSource, /RELEASE_REPO = "Ghazalawy\/prizm-mobile-releases"/, "a private source repo answers 404 to the anonymous update check");
+assert.match(updatesSource, /repos\/\$\{RELEASE_REPO\}\/releases\/latest/);
 assert.match(androidReleaseWorkflowSource, /gradle\/actions\/setup-gradle@v4/);
 assert.match(androidReleaseWorkflowSource, /npm ci --no-audit --no-fund --legacy-peer-deps/);
 assert.match(androidReleaseWorkflowSource, /assembleRelease --build-cache/);
@@ -1324,7 +1381,14 @@ for (const safetyGate of [
   /sdk\.dir=/,
   /apksigner/,
   /Payment_Request\/view_payment_request\/1211/,
-  /gh release upload latest/,
+  /prizm-mobile-releases/,
+  /gh release create \$tag/,
+  /worktree add --detach/,
+  /npm run test:deeplinks/,
+  /npm run test:deeplink-regressions/,
+  /node scripts\/smoke-live-api\.mjs \}/,
+  /check-version-bump\.mjs \$previousSha/,
+  /check-qc-ratchet\.mjs \$previousSha/,
 ]) {
   assert.match(localAndroidReleaseSource, safetyGate);
 }

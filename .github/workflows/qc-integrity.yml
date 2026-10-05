@@ -1,0 +1,39 @@
+name: QC Integrity
+
+# The one hosted check that runs on every pull request. It needs no npm
+# install (git + node only, well under a minute) and it is the check the
+# unattended weekly sync must not be trusted to run on itself:
+#   - baselines (qc/*-baseline.json) only shrink, except alongside a move of
+#     the backend pin, with a reason;
+#   - record-link contracts need fresh "Verified ..." evidence when added/moved;
+#   - autosync/* branches cannot edit gates, workflows or the autonomy policy,
+#     and cannot delete assertions.
+# Everything else is enforced without hosted minutes: by the sync session
+# (npm run qc:all) and by the DSO PC release script before any APK ships.
+
+on:
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: qc-integrity-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+jobs:
+  qc-integrity:
+    name: Gate - QC integrity (ratchet)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Baselines only shrink; automated branches cannot edit gates
+        env:
+          # Branch names are attacker-controlled text; never interpolate them into the script.
+          BRANCH_NAME: ${{ github.head_ref }}
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+        run: node scripts/check-qc-ratchet.mjs "$BASE_SHA" HEAD

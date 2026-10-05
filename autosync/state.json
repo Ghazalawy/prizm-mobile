@@ -1,0 +1,11 @@
+{
+  "schema": 1,
+  "description": "Backend commit the mobile app is verified against. CI checks out PrizmIT/prizm331 at backend.syncedSha so every gate run is reproducible; only the weekly sync (or a deliberate human change) moves it.",
+  "backend": {
+    "repo": "PrizmIT/prizm331",
+    "branch": "main",
+    "syncedSha": "aba3ebc146f191dcf4169c0c5877531ca5410a97",
+    "syncedAt": "2026-10-04T23:30:00Z"
+  },
+  "lastRun": null
+}

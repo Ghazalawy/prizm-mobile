@@ -36,4 +36,8 @@ export const BUILD_FLAGS = {
   ticketsNative:         false,
   calendarNative:        false,
   notificationsNative:   false,
+  // Customer contacts are client-portal logins; Prizm gives customers no
+  // system access, so the app never creates, edits, activates or deletes
+  // them (lib/write-policy.ts). Viewing stays on.
+  customerContactWrites: false,
 } as const;

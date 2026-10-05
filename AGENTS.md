@@ -112,13 +112,52 @@ identified. Don't repeat.
 
 ## CI / build
 
-- `gh run list -R Ghazalawy/prizm-mobile` shows build status.
-- APK published as a rolling release at
-  `github.com/Ghazalawy/prizm-mobile/releases/latest`.
-- In-app auto-update banner polls that release on app start.
-- TypeScript: `npx tsc --noEmit -p tsconfig.json` before commit. The 3
-  pre-existing errors (datetimepicker, image-picker, document-picker)
-  are missing peer deps, not regressions — ignore them.
+The repository is **private**: GitHub-hosted minutes are billed, so builds and
+the full gate suite run on the release PC (DSO PC) and in the weekly cloud
+session, never implicitly on GitHub.
+
+- **Release path (zero hosted minutes):** Windows Task Scheduler on the DSO PC
+  runs `scripts/release-android-watch.ps1`. When `origin/main` carries a
+  version with no `v<version>` release, it runs
+  `scripts/release-android-local.ps1 -Publish`, which is the hard gate:
+  pinned-backend contracts, deeplink wiring and regressions, live API smoke,
+  release-bump and QC-integrity checks since the last release, signer vs
+  `assetlinks.json`, emulator App Link smoke. A failure opens a
+  "Release blocked on release PC" issue. Setup: `docs/LOCAL-ANDROID-RELEASE.md`.
+- **APK distribution:** versioned releases in the public releases-only repo
+  `Ghazalawy/prizm-mobile-releases` (no source). The in-app banner
+  (`lib/updates.ts` `RELEASE_REPO`) reads its `releases/latest`; a private
+  repo's releases are invisible to the unauthenticated check.
+- **Hosted checks:** only `QC Integrity` (`.github/workflows/qc-integrity.yml`)
+  runs on PRs; it needs no npm install. `Quality Gates` and
+  `Build APK (manual fallback)` are `workflow_dispatch` only.
+- Gate philosophy and inventory: `docs/autosync/QC-PHILOSOPHY.md`.
+- Backend-aware scripts read `PRIZM_BACKEND_WORKSPACE` (a prizm331 checkout);
+  releases gate against `autosync/state.json` `backend.syncedSha`.
+- Before pushing: `npm run qc:all` (with `PRIZM_BACKEND_WORKSPACE` set) and
+  `npx expo install --check`. TypeScript currently has zero errors; keep it so.
+
+## Weekly autonomous sync
+
+A Routine runs every Saturday and follows
+`docs/autosync/WEEKLY-SYNC-PLAYBOOK.md`: diff prizm331 since the pinned
+commit (`npm run diff:web-surface`), triage, implement, run every gate
+locally, PR, merge when green; the DSO PC watcher then builds and publishes. Its branches are `autosync/<date>`; CI forbids them from
+editing gates/workflows, deleting assertions, or growing a baseline without
+moving the backend pin. Autonomy limits live in `autosync/policy.json`.
+
+## Deeplink wiring rules
+
+- Every backend notification/approval link must open the correct native
+  screen through the bell, the approvals inbox and App Links
+  (`npm run test:deeplinks`). Known gaps: `qc/deeplink-wiring-baseline.json`
+  (shrink-only).
+- Every record link is pinned in `qc/record-link-contracts.json` to the screen
+  whose endpoint reads the same table as the web controller. New or moved
+  contracts need `Verified …` evidence.
+- Never rely on the controller-name heuristic for records: add an explicit
+  pattern after reading the web controller (it once opened `tblmaterials`
+  rows for `materials/Items/view/{id}`, which are `tblprizmbudget_items`).
 
 ## Pre-push release checklist (mandatory)
 

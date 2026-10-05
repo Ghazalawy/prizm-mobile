@@ -19,8 +19,11 @@ import { BUILD_SHA } from "./build-info";
 // so the SAME APK always looks "15 minutes newer than itself". The SHA is
 // monotonic per commit and never collides with the same build.
 
-const RELEASE_API =
-  "https://api.github.com/repos/Ghazalawy/prizm-mobile/releases/latest";
+// APKs are published to a public, releases-only repository so the source
+// repository can stay private: this check is unauthenticated, and a private
+// repository's releases API answers 404 to anonymous callers (no banner ever).
+export const RELEASE_REPO = "Ghazalawy/prizm-mobile-releases";
+const RELEASE_API = `https://api.github.com/repos/${RELEASE_REPO}/releases/latest`;
 
 // SecureStore key. We store the remote SHA the user dismissed so the banner
 // stays hidden for that exact build but reappears for any later one.

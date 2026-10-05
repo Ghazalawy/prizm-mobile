@@ -1,0 +1,195 @@
+name: Quality Gates
+
+# One job per concern, each a separately visible check (the prizm331
+# "Business Layer - *" pattern). Every gate fails closed: a missing secret or
+# backend checkout is a failure, never a skip — a gate that silently passes is
+# a rubber stamp (docs/CI-LESSONS-LEARNED.md, Trap 3).
+#
+# MANUAL ONLY. The repository is private, so hosted minutes are billed. The
+# same gates run without hosted minutes in two places:
+#   - the weekly sync session (npm run qc:all) before it merges, and
+#   - scripts/release-android-local.ps1 on the DSO PC before it publishes —
+#     the hard gate: no APK ships unless every check passes there.
+# The only hosted check on pull requests is qc-integrity.yml (seconds, no
+# npm install), because it is the one the weekly agent must not run on itself.
+#
+# Required repository secrets (Settings -> Secrets and variables -> Actions):
+#   PRIZM331_READ_TOKEN  fine-grained PAT, Contents: read on PrizmIT/prizm331
+#   PRIZM_QA_EMAIL       staff account used for the read-only live smoke
+#   PRIZM_QA_PASSWORD
+
+on:
+  workflow_dispatch:
+  workflow_call:
+    secrets:
+      PRIZM331_READ_TOKEN:
+        required: false
+      PRIZM_QA_EMAIL:
+        required: false
+      PRIZM_QA_PASSWORD:
+        required: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-gates-${{ github.workflow }}-${{ github.event.pull_request.number || github.sha }}-${{ github.event_name }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  deps:
+    name: Gate - Expo dependency matrix
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - run: npx expo install --check
+
+  types:
+    name: Gate - TypeScript
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - run: npx tsc --noEmit -p tsconfig.json
+
+  unit:
+    name: Gate - Unit & routing regressions
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - name: Biometric sign-in policy
+        run: node scripts/test-biometric-policy.mjs
+      - name: Pinned deeplink regressions
+        run: node scripts/test-deeplink-regressions.mjs
+
+  release-metadata:
+    name: Gate - Release metadata & version bump
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Versions agree (package.json, lock, app.json, CHANGELOG)
+        run: node scripts/verify-release-metadata.mjs
+      - name: Resolve diff base
+        id: base
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE="${{ github.event.pull_request.base.sha }}"
+          elif [ -n "${{ github.event.before }}" ] && [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            BASE="${{ github.event.before }}"
+          else
+            BASE="$(git rev-parse HEAD~1)"
+          fi
+          echo "sha=$BASE" >> "$GITHUB_OUTPUT"
+      - name: User-facing change ships as a new version
+        run: node scripts/check-version-bump.mjs "${{ steps.base.outputs.sha }}" HEAD
+
+  backend-contracts:
+    name: Gate - Backend contracts & deeplink wiring
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - name: Require backend read token
+        env:
+          TOKEN: ${{ secrets.PRIZM331_READ_TOKEN }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "::error::PRIZM331_READ_TOKEN is not set. Backend contract and deeplink wiring gates cannot run, so this gate fails closed."
+            exit 1
+          fi
+      - name: Read pinned backend commit
+        id: pin
+        run: echo "sha=$(jq -r '.backend.syncedSha' autosync/state.json)" >> "$GITHUB_OUTPUT"
+      - name: Check out PrizmIT/prizm331 at the pinned commit
+        uses: actions/checkout@v4
+        with:
+          repository: PrizmIT/prizm331
+          ref: ${{ steps.pin.outputs.sha }}
+          token: ${{ secrets.PRIZM331_READ_TOKEN }}
+          path: _backend
+          fetch-depth: 1
+          sparse-checkout: |
+            application
+            modules
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - name: Deeplink wiring (every backend notification/approval link)
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/test-deeplink-wiring.mjs
+      - name: Mobile contracts
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/test-mobile-contracts.mjs
+      - name: CRUD contracts
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/audit-crud-contracts.mjs
+      - name: List / filter / sort contracts
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/audit-list-contracts.mjs
+      - name: Admin parity contracts
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/test-admin-parity-batch.mjs
+      - name: Web menu parity (report)
+        env:
+          PRIZM_BACKEND_WORKSPACE: ${{ github.workspace }}/_backend
+        run: node scripts/audit-web-menu-parity.mjs | tee web-menu-parity.txt
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: web-menu-parity
+          path: web-menu-parity.txt
+          retention-days: 30
+
+  live-smoke:
+    name: Gate - Live API smoke (read-only)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci --no-audit --no-fund --legacy-peer-deps
+      - name: Open every tappable record and one record per module as the QA account
+        env:
+          PRIZM_QA_EMAIL: ${{ secrets.PRIZM_QA_EMAIL }}
+          PRIZM_QA_PASSWORD: ${{ secrets.PRIZM_QA_PASSWORD }}
+        run: node scripts/smoke-live-api.mjs --json live-smoke.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: live-smoke
+          path: live-smoke.json
+          retention-days: 30
+          if-no-files-found: ignore

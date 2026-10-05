@@ -1,28 +1,85 @@
-name: Build APK and Deploy Pages (manual fallback)
+name: Build APK (manual fallback)
+
+# MANUAL FALLBACK ONLY. The normal release path is the DSO PC:
+# scripts/release-android-watch.ps1 (Task Scheduler) -> release-android-local.ps1,
+# which runs every gate locally and spends zero hosted minutes. This repository
+# is private, so every minute here is billed — use it only when the DSO PC is
+# unavailable.
+#
+# Same contract as the local path: all quality gates, signer check against
+# assetlinks.json and an emulator smoke must pass, then a v<version> release
+# (marked latest) is created in the public releases-only repository that the
+# in-app updater reads (lib/updates.ts RELEASE_REPO).
+#
+# Extra secret for this fallback: RELEASES_TOKEN — fine-grained PAT with
+# Contents: read and write on Ghazalawy/prizm-mobile-releases.
 
 on:
   workflow_dispatch:
+    inputs:
+      force:
+        description: Rebuild and republish even if this version already has a release
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 concurrency:
   group: android-release
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 env:
   API_URL: https://ms.prizm-energy.com
+  RELEASE_REPO: Ghazalawy/prizm-mobile-releases
 
 jobs:
+  detect:
+    name: Detect release
+    runs-on: ubuntu-latest
+    outputs:
+      release: ${{ steps.check.outputs.release }}
+      version: ${{ steps.check.outputs.version }}
+      tag: ${{ steps.check.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          FORCE: ${{ inputs.force }}
+        run: |
+          VERSION="$(jq -r '.version' package.json)"
+          TAG="v$VERSION"
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          if [ -z "$GH_TOKEN" ]; then
+            echo "::error::RELEASES_TOKEN is not set; the fallback cannot publish to $RELEASE_REPO."
+            exit 1
+          fi
+          if gh release view "$TAG" --repo "$RELEASE_REPO" >/dev/null 2>&1 && [ "$FORCE" != "true" ]; then
+            echo "release=false" >> "$GITHUB_OUTPUT"
+            echo "Release $TAG already exists; nothing to publish."
+          else
+            echo "release=true" >> "$GITHUB_OUTPUT"
+            echo "Will release $TAG."
+          fi
+
+  gates:
+    name: Quality gates
+    needs: detect
+    if: needs.detect.outputs.release == 'true'
+    uses: ./.github/workflows/quality-gates.yml
+    secrets: inherit
+
   build-apk:
-    name: Build Android APK
+    name: Build signed APK
+    needs: [detect, gates]
     runs-on: ubuntu-latest
     timeout-minutes: 45
     outputs:
       short_sha: ${{ steps.meta.outputs.short_sha }}
       build_time: ${{ steps.meta.outputs.build_time }}
+      apk_sha256: ${{ steps.signer.outputs.apk_sha256 }}
     steps:
       - uses: actions/checkout@v4
 
@@ -52,18 +109,6 @@ jobs:
       - name: Install npm dependencies
         run: npm ci --no-audit --no-fund --legacy-peer-deps
 
-      - name: Validate Expo dependency matrix
-        run: npx expo install --check
-
-      - name: Verify release metadata (CHANGELOG + versions)
-        run: node scripts/verify-release-metadata.mjs
-
-      - name: TypeScript check
-        run: npx tsc --noEmit
-
-      - name: Biometric sign-in policy tests
-        run: node scripts/test-biometric-policy.mjs
-
       - name: Write .env
         run: echo "EXPO_PUBLIC_API_URL=${{ env.API_URL }}" > .env
 
@@ -86,10 +131,22 @@ jobs:
             awk '/^export const BUILD_FLAGS/,/^} as const;/' lib/build-info.ts
           } > lib/build-info.ts.new
           mv lib/build-info.ts.new lib/build-info.ts
+          grep -q 'BUILD_FLAGS' lib/build-info.ts || { echo "::error::BUILD_FLAGS were lost while injecting build metadata"; exit 1; }
           cat lib/build-info.ts
 
       - name: Expo prebuild (Android)
         run: npx expo prebuild --platform android --no-install --clean
+
+      - name: Signing keystore matches production assetlinks.json
+        run: |
+          EXPECTED="$(jq -r '.[0].target.sha256_cert_fingerprints[0]' public/.well-known/assetlinks.json)"
+          ACTUAL="$(keytool -list -v -keystore android/app/debug.keystore -storepass android -alias androiddebugkey 2>/dev/null | sed -n 's/.*SHA256: *\([0-9A-F:]\{95\}\).*/\1/p' | head -1)"
+          echo "expected=$EXPECTED"
+          echo "actual=$ACTUAL"
+          if [ -z "$ACTUAL" ] || [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::Signing keystore fingerprint does not match assetlinks.json. An APK signed with another key cannot update installed apps and breaks App Links."
+            exit 1
+          fi
 
       - name: Build release APK
         working-directory: android
@@ -104,10 +161,20 @@ jobs:
           path: android/gradle-build.log
           retention-days: 7
 
-      - name: Stage APK
+      - name: Verify APK signer
+        id: signer
         run: |
           mkdir -p out
           cp android/app/build/outputs/apk/release/app-release.apk out/prizm-mobile.apk
+          APKSIGNER="$(find "$ANDROID_HOME/build-tools" -maxdepth 2 -type f -name apksigner | sort -V | tail -1)"
+          [ -x "$APKSIGNER" ] || { echo "::error::apksigner not found under $ANDROID_HOME/build-tools"; exit 1; }
+          EXPECTED="$(jq -r '.[0].target.sha256_cert_fingerprints[0]' public/.well-known/assetlinks.json | tr -d ':' | tr 'A-F' 'a-f')"
+          ACTUAL="$("$APKSIGNER" verify --print-certs out/prizm-mobile.apk | sed -n 's/.*certificate SHA-256 digest: *\([0-9a-fA-F]\{64\}\).*/\1/p' | head -1 | tr 'A-F' 'a-f')"
+          if [ "$ACTUAL" != "$EXPECTED" ]; then
+            echo "::error::APK signer ($ACTUAL) does not match assetlinks.json ($EXPECTED)."
+            exit 1
+          fi
+          echo "apk_sha256=$(sha256sum out/prizm-mobile.apk | cut -d' ' -f1)" >> "$GITHUB_OUTPUT"
           ls -lh out/
 
       - name: Upload APK artifact
@@ -117,53 +184,74 @@ jobs:
           path: out/prizm-mobile.apk
           retention-days: 30
 
-      - name: Publish rolling "latest" release
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: latest
-          name: "Latest build (${{ steps.meta.outputs.short_sha }})"
-          body: |
-            Auto-built from `main` @ `${{ github.sha }}`
-            Built at: ${{ steps.meta.outputs.build_time }}
-            API: ${{ env.API_URL }}
-            Install on Android: enable "Install unknown apps" for your browser, then tap the APK.
-          files: out/prizm-mobile.apk
-          make_latest: "true"
-
-  deploy-pages:
-    name: Deploy GitHub Pages
+  emulator-smoke:
+    name: Emulator smoke (install, launch, App Links, no crash)
     needs: build-apk
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-
-      - name: Stage site
-        run: |
-          mkdir -p _site
-          cp pages/index.html _site/index.html
-          sed -i "s|__SHORT_SHA__|${{ needs.build-apk.outputs.short_sha }}|g" _site/index.html
-          sed -i "s|__BUILD_TIME__|${{ needs.build-apk.outputs.build_time }}|g" _site/index.html
-
-      - name: Setup Node
-        uses: actions/setup-node@v4
+      - uses: actions/download-artifact@v4
         with:
-          node-version: '20'
-
-      - name: Render audit doc to HTML
+          name: prizm-mobile-apk
+          path: out
+      - name: Enable KVM
         run: |
-          npm install --no-save --legacy-peer-deps marked@12
-          node .github/scripts/render-audit.js
-          sed -i "s|__SHORT_SHA__|${{ needs.build-apk.outputs.short_sha }}|g" _site/audit.html
-          sed -i "s|__BUILD_TIME__|${{ needs.build-apk.outputs.build_time }}|g" _site/audit.html
-
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Boot emulator and smoke the exact release APK
+        uses: reactivecircus/android-emulator-runner@v2
         with:
-          path: _site
+          api-level: 34
+          arch: x86_64
+          target: google_apis
+          disable-animations: true
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          script: bash scripts/ci/emulator-smoke.sh out/prizm-mobile.apk
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: emulator-smoke-logcat
+          path: emulator-logcat.txt
+          retention-days: 14
+          if-no-files-found: ignore
 
-      - id: deployment
-        uses: actions/deploy-pages@v4
+  publish:
+    name: Publish release ${{ needs.detect.outputs.tag }}
+    needs: [detect, build-apk, emulator-smoke]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: prizm-mobile-apk
+          path: out
+      - name: Create versioned release in the releases-only repository (marked latest)
+        env:
+          GH_TOKEN: ${{ secrets.RELEASES_TOKEN }}
+          TAG: ${{ needs.detect.outputs.tag }}
+          VERSION: ${{ needs.detect.outputs.version }}
+          SHORT_SHA: ${{ needs.build-apk.outputs.short_sha }}
+          BUILD_TIME: ${{ needs.build-apk.outputs.build_time }}
+          APK_SHA256: ${{ needs.build-apk.outputs.apk_sha256 }}
+        run: |
+          {
+            echo "## $(jq -r '.releases[0].title' CHANGELOG.json)"
+            echo
+            jq -r '.releases[0].highlights[] | "- " + .' CHANGELOG.json
+            echo
+            echo "---"
+            echo "Built by the hosted fallback from \`main\` @ \`${GITHUB_SHA}\` at ${BUILD_TIME}. All quality gates, signer verification and the emulator smoke passed."
+            echo "APK SHA-256: \`${APK_SHA256}\`"
+            echo
+            echo "Install on Android: enable \"Install unknown apps\" for your browser, then tap the APK."
+          } > release-notes.md
+          # lib/updates.ts reads the short SHA from the "(sha)" in the release name.
+          NAME="Prizm Mobile v${VERSION} (${SHORT_SHA})"
+          if gh release view "$TAG" --repo "$RELEASE_REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" out/prizm-mobile.apk --repo "$RELEASE_REPO" --clobber
+            gh release edit "$TAG" --repo "$RELEASE_REPO" --title "$NAME" --notes-file release-notes.md --latest
+          else
+            gh release create "$TAG" out/prizm-mobile.apk --repo "$RELEASE_REPO" --title "$NAME" --notes-file release-notes.md --latest
+          fi

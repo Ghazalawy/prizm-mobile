@@ -4,7 +4,7 @@ import { router, Stack } from "expo-router";
 import { useInbox, type InboxItem } from "@/lib/queries/inbox";
 import { useState, useCallback } from "react";
 import { colors } from "@/lib/theme";
-import { navigateInAppOrExternalLink } from "@/lib/native-routing";
+import { navigateInAppOrExternalLink, routeForInboxItem } from "@/lib/native-routing";
 import { DenseListRow } from "@/components/ui/DenseListRow";
 import { EntityPill } from "@/components/ui/EntityPill";
 
@@ -90,8 +90,9 @@ export default function ApprovalsIndexScreen() {
                 title={item.title || `Approval #${item.id}`}
                 subtitle={item.subtitle || undefined}
                 onPress={() => {
-                  if (item.deeplink) {
-                    void navigateInAppOrExternalLink(item.deeplink, {
+                  const link = routeForInboxItem(item);
+                  if (link) {
+                    void navigateInAppOrExternalLink(link, {
                       fallbackRoute: "/(tabs)/approvals",
                     });
                   }

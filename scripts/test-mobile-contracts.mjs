@@ -739,6 +739,40 @@ const contactsBlock = registrySource.match(/\r?\n  \{\r?\n    key: "contacts",[\
 assert.match(contactsBlock, /detailEndpoint: "contacts\/detail"/);
 assert.match(contactsBlock, /filterableFields:/);
 assert.match(contactsBlock, /sortableFields:/);
+// Customer contacts are client-portal logins; Prizm gives customers no system
+// access. The app must never create, edit, activate or delete one, and must
+// never ship a shared default password again (one was public in source).
+assert.match(contactsBlock, /canCreate: false/);
+assert.match(contactsBlock, /canUpdate: false/);
+assert.match(contactsBlock, /canDelete: false/);
+assert.doesNotMatch(contactsBlock, /^\s*\{ key: "(?:password|send_set_password_email)"/m, "portal login fields must stay disabled");
+assert.doesNotMatch(contactsBlock, /^\s*actions: \[/m, "contact status (portal activation) action must stay disabled");
+assert.match(registrySource, /\{ key: "contacts", title: "Contacts", moduleKey: "contacts", endpointTemplate: "customers\/contacts\?customer_id=\{id\}", canCreate: false \}/);
+const buildInfoSource = fs.readFileSync(path.join(workspace, "lib/build-info.ts"), "utf8");
+assert.match(buildInfoSource, /customerContactWrites: false/);
+const writePolicy = loadTypeScriptModule("lib/write-policy.ts", { "./build-info": { BUILD_FLAGS: { customerContactWrites: false } } });
+for (const [endpoint, method] of [["contacts", "POST"], ["customers/contacts", "POST"], ["customers/contacts", "PUT"], ["customers/contacts", "DELETE"], ["contacts/12", "DELETE"], ["contacts/12/status", "PUT"]]) {
+  assert.equal(writePolicy.blockedWriteReason(endpoint, method), writePolicy.CUSTOMER_CONTACT_WRITES_DISABLED_MESSAGE, `${method} ${endpoint} must be blocked`);
+}
+for (const [endpoint, method] of [["contacts/detail/12", "GET"], ["customers/contacts?customer_id=4", undefined], ["purchase_api/vendor_contacts/3", "POST"], ["dewa_contacts_api", "POST"], ["tasks", "POST"]]) {
+  assert.equal(writePolicy.blockedWriteReason(endpoint, method), null, `${method ?? "GET"} ${endpoint} must stay allowed`);
+}
+assert.match(fs.readFileSync(path.join(workspace, "lib/api.ts"), "utf8"), /const blocked = blockedWriteReason\(endpoint, options\.method\);/);
+const customerScreenSource = fs.readFileSync(path.join(workspace, "components/customers/CustomerDetailScreen.tsx"), "utf8");
+assert.match(customerScreenSource, /const CONTACT_WRITES = BUILD_FLAGS\.customerContactWrites;/);
+for (const dir of ["app", "components", "lib"]) {
+  const stack = [path.join(workspace, dir)];
+  while (stack.length) {
+    const current = stack.pop();
+    for (const entry of fs.readdirSync(current, { withFileTypes: true })) {
+      const full = path.join(current, entry.name);
+      if (entry.isDirectory()) stack.push(full);
+      else if (/\.(tsx?|jsx?)$/.test(entry.name)) {
+        assert.doesNotMatch(fs.readFileSync(full, "utf8"), /\bpassword\s*:\s*["'][^"']{4,}["']/, `hardcoded password literal in ${path.relative(workspace, full)}`);
+      }
+    }
+  }
+}
 const contactsApiSource = fs.readFileSync(path.join(backendWorkspace, "modules/api/controllers/Contacts.php"), "utf8");
 assert.match(contactsApiSource, /function global_list_get/);
 assert.match(contactsApiSource, /api_apply_advanced_filters/);

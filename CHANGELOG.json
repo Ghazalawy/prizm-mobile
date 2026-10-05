@@ -11,7 +11,8 @@
         "Item catalogue notifications open that item; before, they could show an unrelated material.",
         "Calendar reminders open the event; cost-center and training notifications open their record.",
         "Links to features not yet on mobile (advance cash, budgets, old RFQs) no longer open a wrong record.",
-        "Tapping a pending leave request in the Action Center now opens it for approval."
+        "Tapping a pending leave request in the Action Center now opens it for approval.",
+        "Customer contacts are view-only: adding, editing, activating or deleting them is switched off."
       ]
     },
     {

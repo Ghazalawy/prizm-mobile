@@ -3,6 +3,7 @@ import { getAuthToken, getSessionCookie } from "./auth";
 import { notifyInvalidToken, getSessionGeneration } from "./auth-events";
 import { getCurrentImpersonation } from "./impersonation";
 import { isInvalidTokenResponse } from "./auth-response";
+import { blockedWriteReason } from "./write-policy";
 export { isInvalidTokenResponse } from "./auth-response";
 
 // --- Invalid-token detection ----------------------------------------------
@@ -72,6 +73,8 @@ export async function apiRequest(
   endpoint: string,
   options: RequestInit = {}
 ): Promise<any> {
+  const blocked = blockedWriteReason(endpoint, options.method);
+  if (blocked) throw new Error(blocked);
   const gen = getSessionGeneration();
   const authHeaders = await buildAuthHeaders();
   const res = await fetch(`${API_URL}/${endpoint}`, {

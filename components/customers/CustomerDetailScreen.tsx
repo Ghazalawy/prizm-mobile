@@ -30,6 +30,7 @@ import {
 import { FilesTab } from "@/components/crud/FilesTab";
 import { colors } from "@/lib/theme";
 import { navigateInAppOrExternalLink } from "@/lib/native-routing";
+import { BUILD_FLAGS } from "@/lib/build-info";
 
 const ACCENT = colors.primary;
 
@@ -357,6 +358,11 @@ function InfoRow({ label, value }: { label: string; value: any }) {
 
 // ─── Tab: Contacts ───────────────────────────────────────────────────────
 
+// Contacts are client-portal logins and Prizm gives customers no system
+// access: the tab is view-only unless BUILD_FLAGS.customerContactWrites is
+// switched back on (lib/write-policy.ts blocks the API calls either way).
+const CONTACT_WRITES = BUILD_FLAGS.customerContactWrites;
+
 function ContactsTab({ customerId }: { customerId: string }) {
   const { data, isLoading, refetch } = useCustomerContacts(customerId);
   const createContact = useCreateCustomerContact();
@@ -379,8 +385,8 @@ function ContactsTab({ customerId }: { customerId: string }) {
         lastname: lastname.trim(),
         email: email.trim(),
         phonenumber: phonenumber.trim() || undefined,
-        password: "ChangeMe123!",
-        active: 1,
+        // No password: the shared default password that used to be sent here
+        // is retired. Re-enabling contact creation needs a real password policy.
       } as any,
       {
         onSuccess: () => {
@@ -418,7 +424,7 @@ function ContactsTab({ customerId }: { customerId: string }) {
   if (!data || data.length === 0) {
     return (
       <View className="flex-1">
-        {showForm ? (
+        {CONTACT_WRITES && showForm ? (
           <ContactForm
             firstname={firstname}
             lastname={lastname}
@@ -436,9 +442,11 @@ function ContactsTab({ customerId }: { customerId: string }) {
           <View className="flex-1 items-center justify-center py-12 px-6">
             <Ionicons name="person-outline" size={36} color="#CBD5E1" />
             <Text className="text-sm text-slate-400 mt-2">No contacts</Text>
-            <TouchableOpacity onPress={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-lg bg-primary">
-              <Text className="text-white font-medium">Add Contact</Text>
-            </TouchableOpacity>
+            {CONTACT_WRITES ? (
+              <TouchableOpacity onPress={() => setShowForm(true)} className="mt-4 px-4 py-2 rounded-lg bg-primary">
+                <Text className="text-white font-medium">Add Contact</Text>
+              </TouchableOpacity>
+            ) : null}
           </View>
         )}
       </View>
@@ -447,12 +455,14 @@ function ContactsTab({ customerId }: { customerId: string }) {
 
   return (
     <View className="flex-1">
-      <View className="px-3 py-2 flex-row justify-end">
-        <TouchableOpacity onPress={() => setShowForm((v) => !v)} className="px-3 py-1.5 rounded-lg bg-primary">
-          <Text className="text-white text-xs font-semibold">{showForm ? "Cancel" : "Add Contact"}</Text>
-        </TouchableOpacity>
-      </View>
-      {showForm ? (
+      {CONTACT_WRITES ? (
+        <View className="px-3 py-2 flex-row justify-end">
+          <TouchableOpacity onPress={() => setShowForm((v) => !v)} className="px-3 py-1.5 rounded-lg bg-primary">
+            <Text className="text-white text-xs font-semibold">{showForm ? "Cancel" : "Add Contact"}</Text>
+          </TouchableOpacity>
+        </View>
+      ) : null}
+      {CONTACT_WRITES && showForm ? (
         <ContactForm
           firstname={firstname}
           lastname={lastname}
@@ -506,17 +516,19 @@ function ContactsTab({ customerId }: { customerId: string }) {
               >
                 <Ionicons name="mail-outline" size={15} color="#2563EB" />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() =>
-                  handleDelete(
-                    contact.id,
-                    `${contact.firstname} ${contact.lastname || ""}`.trim() || contact.email
-                  )
-                }
-                className="w-8 h-8 rounded-full bg-red-50 items-center justify-center"
-              >
-                <Ionicons name="trash-outline" size={15} color="#DC2626" />
-              </TouchableOpacity>
+              {CONTACT_WRITES ? (
+                <TouchableOpacity
+                  onPress={() =>
+                    handleDelete(
+                      contact.id,
+                      `${contact.firstname} ${contact.lastname || ""}`.trim() || contact.email
+                    )
+                  }
+                  className="w-8 h-8 rounded-full bg-red-50 items-center justify-center"
+                >
+                  <Ionicons name="trash-outline" size={15} color="#DC2626" />
+                </TouchableOpacity>
+              ) : null}
             </View>
           </View>
         </View>

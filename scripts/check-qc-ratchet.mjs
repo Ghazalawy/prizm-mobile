@@ -117,6 +117,7 @@ const QC_INFRA = [
   /^scripts\/ci\//,
   /^scripts\/check-version-bump\.mjs$/,
   /^scripts\/diff-web-surface\.mjs$/,
+  /^scripts\/release-android-(?:local|watch)\.ps1$/,
   /^\.github\/workflows\//,
   /^docs\/autosync\/QC-PHILOSOPHY\.md$/,
   /^docs\/autosync\/WEEKLY-SYNC-PLAYBOOK\.md$/,

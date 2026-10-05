@@ -28,25 +28,33 @@ was violated once and shipped a broken screen to staff.
    features and tests. It may not edit gates or workflows, delete assertions,
    or add baseline entries without moving the backend pin and giving a reason.
 8. **Evidence, not claims.** `tsc` passing is not QC. Every gate prints what it
-   checked and counts it. CI artifacts keep the evidence.
+   checked and counts it. Release-PC logs (`C:\prizm-release\logs`) and PR bodies keep the evidence.
 
 ## Gate inventory
 
-| Gate (CI check) | What it proves | Incident that created it |
-|---|---|---|
-| Expo dependency matrix | Native deps match the Expo SDK | CI broken for weeks by silent drift (May 2026) |
-| TypeScript | The app compiles | — |
-| Unit & routing regressions | Biometric policy; every routing bug fixed so far stays fixed (no backend needed) | v1.14 fingerprint dead end; Oct 2026 routing defects |
-| Release metadata & version bump | A user-facing change ships as a new version with a new What's New entry | APKs that showed the previous version's notes |
-| QC integrity (ratchet) | Baselines only shrink; contracts need evidence; autosync cannot touch gates | — (protects the unattended loop from itself) |
-| Backend contracts & deeplink wiring | Every backend notification/approval link opens the correct native screen through all three paths; CRUD/list/filter/sort endpoints exist in the backend | Leave approvals, delivery notes, received vouchers opening the ERP home; `materials/Items` opening `tblmaterials` rows; legacy RFQ links opening RFQ #1 |
-| Live API smoke (read-only) | Every item the QA account can tap opens with data; every module lists a record and opens it | Payment Request "not found" on mobile while the web worked (model joined an unprefixed table) |
-| Signer verification | The APK is signed with the certificate in `assetlinks.json` | — (an APK with another key can't update installed apps and breaks App Links) |
-| Emulator smoke | The exact APK installs, cold-starts, claims 5 production App Links, no native crash | — |
+The repository is private and hosted minutes are billed, so the full suite
+runs where it costs nothing: the weekly cloud session (before it merges) and
+the release PC (before it publishes). The release PC run is the hard gate: no
+APK is published unless every check below passes there on the exact commit.
 
-The release workflow runs **all** of them on the exact commit before
-publishing. Branch protection is not required for that guarantee: nothing is
-published unless the gates pass.
+| Gate | What it proves | Where it runs | Incident that created it |
+|---|---|---|---|
+| Expo dependency matrix | Native deps match the Expo SDK | sync session*, release PC | CI broken for weeks by silent drift (May 2026) |
+| TypeScript | The app compiles | sync session, release PC | — |
+| Unit & routing regressions | Biometric policy; every routing bug fixed so far stays fixed | sync session, release PC | v1.14 fingerprint dead end; Oct 2026 routing defects |
+| Release metadata & version bump | A user-facing change ships as a new version with a new What's New entry | sync session, release PC (since last release) | APKs that showed the previous version's notes |
+| QC integrity (ratchet) | Baselines only shrink; contracts need evidence; autosync cannot touch gates | **GitHub, every PR** (install-free), release PC | — (protects the unattended loop from itself) |
+| Backend contracts & deeplink wiring | Every backend notification/approval link opens the correct native screen through all three paths; CRUD/list/filter/sort endpoints exist | sync session, release PC (pinned backend) | Leave approvals, delivery notes, received vouchers opening the ERP home; `materials/Items` opening `tblmaterials` rows; legacy RFQ links opening RFQ #1 |
+| Live API smoke (read-only) | Every item the QA account can tap opens with data; every module lists a record and opens it | release PC (sync session* if allowed) | Payment Request "not found" on mobile while the web worked |
+| Signer verification | The APK is signed with the certificate in `assetlinks.json` | release PC | — |
+| Emulator App Link smoke | The exact APK installs and claims the production Payment Request App Link | release PC | — |
+
+\* The cloud environment must allow `ms.prizm-energy.com` / `api.expo.dev`
+for these to run in the sync session. Otherwise only the release PC runs them.
+
+A failed release-PC run opens a "Release blocked on release PC" issue. The
+next weekly sync treats it as priority 1. Staff keep the previous version
+until it is fixed.
 
 ## Deeplink failure codes
 

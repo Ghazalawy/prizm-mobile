@@ -5,8 +5,13 @@ name: Quality Gates
 # backend checkout is a failure, never a skip — a gate that silently passes is
 # a rubber stamp (docs/CI-LESSONS-LEARNED.md, Trap 3).
 #
-# Called directly on pull requests / pushes to main, and by the release
-# workflow so no APK is published from a commit that did not pass all of them.
+# MANUAL ONLY. The repository is private, so hosted minutes are billed. The
+# same gates run without hosted minutes in two places:
+#   - the weekly sync session (npm run qc:all) before it merges, and
+#   - scripts/release-android-local.ps1 on the DSO PC before it publishes —
+#     the hard gate: no APK ships unless every check passes there.
+# The only hosted check on pull requests is qc-integrity.yml (seconds, no
+# npm install), because it is the one the weekly agent must not run on itself.
 #
 # Required repository secrets (Settings -> Secrets and variables -> Actions):
 #   PRIZM331_READ_TOKEN  fine-grained PAT, Contents: read on PrizmIT/prizm331
@@ -14,10 +19,6 @@ name: Quality Gates
 #   PRIZM_QA_PASSWORD
 
 on:
-  pull_request:
-    branches: [main]
-  push:
-    branches: [main]
   workflow_dispatch:
   workflow_call:
     secrets:
@@ -104,39 +105,6 @@ jobs:
           echo "sha=$BASE" >> "$GITHUB_OUTPUT"
       - name: User-facing change ships as a new version
         run: node scripts/check-version-bump.mjs "${{ steps.base.outputs.sha }}" HEAD
-
-  qc-integrity:
-    name: Gate - QC integrity (ratchet)
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
-      - name: Resolve diff base and source branch
-        id: base
-        env:
-          # Branch names are attacker-controlled text; never interpolate them into the script.
-          HEAD_REF: ${{ github.head_ref }}
-        run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            echo "sha=${{ github.event.pull_request.base.sha }}" >> "$GITHUB_OUTPUT"
-            printf 'branch=%s\n' "$HEAD_REF" >> "$GITHUB_OUTPUT"
-          else
-            BEFORE="${{ github.event.before }}"
-            if [ -z "$BEFORE" ] || [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then BEFORE="$(git rev-parse HEAD~1)"; fi
-            echo "sha=$BEFORE" >> "$GITHUB_OUTPUT"
-            # A merge commit names the branch it brought in; autosync rules follow it to main.
-            BRANCH="$(git log -1 --format=%s | sed -n 's#^Merge pull request \#[0-9]* from [^/]*/##p')"
-            echo "branch=$BRANCH" >> "$GITHUB_OUTPUT"
-          fi
-      - name: Baselines only shrink; automated branches cannot edit gates
-        env:
-          BRANCH_NAME: ${{ steps.base.outputs.branch }}
-        run: node scripts/check-qc-ratchet.mjs "${{ steps.base.outputs.sha }}" HEAD
 
   backend-contracts:
     name: Gate - Backend contracts & deeplink wiring

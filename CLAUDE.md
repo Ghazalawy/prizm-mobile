@@ -95,21 +95,28 @@ identified. Don't repeat.
 
 ## CI / build
 
-- **Quality Gates** (`.github/workflows/quality-gates.yml`) run on every PR and
-  push to `main`: Expo deps, TypeScript, unit & routing regressions, release
-  metadata/version bump, QC integrity (ratchet), backend contracts & deeplink
-  wiring, read-only live API smoke. All fail closed. Philosophy and gate
-  inventory: `docs/autosync/QC-PHILOSOPHY.md`.
-- **Release APK** (`.github/workflows/build-and-deploy.yml`) runs on push to
-  `main` when `package.json` carries a version with no `v<version>` release:
-  all gates → signed build → certificate check vs `assetlinks.json` →
-  emulator smoke → GitHub release `v<version>` marked latest.
-- In-app auto-update banner reads `releases/latest` and compares the SHA in
-  the release name with `BUILD_SHA`.
-- Required repo secrets: `PRIZM331_READ_TOKEN` (read PrizmIT/prizm331),
-  `PRIZM_QA_EMAIL`, `PRIZM_QA_PASSWORD` (live smoke). Missing → gates fail.
-- Backend-aware scripts read `PRIZM_BACKEND_WORKSPACE` (a prizm331 checkout).
-  CI pins it to `autosync/state.json` `backend.syncedSha`.
+The repository is **private**: GitHub-hosted minutes are billed, so builds and
+the full gate suite run on the release PC (DSO PC) and in the weekly cloud
+session, never implicitly on GitHub.
+
+- **Release path (zero hosted minutes):** Windows Task Scheduler on the DSO PC
+  runs `scripts/release-android-watch.ps1`. When `origin/main` carries a
+  version with no `v<version>` release, it runs
+  `scripts/release-android-local.ps1 -Publish`, which is the hard gate:
+  pinned-backend contracts, deeplink wiring and regressions, live API smoke,
+  release-bump and QC-integrity checks since the last release, signer vs
+  `assetlinks.json`, emulator App Link smoke. A failure opens a
+  "Release blocked on release PC" issue. Setup: `docs/LOCAL-ANDROID-RELEASE.md`.
+- **APK distribution:** versioned releases in the public releases-only repo
+  `Ghazalawy/prizm-mobile-releases` (no source). The in-app banner
+  (`lib/updates.ts` `RELEASE_REPO`) reads its `releases/latest`; a private
+  repo's releases are invisible to the unauthenticated check.
+- **Hosted checks:** only `QC Integrity` (`.github/workflows/qc-integrity.yml`)
+  runs on PRs; it needs no npm install. `Quality Gates` and
+  `Build APK (manual fallback)` are `workflow_dispatch` only.
+- Gate philosophy and inventory: `docs/autosync/QC-PHILOSOPHY.md`.
+- Backend-aware scripts read `PRIZM_BACKEND_WORKSPACE` (a prizm331 checkout);
+  releases gate against `autosync/state.json` `backend.syncedSha`.
 - Before pushing: `npm run qc:all` (with `PRIZM_BACKEND_WORKSPACE` set) and
   `npx expo install --check`. TypeScript currently has zero errors; keep it so.
 
@@ -117,8 +124,8 @@ identified. Don't repeat.
 
 A Routine runs every Saturday and follows
 `docs/autosync/WEEKLY-SYNC-PLAYBOOK.md`: diff prizm331 since the pinned
-commit (`npm run diff:web-surface`), triage, implement, gate, PR, merge when
-green, release. Its branches are `autosync/<date>`; CI forbids them from
+commit (`npm run diff:web-surface`), triage, implement, run every gate
+locally, PR, merge when green; the DSO PC watcher then builds and publishes. Its branches are `autosync/<date>`; CI forbids them from
 editing gates/workflows, deleting assertions, or growing a baseline without
 moving the backend pin. Autonomy limits live in `autosync/policy.json`.
 

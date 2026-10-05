@@ -1302,16 +1302,18 @@ assert.doesNotMatch(registrySource, /key: "task_template_(?:groups|tasks|milesto
 assert.doesNotMatch(registrySource, /key: "(?:product_families|client_items)"/);
 assert.doesNotMatch(materialsApiSource, /function (?:product_families|client_items)_/);
 
-// The release workflow may run on push to main (public repository: hosted
-// minutes are not billed), but it must only publish a NEW version, and only
-// after every quality gate, the signer check and the emulator smoke passed on
-// that exact commit.
+// Private repository: hosted minutes are billed. Building, publishing and the
+// full gate suite never run implicitly on GitHub; the release PC does them
+// (scripts/release-android-watch.ps1 -> release-android-local.ps1). The manual
+// fallback keeps the same contract: every gate, signer check, emulator smoke.
 const androidReleaseWorkflowSource = fs.readFileSync(
   path.join(workspace, ".github/workflows/build-and-deploy.yml"),
   "utf8",
 );
 assert.match(androidReleaseWorkflowSource, /workflow_dispatch:/);
-assert.match(androidReleaseWorkflowSource, /gh release view "\$TAG"/, "an existing version must not be rebuilt on every push");
+assert.doesNotMatch(androidReleaseWorkflowSource, /^\s{2}(?:push|pull_request|schedule):/m, "a push must never spend hosted build minutes");
+assert.match(androidReleaseWorkflowSource, /RELEASE_REPO: Ghazalawy\/prizm-mobile-releases/);
+assert.match(androidReleaseWorkflowSource, /gh release view "\$TAG"/, "an existing version must not be rebuilt");
 assert.match(androidReleaseWorkflowSource, /if: needs\.detect\.outputs\.release == 'true'/);
 assert.match(androidReleaseWorkflowSource, /uses: \.\/\.github\/workflows\/quality-gates\.yml/);
 assert.match(androidReleaseWorkflowSource, /needs: \[detect, gates\]/, "the APK build must wait for every quality gate");
@@ -1319,6 +1321,14 @@ assert.match(androidReleaseWorkflowSource, /needs: \[detect, build-apk, emulator
 assert.match(androidReleaseWorkflowSource, /apksigner/);
 assert.match(androidReleaseWorkflowSource, /assetlinks\.json/);
 assert.match(androidReleaseWorkflowSource, /Prizm Mobile v\$\{VERSION\} \(\$\{SHORT_SHA\}\)/, "lib/updates.ts parses the short SHA in parentheses");
+const qualityGatesWorkflowSource = fs.readFileSync(path.join(workspace, ".github/workflows/quality-gates.yml"), "utf8");
+assert.doesNotMatch(qualityGatesWorkflowSource, /^\s{2}(?:push|pull_request|schedule):/m, "the full gate suite runs on the release PC and in the sync session, not on hosted minutes");
+const qcIntegrityWorkflowSource = fs.readFileSync(path.join(workspace, ".github/workflows/qc-integrity.yml"), "utf8");
+assert.match(qcIntegrityWorkflowSource, /pull_request:/);
+assert.doesNotMatch(qcIntegrityWorkflowSource, /npm (?:ci|install)/, "the per-PR hosted check must stay install-free");
+const updatesSource = fs.readFileSync(path.join(workspace, "lib/updates.ts"), "utf8");
+assert.match(updatesSource, /RELEASE_REPO = "Ghazalawy\/prizm-mobile-releases"/, "a private source repo answers 404 to the anonymous update check");
+assert.match(updatesSource, /repos\/\$\{RELEASE_REPO\}\/releases\/latest/);
 assert.match(androidReleaseWorkflowSource, /gradle\/actions\/setup-gradle@v4/);
 assert.match(androidReleaseWorkflowSource, /npm ci --no-audit --no-fund --legacy-peer-deps/);
 assert.match(androidReleaseWorkflowSource, /assembleRelease --build-cache/);
@@ -1337,7 +1347,14 @@ for (const safetyGate of [
   /sdk\.dir=/,
   /apksigner/,
   /Payment_Request\/view_payment_request\/1211/,
-  /gh release upload latest/,
+  /prizm-mobile-releases/,
+  /gh release create \$tag/,
+  /worktree add --detach/,
+  /npm run test:deeplinks/,
+  /npm run test:deeplink-regressions/,
+  /node scripts\/smoke-live-api\.mjs \}/,
+  /check-version-bump\.mjs \$previousSha/,
+  /check-qc-ratchet\.mjs \$previousSha/,
 ]) {
   assert.match(localAndroidReleaseSource, safetyGate);
 }

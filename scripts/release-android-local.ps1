@@ -3,6 +3,16 @@ param(
     [string]$ApiUrl = "https://ms.prizm-energy.com",
     [string]$BackendWorkspace = "",
     [string]$DeviceSerial = "",
+    # The in-app updater reads the FIRST repository (public, releases only).
+    # The source repository is kept second during the move to a private source
+    # repo, so installs that still poll it are offered this build once.
+    [string[]]$ReleaseRepos = @("Ghazalawy/prizm-mobile-releases", "Ghazalawy/prizm-mobile"),
+    # Candidate builds only: run backend gates against the workspace as-is
+    # instead of the commit pinned in autosync/state.json.
+    [switch]$UseBackendAsIs,
+    # Only for the very first publication, when no previous release exists to
+    # diff against.
+    [switch]$SkipHistoryChecks,
     [switch]$Publish
 )
 
@@ -19,6 +29,23 @@ function Invoke-NativeStep {
     & $Command
     if ($LASTEXITCODE -ne 0) {
         throw "$Label failed with exit code $LASTEXITCODE."
+    }
+}
+
+# Probe a native command whose failure is an expected answer (missing release,
+# missing commit). Windows PowerShell 5.1 turns redirected native stderr into
+# terminating errors under $ErrorActionPreference = "Stop" (the keytool trap),
+# so the probe runs with Continue and callers read $LASTEXITCODE.
+function Invoke-Probe {
+    param([Parameter(Mandatory = $true)][scriptblock]$Command)
+    $previous = $ErrorActionPreference
+    try {
+        $ErrorActionPreference = "Continue"
+        $output = & $Command 2>&1 | Where-Object { $_ -isnot [System.Management.Automation.ErrorRecord] }
+        return (($output | ForEach-Object { "$_" }) -join "`n").Trim()
+    }
+    finally {
+        $ErrorActionPreference = $previous
     }
 }
 
@@ -77,6 +104,9 @@ if ($Publish) {
     if (-not $DeviceSerial) {
         throw "Publishing requires -DeviceSerial so the exact APK and App Link are smoke-tested first."
     }
+    if ($UseBackendAsIs) {
+        throw "-UseBackendAsIs is for candidate builds; a publication is gated against the pinned backend commit."
+    }
 }
 
 if (-not $BackendWorkspace) {
@@ -86,8 +116,35 @@ if (-not $BackendWorkspace) {
     $BackendWorkspace = Join-Path (Split-Path $repoRoot -Parent) "prizm331"
 }
 $BackendWorkspace = (Resolve-Path $BackendWorkspace).Path
-$env:PRIZM_BACKEND_WORKSPACE = $BackendWorkspace
-$env:PRIZM331_SOURCE_ROOT = $BackendWorkspace
+
+# Gate against exactly the backend commit the app was verified against
+# (autosync/state.json), in a throwaway worktree, so local backend work in
+# progress can neither break nor falsely pass a release.
+$pinnedWorktree = $null
+if ($UseBackendAsIs) {
+    $gateBackend = $BackendWorkspace
+    Write-Host "Backend gates use $BackendWorkspace as-is (candidate build)." -ForegroundColor Yellow
+}
+else {
+    $pin = (Get-Content -Raw "autosync\state.json" | ConvertFrom-Json).backend.syncedSha
+    if ($pin -notmatch "^[0-9a-f]{40}$") { throw "autosync/state.json has no valid backend.syncedSha." }
+    Invoke-NativeStep "Fetch backend main" { git -C $BackendWorkspace fetch --quiet origin main }
+    $null = Invoke-Probe { git -C $BackendWorkspace cat-file -e "$pin^{commit}" }
+    if ($LASTEXITCODE -ne 0) {
+        Invoke-NativeStep "Fetch pinned backend commit $pin" { git -C $BackendWorkspace fetch --quiet origin $pin }
+    }
+    $pinnedWorktree = Join-Path ([IO.Path]::GetTempPath()) ("prizm331-pin-" + $pin.Substring(0, 12))
+    if (Test-Path -LiteralPath $pinnedWorktree) {
+        # Left behind by a run that failed before its cleanup.
+        $null = Invoke-Probe { git -C $BackendWorkspace worktree remove --force $pinnedWorktree }
+        if (Test-Path -LiteralPath $pinnedWorktree) { Remove-Item -LiteralPath $pinnedWorktree -Recurse -Force }
+        $null = Invoke-Probe { git -C $BackendWorkspace worktree prune }
+    }
+    Invoke-NativeStep "Check out pinned backend $($pin.Substring(0, 9))" { git -C $BackendWorkspace worktree add --detach --quiet $pinnedWorktree $pin }
+    $gateBackend = $pinnedWorktree
+}
+$env:PRIZM_BACKEND_WORKSPACE = $gateBackend
+$env:PRIZM331_SOURCE_ROOT = $gateBackend
 
 Invoke-NativeStep "Install locked JavaScript dependencies" {
     npm ci --no-audit --no-fund --legacy-peer-deps
@@ -126,6 +183,34 @@ Invoke-NativeStep "Mobile contract tests" { npm run test:contracts }
 Invoke-NativeStep "List contract audit" { npm run test:list-contracts }
 Invoke-NativeStep "CRUD contract audit" { npm run test:crud-contracts }
 Invoke-NativeStep "Web-menu parity audit" { npm run audit:web-parity }
+Invoke-NativeStep "Pinned deeplink regressions" { npm run test:deeplink-regressions }
+Invoke-NativeStep "Deeplink wiring (every backend notification/approval link)" { npm run test:deeplinks }
+Invoke-NativeStep "Biometric sign-in policy" { npm run test:biometric }
+
+# Read-only live API smoke against production. Fails closed for a publication
+# when PRIZM_QA_EMAIL / PRIZM_QA_PASSWORD are not set on this machine.
+if ($Publish) {
+    Invoke-NativeStep "Live API smoke (read-only)" { node scripts/smoke-live-api.mjs }
+}
+else {
+    Invoke-NativeStep "Live API smoke (read-only, optional for candidates)" { node scripts/smoke-live-api.mjs --allow-missing-credentials }
+}
+
+# Everything merged since the last published build must have been released
+# properly: user-facing changes bumped the version, and no QC baseline grew
+# without a backend pin move (scripts/check-qc-ratchet.mjs).
+if ($Publish -and -not $SkipHistoryChecks) {
+    $previousSha = $null
+    foreach ($repo in $ReleaseRepos) {
+        $latestName = Invoke-Probe { gh release view --repo $repo --json name --jq .name }
+        if ($LASTEXITCODE -eq 0 -and $latestName -match "\(([0-9a-f]{7,12})\)") { $previousSha = $Matches[1]; break }
+    }
+    if (-not $previousSha) { throw "No previous release found in $($ReleaseRepos -join ', '). Pass -SkipHistoryChecks only for the very first publication." }
+    $null = Invoke-Probe { git cat-file -e "$previousSha^{commit}" }
+    if ($LASTEXITCODE -ne 0) { throw "Previous release commit $previousSha is not in this clone; fetch full history." }
+    Invoke-NativeStep "Release-bump gate since $previousSha" { node scripts/check-version-bump.mjs $previousSha HEAD }
+    Invoke-NativeStep "QC integrity since $previousSha" { node scripts/check-qc-ratchet.mjs $previousSha HEAD }
+}
 
 $assetLinks = Get-Content -Raw "public\.well-known\assetlinks.json" | ConvertFrom-Json
 $expectedFingerprint = [string]$assetLinks[0].target.sha256_cert_fingerprints[0]
@@ -242,20 +327,41 @@ $($flagsMatch.Value)
 
     if ($Publish) {
         Invoke-NativeStep "Verify GitHub authentication" { gh auth status }
-        Invoke-NativeStep "Upload rolling release APK" {
-            gh release upload latest $outputApk --repo Ghazalawy/prizm-mobile --clobber
+        # One release per version, marked latest: lib/updates.ts reads the
+        # short SHA in parentheses from the release name, and anyone watching
+        # the repository's releases gets a notification for each new version.
+        $tag = "v$($package.version)"
+        $releaseTitle = "Prizm Mobile v$($package.version) ($shortSha)"
+        $notesFile = Join-Path ([IO.Path]::GetTempPath()) "prizm-release-notes-$shortSha.md"
+        $notes = @("## $($changelog.releases[0].title)", "")
+        $notes += @($changelog.releases[0].highlights | ForEach-Object { "- $_" })
+        $notes += @("", "---", "Built on the release PC from main @ $headSha at $buildTime. All local gates, the live API smoke, signer verification and the emulator App Link smoke passed.", "API: $ApiUrl", "APK SHA-256: $apkHash")
+        [IO.File]::WriteAllText($notesFile, ($notes -join "`n"), [Text.UTF8Encoding]::new($false))
+        foreach ($repo in $ReleaseRepos) {
+            $null = Invoke-Probe { gh release view $tag --repo $repo --json tagName }
+            if ($LASTEXITCODE -eq 0) {
+                Invoke-NativeStep "Replace APK on $repo $tag" { gh release upload $tag $outputApk --repo $repo --clobber }
+                Invoke-NativeStep "Update $repo $tag metadata" { gh release edit $tag --repo $repo --title $releaseTitle --notes-file $notesFile --latest }
+            }
+            elseif ($repo -eq "Ghazalawy/prizm-mobile") {
+                Invoke-NativeStep "Create $repo $tag" { gh release create $tag $outputApk --repo $repo --target $headSha --title $releaseTitle --notes-file $notesFile --latest }
+            }
+            else {
+                Invoke-NativeStep "Create $repo $tag" { gh release create $tag $outputApk --repo $repo --title $releaseTitle --notes-file $notesFile --latest }
+            }
         }
-        $releaseNotes = "Locally built from main @ $headSha`nBuilt at: $buildTime`nAPI: $ApiUrl`nAPK SHA-256: $apkHash"
-        Invoke-NativeStep "Update rolling release metadata" {
-            gh release edit latest --repo Ghazalawy/prizm-mobile --title "Latest build ($shortSha)" --notes $releaseNotes --latest
-        }
-        Write-Host "Published without GitHub-hosted build minutes." -ForegroundColor Green
+        Remove-Item -LiteralPath $notesFile -Force -ErrorAction SilentlyContinue
+        Write-Host "Published $tag to $($ReleaseRepos -join ', ') without GitHub-hosted build minutes." -ForegroundColor Green
     }
     else {
         Write-Host "Build-only mode: nothing was uploaded. Re-run from synced main with -Publish and -DeviceSerial after final approval." -ForegroundColor Yellow
     }
 }
 finally {
+    if ($pinnedWorktree) {
+        $null = Invoke-Probe { git -C $BackendWorkspace worktree remove --force $pinnedWorktree }
+        $null = Invoke-Probe { git -C $BackendWorkspace worktree prune }
+    }
     [IO.File]::WriteAllBytes($buildInfoPath, $buildInfoBackup)
     if ($hadEnv) {
         [IO.File]::WriteAllBytes($envPath, $envBackup)

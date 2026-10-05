@@ -51,6 +51,11 @@ it starts.
 
 ## 1. Baseline health (before touching anything)
 
+Open issues titled `Release blocked on release PC: …` are priority 1: the last
+merged version never reached staff. Read the log tail in the issue, fix the
+cause on this run's branch, and reference the issue in the PR.
+
+
 `git -C /home/user/prizm331 checkout --detach "$PIN"`, then `npm run qc:all`.
 It must be green.
 If it is not, main is broken: fixing that is this week's first item.
@@ -132,16 +137,24 @@ title `autosync: week of <date> — v<version>` (or `— no release`), body =
 `$RUN/delta.md` summary, the plan table, what shipped, what was deferred and
 why, evidence. Subscribe to PR activity.
 
-When **every** check of the Quality Gates workflow is green on the head
-commit and `autosync/policy.json` `mobile.autoMerge` is true, merge with a
-merge commit. A red check is work: fix it and push. Never merge red. Never
-re-run a failing test hoping for green unless the job died before any test ran
-(checkout, install, runner loss), and at most once.
+The repository is private and hosted minutes are billed, so the only hosted
+check on the PR is **QC Integrity**. Merge (merge commit) only when all of
+these hold and `autosync/policy.json` `mobile.autoMerge` is true:
 
-The merge triggers **Release APK**: gates again, signed build, certificate
-check, emulator smoke, then a `v<version>` GitHub release marked latest.
-Phones show the in-app update banner on next launch, and anyone watching the
-repo's releases gets a GitHub notification.
+- step 7 passed locally on the pushed head commit (paste the command output
+  summary into the PR body as evidence);
+- the QC Integrity check is green on that head commit.
+
+A red check or a red local gate is work: fix it and push. Never merge red.
+Do not trigger the manual `Quality Gates` / `Build APK` workflows; they spend
+billed minutes and exist for when the release PC is down.
+
+After the merge, the release PC watcher (every 2 h while the DSO PC is on)
+runs every gate again, including the live API smoke the cloud session may not
+be able to reach, then publishes `v<version>` to
+`Ghazalawy/prizm-mobile-releases`. Phones show the in-app update banner on
+next launch. If the watcher fails, it opens a "Release blocked" issue (step 1
+of next week's run).
 
 ## 9. Backend PRs (P4)
 

@@ -372,7 +372,7 @@ assert.equal(
 );
 assert.equal(
   routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/dewa_contacts/add_dewa_contact/15"),
-  "/(tabs)/erp/dewa_contacts/15",
+  null,
 );
 assert.equal(
   routing.resolveNativeRoute("https://ms.prizm-energy.com/MS/admin/prizmsubscription/prizmsubscription/edit_subscription/23"),

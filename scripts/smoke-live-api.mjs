@@ -231,8 +231,26 @@ const sweepable = [...registry.values()].filter((module) =>
   module.endpoint && module.canOpenDetail !== false && !module.requiresSearch && !module.endpoint.includes("{"),
 );
 const sweep = await pool(sweepable, async (module) => {
-  const separator = module.endpoint.includes("?") ? "&" : "?";
-  const list = await request(`${module.endpoint}${module.unpaginated ? "" : `${separator}limit=1`}`);
+  let collectionEndpoint = module.endpoint;
+  if (module.collectionParent) {
+    const parent = module.collectionParent;
+    const parentModule = registry.get(parent.moduleKey);
+    if (!parentModule) return { key: module.key, result: "fail", code: "PARENT_CONFIG", detail: `Unknown parent module ${parent.moduleKey}` };
+    const parentSeparator = parentModule.endpoint.includes("?") ? "&" : "?";
+    const parentList = await request(`${parentModule.endpoint}${parentModule.unpaginated ? "" : `${parentSeparator}limit=1`}`);
+    const parentVerdict = classify(parentList);
+    if (parentVerdict.code === "forbidden") return { key: module.key, result: "forbidden" };
+    if (parentVerdict.code !== "ok") return { key: module.key, result: "fail", code: `PARENT_${parentVerdict.code}`, detail: parentVerdict.detail };
+    const parentRecord = listItems(parentList.json)[0];
+    const parentId = parentRecord?.[parentModule.idKey || "id"];
+    if (parentId === undefined || parentId === null || parentId === "") return { key: module.key, result: "empty" };
+    for (const [key, value] of Object.entries(parent.params || {})) {
+      collectionEndpoint += `${collectionEndpoint.includes("?") ? "&" : "?"}${encodeURIComponent(key)}=${encodeURIComponent(value)}`;
+    }
+    collectionEndpoint += `${collectionEndpoint.includes("?") ? "&" : "?"}${encodeURIComponent(parent.param)}=${encodeURIComponent(String(parentId))}`;
+  }
+  const separator = collectionEndpoint.includes("?") ? "&" : "?";
+  const list = await request(`${collectionEndpoint}${module.unpaginated ? "" : `${separator}limit=1`}`);
   const listVerdict = classify(list);
   if (listVerdict.code === "forbidden") return { key: module.key, result: "forbidden" };
   if (listVerdict.code !== "ok") return { key: module.key, result: "fail", code: `LIST_${listVerdict.code}`, detail: listVerdict.detail };

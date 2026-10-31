@@ -3,7 +3,7 @@
   "releases": [
     {
       "version": "1.18.4",
-      "date": "2026-10-31",
+      "date": "2026-11-01",
       "title": "Approvals and module reads repaired",
       "highlights": [
         "Leave approval notifications now open the real request with its approval history and actions.",

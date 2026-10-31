@@ -178,6 +178,14 @@
       "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
     },
     {
+      "key": "app-link przdataops/cron_cockpit",
+      "codes": [
+        "ERP_HOME_FALLBACK"
+      ],
+      "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
+      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
+    },
+    {
       "key": "app-link przdataops/dataops/vto_monitor#vto-local-release-watch",
       "codes": [
         "ERP_HOME_FALLBACK"
@@ -415,6 +423,14 @@
       "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
     },
     {
+      "key": "approval przdataops/cron_cockpit",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
+      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
+    },
+    {
       "key": "approval przdataops/dataops/vto_monitor#vto-local-release-watch",
       "codes": [
         "NO_NATIVE_ROUTE"
@@ -645,6 +661,14 @@
       ],
       "reason": "Known gap at QC gate introduction: backend link has no native screen yet; weekly sync must burn it down.",
       "since": "aba3ebc146f191dcf4169c0c5877531ca5410a97"
+    },
+    {
+      "key": "notification przdataops/cron_cockpit",
+      "codes": [
+        "NO_NATIVE_ROUTE"
+      ],
+      "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
+      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
     },
     {
       "key": "notification przdataops/dataops/vto_monitor#vto-local-release-watch",

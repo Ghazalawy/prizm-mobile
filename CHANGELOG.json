@@ -2,6 +2,18 @@
   "_comment": "Versioned release notes. TOP entry feeds the 'What's New' popup on first launch after an update (gated by BUILD_SHA comparison in WhatsNewModal). The full list is rendered as a vertical timeline in the Settings → About → Changelog screen. Add new entries to the top. Each entry needs version (semver) and date (YYYY-MM-DD). Bumps: patch = fix, minor = feature, major = breaking. Keep titles under 60 chars and bullets under 110 chars.",
   "releases": [
     {
+      "version": "1.18.3",
+      "date": "2026-10-31",
+      "title": "Payment Requests open reliably",
+      "highlights": [
+        "Fixed a server error that made existing Payment Requests appear missing on mobile.",
+        "TenderOps notifications now open the correct opportunity record.",
+        "Server-only cron links no longer fall through to an unrelated mobile destination.",
+        "Updated native dependencies and verified mobile contracts against the current production ERP.",
+        "Versioned APK releases now reach older installations through the public release channel."
+      ]
+    },
+    {
       "version": "1.18.2",
       "date": "2026-10-04",
       "title": "Notifications open the right screen",

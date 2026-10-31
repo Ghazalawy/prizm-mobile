@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-11-01 — Live Approval and Module Parity v1.18.4
 
-**Status:** Backend API `2.29.6` is deployed at `3307f5a201a6e481bf99b887c1e0f1494eb3431b`; the full authenticated live smoke is green. Mobile `1.18.4` (versionCode `40`) is in signed-build/publication QC and is not yet published.
+**Status:** Backend API `2.29.6` and mobile `1.18.4` (versionCode `40`) are deployed. The signed public release and previous-version update banner are verified.
 
 ### Completed and verified
 
@@ -13,12 +13,15 @@
 - Added failing-first API and mobile child-parity regressions. API `2.29.2` passed PR #2880; `2.29.6` passed PR #2900.
 - Mobile candidate pins backend merge `3307f5a201a6e481bf99b887c1e0f1494eb3431b` and advances release metadata to `1.18.4`/code `40`.
 
-### Evidence and remaining gates
+### Evidence
 
+- Canonical QC report: `C:\Users\osama\.claude-brain\_audits\qc-reports\PE-QAQC-QC-RPT-26028-R02__mobile-erp-parity-20261031.md`, `.html` and `.pdf`; `_INDEX.md` is updated.
 - API QC: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-api-live-parity-qc.md`, `2026-10-31-api-equipment-read-hotfix-qc.md`, `2026-11-01-api-equipment-combined-read-qc.md`.
 - Test report: `C:\Users\osama\.claude-brain\_work\artifacts\dev-team\tests\2026-10-31-mobile-erp-live-parity-test-report.md`.
 - Final live smoke: 79 tappable inbox/notification records opened with zero failures; module sweep has 112 OK, 14 empty, 1 correctly forbidden and zero failures/baselines.
-- Still required: signed `1.18.4` build/install verification, publication and previous-version update-banner smoke.
+- Public release: `https://github.com/Ghazalawy/prizm-mobile-releases/releases/tag/v1.18.4` at mobile merge `2523810cb634bce601fc533cbb9fe052539182ff`.
+- Published APK SHA-256: `deaf5a15555cf8fc3bf8d2581a5e3d79e0ddeb09f42a5ee0a7549298dfdf62e5`; anonymous download hash matches.
+- Installed candidate opens leave request `412` with approval history. Preserved 1.18.3 displays `Update available` and `Install`; published 1.18.4 was then reinstalled.
 
 ---
 

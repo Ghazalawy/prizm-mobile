@@ -2,7 +2,7 @@
 
 ## Current Session — 2026-10-31 — Live Approval and Module Parity v1.18.4
 
-**Status:** Backend API `2.29.3` merged at `fb96306f5d2d03f6a2ff0f5b50a84e20d9947f`; production deployment and full smoke are pending the governed idle-window lock. Mobile `1.18.4` (versionCode `40`) is not published.
+**Status:** Backend API `2.29.3` merged at `fb96306f5ec9f646d182f4c894525c8a904c83d6`; production deployment and full smoke are pending the governed idle-window lock. Mobile `1.18.4` (versionCode `40`) is not published.
 
 ### Completed and verified
 
@@ -11,7 +11,7 @@
 - Confirmed DEWA Contacts is inactive in production and removed its mobile surface and redirects instead of creating schema.
 - Marked collection-only Advance Lead/task children non-tappable and added real parent resolution for Material Specifications, license seats, kit models and accessory checkouts.
 - Added failing-first API and mobile child-parity regressions. API `2.29.2` passed PR #2880; `2.29.3` passed PR #2882.
-- Mobile candidate pins backend merge `fb96306f5d2d03f6a2ff0f5b50a84e20d9947f` and advances release metadata to `1.18.4`/code `40`.
+- Mobile candidate pins backend merge `fb96306f5ec9f646d182f4c894525c8a904c83d6` and advances release metadata to `1.18.4`/code `40`.
 
 ### Evidence and remaining gates
 

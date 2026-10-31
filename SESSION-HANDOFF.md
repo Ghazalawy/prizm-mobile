@@ -1,5 +1,29 @@
 # Prizm Mobile — Session Handoff
 
+## Current Session — 2026-10-31 — Payment Request and Production Parity v1.18.3
+
+**Status:** Backend API `2.29.1` is deployed at `5c3201802f23d1fbc043ec0fcc66ce93b497f4d5`. Mobile release candidate `1.18.3` (Android versionCode `39`) is in final QC.
+
+### Completed and verified
+
+- Reproduced Payment Request `1211` on installed v1.18.0: the native route opened but displayed `Payment Request not found`.
+- Production logs identified `Call to undefined function przpurchase_document_code()` as the root cause. The REST controller now loads `przpurchase/przpurchase_company`; a failing-first contract passes after the fix.
+- Added a verified TenderOps opportunity record-link contract and fail-closed handling for the server-only cron cockpit.
+- Advanced the mobile backend verification pin to deployed backend merge SHA `5c3201802f23d1fbc043ec0fcc66ce93b497f4d5`.
+- Updated `expo-asset` to `~12.0.14`; Expo dependency validation passes.
+- Production-pinned QC passes: TypeScript, 33 deeplink regressions, 203 pipeline checks, 357 mutation contracts, 125 filterable lists, admin parity, release metadata and QC integrity.
+- Restored the public releases-only repository `Ghazalawy/prizm-mobile-releases`; signed APK publication and update-banner verification remain pending.
+
+### Evidence and remaining gates
+
+- QC record: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-mobile-erp-parity-qc.md`.
+- Test report: `C:\Users\osama\.claude-brain\_work\artifacts\dev-team\tests\2026-10-31-mobile-erp-parity-qc-test-report.md`.
+- Backend API version is `2.29.1`; canonical API changelog and overview are updated.
+- Backend PR `PrizmIT/prizm331#2858` merged and deployed. Cold-start Android now renders Payment Request `1211` as `MT-26080002`, fully approved, with the correct total and line items.
+- Still required: signed candidate build, installed release verification and update-banner smoke.
+
+---
+
 ## Current Session — 2026-08-02 — Full Native Parity Release v1.17.0
 
 **Status:** Backend and mobile are deployed. Production backend is `f94a2528bd6071106e2eaa4428ad8f3c7daae507`; rolling Android release is v1.17.0/code35 from merge `a83f365647790301c252c23c809533cd384b4dd7`.

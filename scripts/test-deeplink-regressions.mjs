@@ -42,6 +42,8 @@ opens("przpurchase/Delivery_Notes/view_delivery_note/77", "/(tabs)/erp/purchase_
 opens("przpurchase/Received_Vouchers/view_voucher/78", "/(tabs)/erp/purchase_received_vouchers/78", "received voucher approval");
 opens("przpurchase/Payment_Request/view_payment_request/1211", "/(tabs)/approvals/payment_request/1211", "payment request approval");
 opens("quotations/list_quotations/5", "/(tabs)/erp/purchase_quotations/5", "supplier-accepted quotation notification");
+opens("opportunities/view/2782?group=opportunity_tenderops", "/(tabs)/opportunities/2782", "TenderOps scope gate notification keeps the opportunity record");
+opens("przdataops/cron_cockpit", null, "server operations cockpit has no native screen");
 
 // Wrong-table records: these used to open a DIFFERENT record with the same id.
 opens("materials/Items/view/4410", "/(tabs)/erp/budget_items/4410", "materials/Items is tblprizmbudget_items (budget_items), not tblmaterials");

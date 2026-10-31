@@ -182,6 +182,7 @@ const CONTROLLER_TO_MODULE: Record<string, string> = {
  */
 const NO_NATIVE_SCREEN_PATTERNS: RegExp[] = [
   /^rfq2?\/rfq\/rfq\/\d+/i,
+  /^przdataops\/cron_cockpit\/?$/i,
   // Additional-hours approvals have no native screen; the bare path would land
   // an approver on their own leave list, which looks like a page but is not.
   /^timesheets\/requisition_manage\?(?:.*&)?tab=additional_timesheets/i,

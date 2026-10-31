@@ -67,6 +67,11 @@
       "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."
     },
     {
+      "template": "opportunities/view/{id}?group=opportunity_tenderops",
+      "screen": "app/(tabs)/opportunities/[id]",
+      "evidence": "Verified 2026-10-31: web Opportunities::view and mobile opportunities_api/data/{id} both read tblopportunities by opportunity_id; the query group selects the TenderOps tab on the same record, not another entity."
+    },
+    {
       "template": "payments/payment/{id}",
       "screen": "app/(tabs)/erp/payments/[id]",
       "evidence": "Pre-existing explicit native-routing pattern at gate introduction (2026-10-04); target table NOT re-verified against the web controller."

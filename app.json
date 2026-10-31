@@ -2,7 +2,7 @@
   "expo": {
     "name": "Prizm CRM",
     "slug": "prizm-mobile",
-    "version": "1.18.2",
+    "version": "1.18.3",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "prizmcrm",
@@ -51,7 +51,7 @@
         "android.permission.MODIFY_AUDIO_SETTINGS",
         "android.permission.REQUEST_INSTALL_PACKAGES"
       ],
-      "versionCode": 38
+      "versionCode": 39
     },
     "web": {
       "bundler": "metro",
@@ -96,7 +96,8 @@
         }
       ],
       "@react-native-community/datetimepicker",
-      "expo-font"
+      "expo-font",
+      "expo-asset"
     ],
     "experiments": {
       "typedRoutes": true

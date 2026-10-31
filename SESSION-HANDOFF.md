@@ -2,23 +2,23 @@
 
 ## Current Session — 2026-11-01 — Live Approval and Module Parity v1.18.4
 
-**Status:** Backend API `2.29.5` merged at `c4c017d82773efeebb8d0cbea4f77df1958125fe`; production deployment and full smoke are pending the governed idle-window lock. Mobile `1.18.4` (versionCode `40`) is not published.
+**Status:** Backend API `2.29.6` is deployed at `3307f5a201a6e481bf99b887c1e0f1494eb3431b`; the full authenticated live smoke is green. Mobile `1.18.4` (versionCode `40`) is in signed-build/publication QC and is not yet published.
 
 ### Completed and verified
 
-- Added the missing leave-approval detail/action API. Both failing notifications for request `412` now return real records; all 68 tappable inbox/notification records pass.
+- Added the missing leave-approval detail/action API. Both failing notifications for request `412` now return real records.
 - Fixed bootstrap/helper failures for Fixed Equipment, Goals, HR training and DMS; moved OTP and equipment visibility evaluation ahead of query construction.
 - Confirmed DEWA Contacts is inactive in production and removed its mobile surface and redirects instead of creating schema.
 - Marked collection-only Advance Lead/task children non-tappable and added real parent resolution for Material Specifications, license seats, kit models and accessory checkouts.
-- Added failing-first API and mobile child-parity regressions. API `2.29.2` passed PR #2880; `2.29.5` passed PR #2898.
-- Mobile candidate pins backend merge `c4c017d82773efeebb8d0cbea4f77df1958125fe` and advances release metadata to `1.18.4`/code `40`.
+- Added failing-first API and mobile child-parity regressions. API `2.29.2` passed PR #2880; `2.29.6` passed PR #2900.
+- Mobile candidate pins backend merge `3307f5a201a6e481bf99b887c1e0f1494eb3431b` and advances release metadata to `1.18.4`/code `40`.
 
 ### Evidence and remaining gates
 
-- API QC: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-api-live-parity-qc.md` and `2026-10-31-api-equipment-read-hotfix-qc.md`.
+- API QC: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-api-live-parity-qc.md`, `2026-10-31-api-equipment-read-hotfix-qc.md`, `2026-11-01-api-equipment-combined-read-qc.md`.
 - Test report: `C:\Users\osama\.claude-brain\_work\artifacts\dev-team\tests\2026-10-31-mobile-erp-live-parity-test-report.md`.
-- Latest complete smoke after API `2.29.2`: 68 tappable checks passed; module sweep reached 108 OK with five failures. API `2.29.5` and the new parent mappings address those five but must be verified together after deployment.
-- Still required: governed API `2.29.5` deployment, full green live smoke, signed `1.18.4` build/install verification, publication and previous-version update-banner smoke.
+- Final live smoke: 79 tappable inbox/notification records opened with zero failures; module sweep has 112 OK, 14 empty, 1 correctly forbidden and zero failures/baselines.
+- Still required: signed `1.18.4` build/install verification, publication and previous-version update-banner smoke.
 
 ---
 

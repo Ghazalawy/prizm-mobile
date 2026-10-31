@@ -333,6 +333,8 @@ export type ModuleDefinition = {
   searchParam?: string;
   /** Do not call the endpoint until the user enters a search term. */
   requiresSearch?: boolean;
+  /** Resolve this parent before exercising a parent-scoped collection in live QC. */
+  collectionParent?: { moduleKey: string; param: string; params?: Record<string, string> };
   /** The endpoint returns its complete collection and ignores limit/offset. */
   unpaginated?: boolean;
   /** Record mutations are available only to Perfex administrators. */
@@ -899,6 +901,7 @@ export const MODULES: ModuleDefinition[] = [
     canCreate: false,
     canUpdate: false,
     canDelete: false,
+    canOpenDetail: false,
   },
   {
     key: "advance_lead_statuses",
@@ -1067,6 +1070,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "description", label: "Description", type: "multiline", required: true },
       { key: "finished", label: "Finished", type: "boolean" },
     ],
+    canOpenDetail: false,
   },
   {
     key: "task_comments",
@@ -1084,6 +1088,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "content", label: "Comment", type: "multiline", required: true },
     ],
     canUpdate: false,
+    canOpenDetail: false,
   },
   {
     key: "task_assignments",
@@ -1101,6 +1106,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "staffid", label: "Staff", type: "number", relation: "staff", required: true },
     ],
     canUpdate: false,
+    canOpenDetail: false,
   },
   {
     key: "task_followers",
@@ -1118,6 +1124,7 @@ export const MODULES: ModuleDefinition[] = [
       { key: "staffid", label: "Staff", type: "number", relation: "staff", required: true },
     ],
     canUpdate: false,
+    canOpenDetail: false,
   },
   {
     key: "invoices",
@@ -3164,32 +3171,6 @@ export const MODULES: ModuleDefinition[] = [
     ],
   },
   {
-    key: "dewa_contacts",
-    title: "DEWA Contact",
-    plural: "DEWA Contacts",
-    group: "CRM",
-    endpoint: "dewa_contacts_api",
-    permissionFeature: "dewa_contacts",
-    idKey: "id",
-    icon: "people-outline",
-    color: "#0284C7",
-    titleFields: ["first_name", "last_name", "email"],
-    subtitleFields: ["rfxno", "phone", "status"],
-    searchFields: ["first_name", "last_name", "email"],
-    fields: [
-      { key: "contact_id", label: "Contact ID", section: "Contact", type: "number", required: true },
-      { key: "rfxno", label: "RFx Number", section: "Reference" },
-      { key: "first_name", label: "First Name", section: "Contact", required: true },
-      { key: "last_name", label: "Last Name", section: "Contact" },
-      { key: "email", label: "Email", section: "Contact", type: "email" },
-      { key: "phone", label: "Phone", section: "Contact", type: "phone" },
-      { key: "note", label: "Note", section: "Notes", type: "multiline" },
-      { key: "status", label: "Active", section: "Status", type: "boolean", defaultValue: true },
-      { key: "created_at", label: "Created", section: "Audit", type: "datetime", readOnly: true },
-      { key: "updated_at", label: "Updated", section: "Audit", type: "datetime", readOnly: true },
-    ],
-  },
-  {
     key: "materials",
     title: "Material",
     plural: "Materials",
@@ -3247,6 +3228,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "Inventory",
     endpoint: "materials_catalog/material_metadata",
     permissionFeature: "materials",
+    collectionParent: { moduleKey: "materials", param: "material_id" },
     idKey: "id",
     icon: "list-outline",
     color: "#0F766E",
@@ -5122,6 +5104,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "Operations",
     endpoint: "fixed_equipment_api/license_seats",
     permissionFeature: "fixed_equipment_licenses",
+    collectionParent: { moduleKey: "fixed_equipment_licenses", param: "license_id" },
     idKey: "id",
     icon: "person-circle-outline",
     color: "#4F46E5",
@@ -5199,6 +5182,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "Operations",
     endpoint: "fixed_equipment_api/predefined_kit_models",
     permissionFeature: "fixed_equipment_predefined_kits",
+    collectionParent: { moduleKey: "fixed_equipment_predefined_kits", param: "parent_id" },
     idKey: "id",
     icon: "cube-outline",
     color: "#0F766E",
@@ -5355,6 +5339,7 @@ export const MODULES: ModuleDefinition[] = [
     group: "Operations",
     endpoint: "fixed_equipment_api/inventory_checkouts",
     permissionFeature: ["fixed_equipment_accessories", "fixed_equipment_consumables", "fixed_equipment_components"],
+    collectionParent: { moduleKey: "fixed_equipment_accessories", param: "item_id", params: { kind: "accessory" } },
     idKey: "id",
     icon: "swap-horizontal-outline",
     color: "#475569",

@@ -1,26 +1,24 @@
 # Prizm Mobile — Session Handoff
 
-## Current Session — 2026-10-31 — Payment Request and Production Parity v1.18.3
+## Current Session — 2026-11-01 — Live Approval and Module Parity v1.18.4
 
-**Status:** Backend API `2.29.1` is deployed at `5c3201802f23d1fbc043ec0fcc66ce93b497f4d5`. Mobile release candidate `1.18.3` (Android versionCode `39`) is in final QC.
+**Status:** Backend API `2.29.6` is deployed at `3307f5a201a6e481bf99b887c1e0f1494eb3431b`; the full authenticated live smoke is green. Mobile `1.18.4` (versionCode `40`) is in signed-build/publication QC and is not yet published.
 
 ### Completed and verified
 
-- Reproduced Payment Request `1211` on installed v1.18.0: the native route opened but displayed `Payment Request not found`.
-- Production logs identified `Call to undefined function przpurchase_document_code()` as the root cause. The REST controller now loads `przpurchase/przpurchase_company`; a failing-first contract passes after the fix.
-- Added a verified TenderOps opportunity record-link contract and fail-closed handling for the server-only cron cockpit.
-- Advanced the mobile backend verification pin to deployed backend merge SHA `5c3201802f23d1fbc043ec0fcc66ce93b497f4d5`.
-- Updated `expo-asset` to `~12.0.14`; Expo dependency validation passes.
-- Production-pinned QC passes: TypeScript, 33 deeplink regressions, 203 pipeline checks, 357 mutation contracts, 125 filterable lists, admin parity, release metadata and QC integrity.
-- Restored the public releases-only repository `Ghazalawy/prizm-mobile-releases`; signed APK publication and update-banner verification remain pending.
+- Added the missing leave-approval detail/action API. Both failing notifications for request `412` now return real records.
+- Fixed bootstrap/helper failures for Fixed Equipment, Goals, HR training and DMS; moved OTP and equipment visibility evaluation ahead of query construction.
+- Confirmed DEWA Contacts is inactive in production and removed its mobile surface and redirects instead of creating schema.
+- Marked collection-only Advance Lead/task children non-tappable and added real parent resolution for Material Specifications, license seats, kit models and accessory checkouts.
+- Added failing-first API and mobile child-parity regressions. API `2.29.2` passed PR #2880; `2.29.6` passed PR #2900.
+- Mobile candidate pins backend merge `3307f5a201a6e481bf99b887c1e0f1494eb3431b` and advances release metadata to `1.18.4`/code `40`.
 
 ### Evidence and remaining gates
 
-- QC record: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-mobile-erp-parity-qc.md`.
-- Test report: `C:\Users\osama\.claude-brain\_work\artifacts\dev-team\tests\2026-10-31-mobile-erp-parity-qc-test-report.md`.
-- Backend API version is `2.29.1`; canonical API changelog and overview are updated.
-- Backend PR `PrizmIT/prizm331#2858` merged and deployed. Cold-start Android now renders Payment Request `1211` as `MT-26080002`, fully approved, with the correct total and line items.
-- Still required: signed candidate build, installed release verification and update-banner smoke.
+- API QC: `C:\Users\osama\.claude-brain\_work\artifacts\qc\2026-10-31-api-live-parity-qc.md`, `2026-10-31-api-equipment-read-hotfix-qc.md`, `2026-11-01-api-equipment-combined-read-qc.md`.
+- Test report: `C:\Users\osama\.claude-brain\_work\artifacts\dev-team\tests\2026-10-31-mobile-erp-live-parity-test-report.md`.
+- Final live smoke: 79 tappable inbox/notification records opened with zero failures; module sweep has 112 OK, 14 empty, 1 correctly forbidden and zero failures/baselines.
+- Still required: signed `1.18.4` build/install verification, publication and previous-version update-banner smoke.
 
 ---
 

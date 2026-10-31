@@ -183,7 +183,7 @@
         "ERP_HOME_FALLBACK"
       ],
       "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
-      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
+      "since": "5c3201802f23d1fbc043ec0fcc66ce93b497f4d5"
     },
     {
       "key": "app-link przdataops/dataops/vto_monitor#vto-local-release-watch",
@@ -428,7 +428,7 @@
         "NO_NATIVE_ROUTE"
       ],
       "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
-      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
+      "since": "5c3201802f23d1fbc043ec0fcc66ce93b497f4d5"
     },
     {
       "key": "approval przdataops/dataops/vto_monitor#vto-local-release-watch",
@@ -668,7 +668,7 @@
         "NO_NATIVE_ROUTE"
       ],
       "reason": "Reviewed 2026-10-31: cron_cockpit is server-only operations and must fail closed until a native operations screen is approved",
-      "since": "5858097446514f2ab3bf5075acdd977c55804bf3"
+      "since": "5c3201802f23d1fbc043ec0fcc66ce93b497f4d5"
     },
     {
       "key": "notification przdataops/dataops/vto_monitor#vto-local-release-watch",
